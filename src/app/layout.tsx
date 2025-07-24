@@ -1,32 +1,32 @@
 import type { Metadata } from 'next';
-import { Providers } from '@/components/Providers';
+import './globals.css';
+import { Inter } from 'next/font/google';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Toaster } from "@/components/ui/toaster"
-import './globals.css';
+import { Providers } from '@/components/Providers';
+import { Toaster } from '@/components/ui/toaster';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Bloomtales Boutique',
-  description: 'Chic clothing for women and children in India.',
+  title: 'Bloom Tales - Women\'s Fashion Boutique',
+  description: 'Discover the latest in women\'s fashion at Bloom Tales. Shop our curated collection of clothing and accessories.',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Belleza&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+    <html lang="en">
+      <body className={inter.className}>
         <Providers>
-          <div className="flex flex-col min-h-screen">
+          <div className="min-h-screen flex flex-col">
             <Header />
-            <main className="flex-grow">{children}</main>
+            <main className="flex-grow">
+              {children}
+            </main>
             <Footer />
           </div>
           <Toaster />

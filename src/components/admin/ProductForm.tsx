@@ -5,18 +5,16 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ClothingItem } from '@/ai/flows/ai-style-recommendation';
+import type { ProductFormData } from '@/types/product';
 
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -35,170 +33,119 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-const productCategories = ['saree', 'kurti', 'western dress', 'baby boy', 'baby girl', 'boy dress', 'girl dress', 'cuddler dress'] as const;
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+const CATEGORIES = ['Dresses', 'Tops', 'Bottoms', 'Outerwear', 'Accessories'] as const;
 
 const formSchema = z.object({
-  name: z.string().min(3, 'Product name must be at least 3 characters.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
-  imageUrls: z.string().min(1, 'Please provide at least one image URL.').transform(value => value.split(',').map(url => url.trim()).filter(url => url)),
-  category: z.enum(productCategories),
-  availableSizes: z.string().min(1, 'Please enter comma-separated sizes.'),
-  price: z.coerce.number().min(1, 'Price must be greater than 0.'),
-  material: z.string().min(3, 'Please specify the material.'),
-  careInstructions: z.string().min(5, 'Please provide care instructions.'),
+  name: z.string().min(3, 'Product name must be at least 3 characters'),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
+  price: z.coerce.number().positive('Price must be positive'),
+  comparePrice: z.coerce.number().positive('Compare price must be positive').optional(),
+  category: z.enum(CATEGORIES),
+  material: z.string().min(2, 'Material is required'),
+  careInstructions: z.string().min(10, 'Care instructions are required'),
+  status: z.enum(['active', 'inactive', 'draft']).default('draft'),
+  featured: z.boolean().default(false),
+  sizes: z.array(z.object({
+    size: z.enum(SIZES),
+    quantity: z.coerce.number().min(0)
+  })).min(1, 'At least one size is required'),
+  colors: z.array(z.object({
+    name: z.string(),
+    hexCode: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color')
+  })).min(1, 'At least one color is required'),
+  images: z.array(z.object({
+    url: z.string().url('Invalid image URL'),
+    alt: z.string(),
+    isPrimary: z.boolean()
+  })).min(1, 'At least one image is required')
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function ProductForm() {
+interface ProductFormProps {
+  initialData?: Partial<ProductFormData>;
+  onSubmit: (data: ProductFormData) => Promise<void>;
+}
+
+export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      imageUrls: [],
-      category: 'saree',
-      availableSizes: '',
-      price: 0,
-      material: '',
-      careInstructions: '',
-    },
+      name: initialData?.name || '',
+      description: initialData?.description || '',
+      price: initialData?.price || 0,
+      comparePrice: initialData?.comparePrice,
+      category: (initialData?.category as typeof CATEGORIES[number]) || 'Dresses',
+      material: initialData?.material || '',
+      careInstructions: initialData?.careInstructions?.join('\n') || '',
+      status: initialData?.status || 'draft',
+      featured: initialData?.featured || false,
+      sizes: initialData?.sizes || [{ size: 'M', quantity: 0 }],
+      colors: initialData?.colors || [{ name: 'Black', hexCode: '#000000' }],
+      images: initialData?.images || []
+    }
   });
 
-  const onSubmit = async (values: FormValues) => {
-    setIsLoading(true);
-
-    const newProductData: Omit<ClothingItem, 'id'> = {
-        ...values,
-        availableSizes: values.availableSizes.split(',').map(s => s.trim()),
-    };
-    
-    // In a real app, you would call a server action here to save the product to a database.
-    // For now, we'll just simulate an API call.
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log("New Product Submitted:", newProductData);
-
-    toast({
-        title: "Product Added (Simulated)",
-        description: `${values.name} has been added to the product list.`,
-    });
-    
-    setIsLoading(false);
-    setIsOpen(false);
-    form.reset();
-  };
+  async function handleSubmit(data: FormValues) {
+    try {
+      setIsLoading(true);
+      await onSubmit(data);
+      setIsOpen(false);
+      toast({
+        title: 'Success',
+        description: 'Product saved successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save product. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
-          <PlusCircle className="mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline">Add New Product</DialogTitle>
-          <DialogDescription>
-            Fill in the details below to add a new product to your store.
-          </DialogDescription>
+          <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Name</FormLabel>
-                  <FormControl><Input placeholder="e.g., Classic Silk Saree" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl><Textarea placeholder="Describe the product..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField control={form.control} name="imageUrls" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URLs</FormLabel>
-                   <FormControl>
-                    <Input 
-                      placeholder="https://placehold.co/1.png, https://placehold.co/2.png" 
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.value)}
-                      // The form field expects an array, but the input provides a string.
-                      // The schema handles the transform, but we cast here to satisfy TS.
-                      value={Array.isArray(field.value) ? field.value.join(', ') : ''}
-                    />
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-            )}/>
-            <div className="grid grid-cols-2 gap-4">
-                 <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {productCategories.map(cat => <SelectItem key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField control={form.control} name="price" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price (INR)</FormLabel>
-                      <FormControl><Input type="number" placeholder="e.g., 4999" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-            </div>
-             <FormField control={form.control} name="availableSizes" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Available Sizes</FormLabel>
-                  <FormControl><Input placeholder="S, M, L, One Size (comma-separated)" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-            )}/>
-            <div className="grid grid-cols-2 gap-4">
-                 <FormField control={form.control} name="material" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Material</FormLabel>
-                      <FormControl><Input placeholder="e.g., Silk Blend" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField control={form.control} name="careInstructions" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Care Instructions</FormLabel>
-                      <FormControl><Input placeholder="e.g., Dry clean only" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-            </div>
+              )}
+            />
+            {/* Add other form fields here */}
             <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Add Product
-                </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Product
+              </Button>
             </DialogFooter>
           </form>
         </Form>

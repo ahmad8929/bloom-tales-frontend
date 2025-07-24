@@ -5,87 +5,183 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { IndianRupee, Minus, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Minus, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function CartView() {
-  const { cartItems, updateQuantity, removeFromCart, cartTotal, itemCount } = useCart();
+  const { state, updateQuantity, removeFromCart, getCartTotals } = useCart();
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const { items, isLoading } = state;
+  const { subtotal, shipping, tax, total } = getCartTotals();
 
-  if (itemCount === 0) {
+  if (isLoading) {
+    return <CartSkeleton />;
+  }
+
+  if (items.length === 0) {
     return (
-      <div className="text-center">
-        <p className="text-xl text-muted-foreground mb-4">Your cart is empty.</p>
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
+        <p className="text-muted-foreground mb-6">
+          Looks like you haven't added anything to your cart yet.
+        </p>
         <Button asChild>
-          <Link href="/shop">Continue Shopping</Link>
+          <Link href="/shop">Start Shopping</Link>
         </Button>
       </div>
     );
   }
 
+  const handleQuantityUpdate = async (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setIsUpdating(productId);
+    try {
+      await updateQuantity(productId, newQuantity);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
   return (
-    <div className="grid md:grid-cols-3 gap-12">
-      <div className="md:col-span-2 space-y-4">
-        {cartItems.map(item => (
-          <Card key={item.id} className="flex items-center p-4">
-            <Image 
-              src={item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls[0] : 'https://placehold.co/128x128.png'} 
-              alt={item.name} 
-              width={128}
-              height={128}
-              className="object-cover rounded-md w-24 h-24 md:w-32 md:h-32" 
-            />
-            <div className="flex-grow ml-4">
-              <h3 className="font-headline text-lg font-semibold">{item.name}</h3>
-              <p className="text-sm text-muted-foreground">Category: {item.category}</p>
-              <p className="text-md font-semibold flex items-center mt-1">
-                <IndianRupee className="h-4 w-4 mr-1" /> {item.price.toLocaleString('en-IN')}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-               <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Input type="number" value={item.quantity} readOnly className="h-8 w-12 text-center" />
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
-                  <Plus className="h-4 w-4" />
+    <div className="grid lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-4">
+        {items.map(item => (
+          <Card key={item.productId} className="overflow-hidden">
+            <div className="flex gap-4 p-4">
+              <div className="relative h-24 w-24 flex-shrink-0">
+                <Image
+                  src={item.product.imageUrls[0]}
+                  alt={item.product.name}
+                  fill
+                  className="object-cover rounded-md"
+                />
+              </div>
+              
+              <div className="flex-grow">
+                <Link 
+                  href={`/shop/${item.productId}`}
+                  className="text-lg font-semibold hover:text-primary transition-colors"
+                >
+                  {item.product.name}
+                </Link>
+                
+                <div className="text-sm text-muted-foreground mt-1">
+                  {item.size && <p>Size: {item.size}</p>}
+                </div>
+                
+                <div className="mt-2 font-semibold">
+                  ₹{item.product.price.toLocaleString('en-IN')}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={isUpdating === item.productId}
+                    onClick={() => handleQuantityUpdate(item.productId, item.quantity - 1)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center">{item.quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={isUpdating === item.productId}
+                    onClick={() => handleQuantityUpdate(item.productId, item.quantity + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => removeFromCart(item.productId)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
           </Card>
         ))}
       </div>
-      <div className="md:col-span-1">
-        <Card>
+
+      <div>
+        <Card className="sticky top-4">
           <CardHeader>
-            <CardTitle className="font-headline">Order Summary</CardTitle>
+            <CardTitle>Order Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between">
-              <span>Subtotal ({itemCount} items)</span>
-              <span className="font-semibold flex items-center"><IndianRupee className="h-4 w-4 mr-1" /> {cartTotal.toLocaleString('en-IN')}</span>
+              <span>Subtotal</span>
+              <span>₹{subtotal.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span className="font-semibold">FREE</span>
+              <span>{shipping === 0 ? 'Free' : `₹${shipping.toLocaleString('en-IN')}`}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax</span>
+              <span>₹{tax.toLocaleString('en-IN')}</span>
             </div>
             <Separator />
-            <div className="flex justify-between font-bold text-lg">
+            <div className="flex justify-between text-lg font-semibold">
               <span>Total</span>
-              <span className="flex items-center"><IndianRupee className="h-5 w-5 mr-1" /> {cartTotal.toLocaleString('en-IN')}</span>
+              <span>₹{total.toLocaleString('en-IN')}</span>
             </div>
           </CardContent>
           <CardFooter>
-            <Button size="lg" className="w-full" asChild>
+            <Button className="w-full" size="lg" asChild>
               <Link href="/checkout">
-                Proceed to Checkout <ArrowRight className="ml-2" />
+                Proceed to Checkout
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function CartSkeleton() {
+  return (
+    <div className="grid lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-4">
+        {[1, 2, 3].map(i => (
+          <Card key={i} className="p-4">
+            <div className="flex gap-4">
+              <Skeleton className="h-24 w-24 rounded-md" />
+              <div className="flex-grow space-y-2">
+                <Skeleton className="h-6 w-2/3" />
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-1/4" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-10 w-full" />
           </CardFooter>
         </Card>
       </div>

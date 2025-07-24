@@ -1,15 +1,29 @@
 
-import { ProductTable } from "@/components/admin/ProductTable";
-import { products } from "@/lib/products";
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { ProductTable } from '@/components/admin/ProductTable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function AdminDashboardPage() {
+export default function AdminDashboard() {
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl md:text-5xl font-bold">Admin Dashboard</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Manage your products</p>
+    <AdminLayout>
+      <div className="grid gap-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Products
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <ProductTable />
       </div>
-      <ProductTable products={products} />
-    </div>
+    </AdminLayout>
   );
 }

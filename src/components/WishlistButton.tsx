@@ -1,50 +1,62 @@
 'use client';
 
-import type { ClothingItem } from '@/ai/flows/ai-style-recommendation';
-import { Button, ButtonProps } from '@/components/ui/button';
+import type { Product } from '@/types/product';
+import { Button } from '@/components/ui/button';
 import { useWishlist } from '@/hooks/useWishlist';
-import { useToast } from '@/hooks/use-toast';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ComponentProps, useState } from 'react';
 
-interface WishlistButtonProps extends ButtonProps {
-  product: ClothingItem;
+type ButtonProps = ComponentProps<typeof Button>;
+
+interface WishlistButtonProps extends Omit<ButtonProps, 'size'> {
+  product: Product;
+  buttonSize?: ButtonProps['size'];
 }
 
-export function WishlistButton({ product, className, ...props }: WishlistButtonProps) {
-  const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
-  const { toast } = useToast();
-  const isInWishlist = wishlistItems.some(item => item.id === product.id);
+export function WishlistButton({ 
+  product, 
+  className, 
+  buttonSize = 'icon',
+  ...props 
+}: WishlistButtonProps) {
+  const { items, addToWishlist, removeFromWishlist } = useWishlist();
+  const [isLoading, setIsLoading] = useState(false);
+  const isInWishlist = items.some(item => item.productId === product.id);
 
-  const handleWishlistToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleWishlistToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (isInWishlist) {
-      removeFromWishlist(product.id);
-      toast({
-        title: "Removed from wishlist",
-        description: `${product.name} has been removed from your wishlist.`,
-      });
-    } else {
-      addToWishlist(product);
-      toast({
-        title: "Added to wishlist!",
-        description: `${product.name} has been added to your wishlist.`,
-      });
+    setIsLoading(true);
+    try {
+      if (isInWishlist) {
+        await removeFromWishlist(product.id);
+      } else {
+        await addToWishlist(product);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Button 
-      size="icon" 
+      size={buttonSize}
       variant="secondary" 
       onClick={handleWishlistToggle} 
       className={cn(className)} 
+      disabled={isLoading}
       {...props}
     >
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
         <Heart className={cn("h-4 w-4", isInWishlist && "fill-primary text-primary")} />
-        <span className="sr-only">Toggle Wishlist</span>
+      )}
+      <span className="sr-only">
+        {isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+      </span>
     </Button>
   );
 }

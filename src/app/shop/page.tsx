@@ -1,8 +1,18 @@
 import { ShopClient } from "@/components/ShopClient";
-import { products, productCategories } from "@/lib/products";
+import { productApi } from "@/lib/api";
 import { Suspense } from "react";
 
-export default function ShopPage({
+async function getProducts() {
+  const { data } = await productApi.getAllProducts();
+  return data?.products || [];
+}
+
+async function getCategories() {
+  const { data } = await productApi.getCategories();
+  return data?.categories || [];
+}
+
+export default async function ShopPage({
   searchParams,
 }: {
   searchParams?: {
@@ -10,11 +20,16 @@ export default function ShopPage({
   };
 }) {
   const selectedCategory = searchParams?.category;
+  
+  // Fetch products and categories in parallel
+  const [products, categories] = await Promise.all([
+    getProducts(),
+    getCategories()
+  ]);
 
   // Extract all available colors and sizes for filter options
-  const allColors = [...new Set(products.map(p => p.material.split(" ")[0]))]; // Simple color extraction
-  const allSizes = [...new Set(products.flatMap(p => p.availableSizes))];
-
+  const allColors = [...new Set(products.map(p => p.material?.split(" ")[0] || ''))];
+  const allSizes = [...new Set(products.flatMap(p => p.availableSizes || []))];
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -25,7 +40,7 @@ export default function ShopPage({
       <Suspense fallback={<div>Loading...</div>}>
         <ShopClient 
           products={products} 
-          categories={productCategories} 
+          categories={categories} 
           initialCategory={selectedCategory}
           allColors={allColors}
           allSizes={allSizes}

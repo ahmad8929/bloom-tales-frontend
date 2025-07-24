@@ -1,5 +1,5 @@
 
-import { products } from "@/lib/products";
+import { productApi } from "@/lib/api";
 import { IndianRupee, ShoppingCart, Star } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { notFound } from "next/navigation";
@@ -10,17 +10,34 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SizeGuide } from "@/components/SizeGuide";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { Product, Review } from "@/types/product";
 
-export default function ProductDetailPage({ params }: { params: { productId: string } }) {
-  const product = products.find(p => p.id === params.productId);
-  const relatedProducts = products.filter(p => p.category === product?.category && p.id !== product?.id).slice(0, 4);
+async function getProduct(productId: string): Promise<Product | null> {
+  const { data, error } = await productApi.getProduct(productId);
+  if (error || !data?.product) {
+    return null;
+  }
+  return data.product;
+}
+
+async function getRelatedProducts(categoryId: string, currentProductId: string): Promise<Product[]> {
+  const { data } = await productApi.getProductsByCategory(categoryId);
+  return (data?.products || [])
+    .filter(p => p.id !== currentProductId)
+    .slice(0, 4);
+}
+
+export default async function ProductDetailPage({ params }: { params: { productId: string } }) {
+  const product = await getProduct(params.productId);
 
   if (!product) {
     notFound();
   }
 
+  const relatedProducts = await getRelatedProducts(product.category, product.id);
+
   const averageRating = product.reviews && product.reviews.length > 0 
-    ? product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length
+    ? product.reviews.reduce((acc: number, review: Review) => acc + review.rating, 0) / product.reviews.length
     : 0;
 
   return (
@@ -56,7 +73,7 @@ export default function ProductDetailPage({ params }: { params: { productId: str
                     <SizeGuide />
                 </div>
                 <div className="flex gap-2">
-                    {product.availableSizes.map(size => (
+                    {product.availableSizes.map((size: string) => (
                         <Button key={size} variant="outline" size="sm" className="w-16">{size}</Button>
                     ))}
                 </div>
@@ -89,7 +106,7 @@ export default function ProductDetailPage({ params }: { params: { productId: str
           </CardHeader>
           <CardContent className="space-y-8">
             {product.reviews && product.reviews.length > 0 ? (
-                product.reviews.map((review) => (
+                product.reviews.map((review: Review) => (
                 <div key={review.id} className="flex gap-4">
                     <Avatar>
                         <AvatarImage src={review.user.avatarUrl} alt={review.user.name} />
@@ -134,7 +151,8 @@ export default function ProductDetailPage({ params }: { params: { productId: str
 
 // This function tells Next.js which dynamic routes to pre-render at build time.
 export async function generateStaticParams() {
-  return products.map((product) => ({
+  const { data } = await productApi.getAllProducts();
+  return (data?.products || []).map((product) => ({
     productId: product.id,
-  }))
+  }));
 }
