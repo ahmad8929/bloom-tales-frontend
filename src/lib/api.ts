@@ -15,7 +15,6 @@ export async function fetchApi<T>(
       ...options.headers as Record<string, string>,
     };
 
-    // Get token from localStorage if it exists
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token) {
@@ -23,7 +22,7 @@ export async function fetchApi<T>(
       }
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_URL}/api${endpoint}`, {
       ...options,
       headers,
     });
@@ -43,90 +42,128 @@ export async function fetchApi<T>(
   }
 }
 
-// Common API methods
 export const api = {
   get: <T>(endpoint: string) => fetchApi<T>(endpoint),
-  
+
   post: <T>(endpoint: string, data: any) =>
     fetchApi<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  
+
   put: <T>(endpoint: string, data: any) =>
     fetchApi<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-  
+
   delete: <T>(endpoint: string) =>
     fetchApi<T>(endpoint, {
       method: 'DELETE',
     }),
-}; 
+};
 
-// Auth APIs
+// ✅ Auth APIs
 export const authApi = {
   login: (data: { email: string; password: string }) =>
     api.post<{ token: string; user: any }>('/auth/login', data),
-  
-  register: (data: { name: string; email: string; password: string }) =>
-    api.post<{ token: string; user: any }>('/auth/register', data),
-  
-  getProfile: () => api.get<{ user: any }>('/auth/profile'),
+
+  register: (data: { firstName: string; lastName: string; email: string; password: string }) =>
+    api.post<{ token: string; user: any }>('/auth/signup', data),
+
+  getProfile: () => api.get<{ user: any }>('/auth/me'),
+
+  updatePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put<{ message: string }>('/auth/update-password', data),
+
+  logout: () => api.post<{ message: string }>('/auth/logout', {}),
+
+  refreshToken: () => api.post<{ token: string }>('/auth/refresh-token', {}),
+
+  forgotPassword: (data: { email: string }) =>
+    api.post<{ message: string }>('/auth/forgot-password', data),
+
+  resetPassword: (token: string, data: { password: string }) =>
+    api.post<{ message: string }>(`/auth/reset-password/${token}`, data),
+
+  // verifyEmail: (token: string) =>
+  //   api.post<{ message: string }>(`/api/auth/verify-email/${token}`, {}),
+  verifyEmail: (token: string) =>
+  api.get<{ message: string }>(`/auth/verify-email/${token}`, {}),
+
+
+  resendVerification: (data: { email: string }) =>
+    api.post<{ message: string }>('/auth/resend-verification', data),
 };
 
-// Product APIs
+// ✅ Product APIs
 export const productApi = {
-  getAllProducts: (query?: string) => 
+  getAllProducts: (query?: string) =>
     api.get<{ products: any[] }>(`/products${query ? `?${query}` : ''}`),
-  
-  getProduct: (id: string) => 
+
+  getProduct: (id: string) =>
     api.get<{ product: any }>(`/products/${id}`),
-  
-  getCategories: () => 
+
+  getCategories: () =>
     api.get<{ categories: any[] }>('/categories'),
-  
+
   getProductsByCategory: (categoryId: string) =>
     api.get<{ products: any[] }>(`/categories/${categoryId}/products`),
+
+  searchProducts: (query: string) =>
+    api.get<{ products: any[] }>(`/products/search?${query}`),
+
+  getFeaturedProducts: () =>
+    api.get<{ products: any[] }>('/products/featured'),
 };
 
-// Cart APIs
+// ✅ Cart APIs
 export const cartApi = {
   getCart: () => api.get<{ cart: any }>('/cart'),
-  
+
   addToCart: (productId: string, quantity: number = 1) =>
-    api.post<{ cart: any }>('/cart', { productId, quantity }),
-  
-  updateCartItem: (productId: string, quantity: number) =>
-    api.put<{ cart: any }>(`/cart/${productId}`, { quantity }),
-  
-  removeFromCart: (productId: string) =>
-    api.delete<{ cart: any }>(`/cart/${productId}`),
-  
-  clearCart: () => api.delete<{ message: string }>('/cart'),
+    api.post<{ cart: any }>('/cart/add', { productId, quantity }),
+
+  updateCartItem: (itemId: string, quantity: number) =>
+    api.put<{ cart: any }>(`/cart/update/${itemId}`, { quantity }),
+
+  removeFromCart: (itemId: string) =>
+    api.delete<{ cart: any }>(`/cart/remove/${itemId}`),
+
+  clearCart: () => api.delete<{ message: string }>('/cart/clear'),
+
+  applyCoupon: (code: string) =>
+    api.post<{ cart: any }>('/cart/apply-coupon', { code }),
+
+  removeCoupon: () => api.delete<{ cart: any }>('/cart/remove-coupon'),
 };
 
-// Wishlist APIs
+// ✅ Wishlist APIs
 export const wishlistApi = {
   getWishlist: () => api.get<{ wishlist: any }>('/wishlist'),
-  
+
   addToWishlist: (productId: string) =>
     api.post<{ wishlist: any }>('/wishlist', { productId }),
-  
+
   removeFromWishlist: (productId: string) =>
     api.delete<{ wishlist: any }>(`/wishlist/${productId}`),
 };
 
-// Order APIs
+// ✅ Order APIs
 export const orderApi = {
-  createOrder: (data: { 
+  createOrder: (data: {
     shippingAddress: any;
     paymentMethod: string;
-  }) => api.post<{ order: any }>('/orders', data),
-  
+  }) => api.post<{ order: any }>('/orders/create', data),
+
   getOrders: () => api.get<{ orders: any[] }>('/orders'),
-  
-  getOrder: (orderId: string) => 
+
+  getOrder: (orderId: string) =>
     api.get<{ order: any }>(`/orders/${orderId}`),
-}; 
+
+  cancelOrder: (orderId: string) =>
+    api.post<{ message: string }>(`/orders/${orderId}/cancel`, {}),
+
+  trackOrder: (orderId: string) =>
+    api.get<{ tracking: any }>(`/orders/${orderId}/track`),
+};
