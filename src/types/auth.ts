@@ -19,10 +19,21 @@ export interface LoginCredentials {
 }
 
 export interface SignupData {
-  email: string;
-  password: string;
   firstName: string;
   lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  status: 'success' | 'error';
+  message?: string;
+  data?: {
+    user: User;
+    accessToken: string;
+    refreshToken: string;
+  };
+  error?: string;
 }
 
 export interface ResetPasswordData {

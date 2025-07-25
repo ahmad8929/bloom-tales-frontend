@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { setCookie } from './utils';
+import type { AuthResponse } from '@/types/auth';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
 
 interface ApiResponse<T> {
   data?: T;
@@ -17,8 +20,49 @@ export async function fetchApi<T>(
 
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        // Check if token needs refresh (every 10 minutes)
+        const lastRefresh = localStorage.getItem('lastTokenRefresh');
+        const now = Date.now();
+        if (!lastRefresh || now - parseInt(lastRefresh) > 10 * 60 * 1000) {
+          try {
+            const refreshResponse = await fetch(`${API_URL}/api/auth/refresh-token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ refreshToken })
+            });
+            
+            if (refreshResponse.ok) {
+              const { data } = await refreshResponse.json();
+              if (data?.accessToken) {
+                localStorage.setItem('token', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
+                localStorage.setItem('lastTokenRefresh', now.toString());
+                
+                // Update cookies with new token
+                setCookie('auth-token', data.accessToken);
+                if (data.user?.role) {
+                  setCookie('user-role', data.user.role);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Token refresh failed:', error);
+            // Clear tokens if refresh fails
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('lastTokenRefresh');
+            window.location.href = '/login';
+            return { error: 'Session expired' };
+          }
+        }
+        
+        // Use the latest token (refreshed or not)
+        headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
       }
     }
 
@@ -66,15 +110,15 @@ export const api = {
 // ✅ Auth APIs
 export const authApi = {
   login: (data: { email: string; password: string }) =>
-    api.post<{ token: string; user: any }>('/auth/login', data),
+    api.post<AuthResponse>('/auth/login', data),
 
   register: (data: { firstName: string; lastName: string; email: string; password: string }) =>
-    api.post<{ token: string; user: any }>('/auth/signup', data),
+    api.post<AuthResponse>('/auth/signup', data),
 
-  getProfile: () => api.get<{ user: any }>('/auth/me'),
+  getProfile: () => api.get<AuthResponse>('/auth/me'),
 
   updatePassword: (data: { currentPassword: string; newPassword: string }) =>
-    api.put<{ message: string }>('/auth/update-password', data),
+    api.post<AuthResponse>('/auth/update-password', data),
 
   logout: () => api.post<{ message: string }>('/auth/logout', {}),
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { AuthState, LoginCredentials, SignupData, User } from '@/types/auth';
 import { toast } from '@/hooks/use-toast';
 import { authApi } from '@/lib/api';
+import { setCookie, removeCookie } from '@/lib/utils';
 
 type AuthAction =
   | { type: 'LOGIN_START' }
@@ -57,12 +58,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data, error } = await authApi.getProfile();
         if (error) throw new Error(error);
         if (data?.user) {
+          // Ensure cookies are set if we have a valid session
+          const token = localStorage.getItem('token');
+          if (token) {
+            setCookie('auth-token', token);
+            setCookie('user-role', data.user.role);
+          }
           dispatch({ type: 'LOGIN_SUCCESS', payload: data.user });
         } else {
+          // Clear everything if no valid session
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('lastTokenRefresh');
+          removeCookie('auth-token');
+          removeCookie('user-role');
           dispatch({ type: 'LOGOUT' });
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('lastTokenRefresh');
+        removeCookie('auth-token');
+        removeCookie('user-role');
         dispatch({ type: 'LOGOUT' });
       }
     };
@@ -78,23 +96,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: LoginCredentials) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      const { data, error } = await authApi.login(credentials);
-      if (error) throw new Error(error);
-      if (!data) throw new Error('No data received from server');
+      const res = await authApi.login(credentials);
 
-      const { token, user } = data;
-      if (token) {
-        localStorage.setItem('token', token);
+      if (res?.data?.status !== 'success') {
+        throw new Error(res?.data?.message || 'Login failed');
       }
-      
+
+      const { user, accessToken, refreshToken } = res.data.data;
+
+      if (accessToken && refreshToken) {
+        // Store tokens in localStorage
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('lastTokenRefresh', Date.now().toString());
+        
+        // Store token and role in cookies
+        setCookie('auth-token', accessToken);
+        setCookie('user-role', user.role);
+      }
+
       dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-      
+
       toast({
         title: 'Welcome back!',
         description: `Logged in as ${user.email}`
       });
 
-      router.push('/');
+      window.location.href = '/';
     } catch (error) {
       dispatch({
         type: 'LOGIN_FAILURE',
@@ -104,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast({
         title: 'Login failed',
         description: error instanceof Error ? error.message : 'Please try again',
-        variant: 'destructive'
       });
     }
   };
@@ -151,7 +178,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      // Clear localStorage
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('lastTokenRefresh');
+      
+      // Clear cookies
+      removeCookie('auth-token');
+      removeCookie('user-role');
+      
       dispatch({ type: 'LOGOUT' });
       router.push('/login');
       
@@ -164,7 +199,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       toast({
         title: 'Logout failed',
-        description: 'Please try again',
         variant: 'destructive'
       });
     }
