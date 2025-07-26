@@ -1,3 +1,7 @@
+'use client';
+
+import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -6,13 +10,23 @@ import { ProductCard } from '@/components/ProductCard';
 import { products } from '@/lib/products';
 import { ArrowRight, Bot, Star } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { NewsletterPopup } from '@/components/NewsletterPopup';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import type { Product } from '@/types/product';
 
 export default function Home() {
-  const newArrivals = products.slice(0, 4);
-  const onSale = products.slice(4, 8);
+  const newArrivals: Product[] = products.slice(0, 4);
+  const onSale: Product[] = products.slice(4, 8);
   const mainCategories = ['saree', 'kurti', 'western dress', 'baby girl'];
+
+  const { user, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('Logged in user:', user);
+    } else {
+      console.log('No user logged in');
+    }
+  }, [user, isAuthenticated]);
 
   const categoryImages: { [key: string]: string } = {
     'saree': 'https://placehold.co/600x800.png',
@@ -46,9 +60,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex flex-col">
-      <NewsletterPopup />
-      
+    <div className="flex flex-col">      
       <section className="w-full">
         <Carousel className="w-full" opts={{ loop: true }}>
           <CarouselContent>
@@ -124,7 +136,7 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {newArrivals.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product._id} product={product} />
             ))}
           </div>
            <div className="text-center mt-12">
@@ -142,7 +154,7 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {onSale.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product._id} product={product} />
             ))}
           </div>
         </div>

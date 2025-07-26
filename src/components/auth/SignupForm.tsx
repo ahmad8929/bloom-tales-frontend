@@ -36,7 +36,7 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
-  const { signup, state } = useAuth();
+  const { signup } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<SignupFormData>({
@@ -158,9 +158,9 @@ export function SignupForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={state.isLoading}
+            disabled={false}
           >
-            {state.isLoading && (
+            {false && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
             Create Account

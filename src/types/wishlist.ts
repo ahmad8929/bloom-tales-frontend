@@ -1,13 +1,15 @@
-import { Product } from './product';
-
-export interface WishlistItem {
-  productId: string;
-  product: Product;
-  createdAt: string;
-}
+import type { Product } from './product';
 
 export interface WishlistState {
-  items: WishlistItem[];
+  items: Product[];
   isLoading: boolean;
   error: string | null;
-} 
+}
+
+export interface WishlistResponse {
+  wishlist: {
+    items: Product[];
+    createdAt: string;
+    updatedAt: string;
+  };
+}

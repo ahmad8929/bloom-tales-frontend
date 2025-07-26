@@ -2,19 +2,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { productCategories, products } from "@/lib/products";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Product } from "@/types/product";
 
 export default function CategoriesPage() {
   const categoryImages: { [key: string]: string } = {};
+  const defaultImage = "https://placehold.co/600x400.png";
 
   // Find the first product for each category to use its image
-  for (const category of productCategories) {
-    const product = products.find(p => p.category === category);
-    if (product && product.imageUrls.length > 0) {
-      categoryImages[category] = product.imageUrls[0];
-    } else {
-        categoryImages[category] = "https://placehold.co/600x400.png";
-    }
-  }
+  productCategories.forEach((category) => {
+    const product: Product | undefined = products.find(p => p.category === category);
+    categoryImages[category] = product?.images?.[0] || defaultImage;
+  });
 
   return (
     <div className="container mx-auto px-4 py-12">

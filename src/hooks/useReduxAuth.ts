@@ -1,3 +1,4 @@
+// File: src/hooks/useReduxAuth.ts
 'use client';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,21 +27,24 @@ interface TokenResponse {
   message?: string;
 }
 
-export function useAuth() {
+export function useReduxAuth() {
   const dispatch = useDispatch();
   const { user, accessToken, refreshToken, isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const login = async (credentials: { email: string; password: string }) => {
+    console.log('Starting login process...', credentials.email);
     dispatch(loginStart());
     try {
       const res = await authApi.login(credentials);
+      console.log('Login API response:', res);
+
       const response = res?.data as LoginResponse;
-      
       if (response?.status !== 'success' || !response.data) {
         throw new Error(response?.message || 'Login failed');
       }
       
       const { user, accessToken, refreshToken } = response.data;
+      console.log('Login successful, user:', user);
       
       // Store tokens in Redux
       dispatch(loginSuccess({ user, accessToken, refreshToken }));
@@ -54,30 +58,21 @@ export function useAuth() {
       
       return { success: true };
     } catch (err: any) {
+      console.error('Login error:', err);
       dispatch(loginFailure(err.message));
       return { success: false, error: err.message };
     }
   };
 
-  // Add signup function
-  const signup = async (signupData: { firstName: string; lastName: string; email: string; password: string }) => {
-    try {
-      // Call your backend signup API
-      const res = await authApi.register(signupData);
-      // Optionally, handle response (show message, auto-login, etc.)
-      return res.data;
-    } catch (err: any) {
-      throw err;
-    }
-  };
-
   const refreshAccessToken = async () => {
+    console.log('Attempting to refresh token...');
     try {
       if (!refreshToken) throw new Error('No refresh token available');
       
       const res = await authApi.refreshToken(refreshToken);
+      console.log('Token refresh response:', res);
+
       const response = res?.data as TokenResponse;
-      
       if (response?.status !== 'success' || !response.data) {
         throw new Error('Token refresh failed');
       }
@@ -92,12 +87,14 @@ export function useAuth() {
       
       return { success: true };
     } catch (err: any) {
+      console.error('Token refresh failed:', err);
       logoutUser();
       return { success: false, error: err.message };
     }
   };
 
   const logoutUser = () => {
+    console.log('Logging out user...');
     // Clear cookies
     removeCookie('auth-token');
     removeCookie('user-role');
@@ -117,7 +114,6 @@ export function useAuth() {
     error,
     isAuthenticated,
     login, 
-    signup, // <-- add this
     refreshAccessToken,
     logoutUser 
   };

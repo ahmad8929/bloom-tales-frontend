@@ -1,7 +1,7 @@
-import { setCookie } from './utils';
+import { getCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface ApiResponse<T> {
   data?: T;
@@ -13,68 +13,34 @@ export async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
+    // Get token from cookie for client-side requests
+    const token = typeof window !== 'undefined' ? getCookie('auth-token') : null;
+    
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...options.headers as Record<string, string>,
     };
 
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      const refreshToken = localStorage.getItem('refreshToken');
-      
-      if (token) {
-        // Check if token needs refresh (every 10 minutes)
-        const lastRefresh = localStorage.getItem('lastTokenRefresh');
-        const now = Date.now();
-        if (!lastRefresh || now - parseInt(lastRefresh) > 10 * 60 * 1000) {
-          try {
-            const refreshResponse = await fetch(`${API_URL}/api/auth/refresh-token`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ refreshToken })
-            });
-            
-            if (refreshResponse.ok) {
-              const { data } = await refreshResponse.json();
-              if (data?.accessToken) {
-                localStorage.setItem('token', data.accessToken);
-                localStorage.setItem('refreshToken', data.refreshToken);
-                localStorage.setItem('lastTokenRefresh', now.toString());
-                
-                // Update cookies with new token
-                setCookie('auth-token', data.accessToken);
-                if (data.user?.role) {
-                  setCookie('user-role', data.user.role);
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Token refresh failed:', error);
-            // Clear tokens if refresh fails
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('lastTokenRefresh');
-            window.location.href = '/login';
-            return { error: 'Session expired' };
-          }
-        }
-        
-        // Use the latest token (refreshed or not)
-        headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
-      }
+    // Don't set Content-Type for FormData - let browser set it with boundary
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Add authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_URL}/api${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
+      mode: 'cors',
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
-      throw new Error(data.message || 'An error occurred');
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
     return { data };
@@ -87,27 +53,43 @@ export async function fetchApi<T>(
 }
 
 export const api = {
-  get: <T>(endpoint: string) => fetchApi<T>(endpoint),
+  get: <T>(endpoint: string, options?: RequestInit) =>
+    fetchApi<T>(endpoint, { ...options, method: 'GET' }),
 
-  post: <T>(endpoint: string, data: any) =>
-    fetchApi<T>(endpoint, {
+  post: <T>(endpoint: string, data: any, options?: RequestInit) => {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    return fetchApi<T>(endpoint, {
+      ...options,
       method: 'POST',
-      body: JSON.stringify(data),
-    }),
+      body,
+    });
+  },
 
-  put: <T>(endpoint: string, data: any) =>
-    fetchApi<T>(endpoint, {
+  put: <T>(endpoint: string, data: any, options?: RequestInit) => {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    return fetchApi<T>(endpoint, {
+      ...options,
       method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+      body,
+    });
+  },
 
-  delete: <T>(endpoint: string) =>
+  patch: <T>(endpoint: string, data: any, options?: RequestInit) => {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    return fetchApi<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body,
+    });
+  },
+
+  delete: <T>(endpoint: string, options?: RequestInit) =>
     fetchApi<T>(endpoint, {
+      ...options,
       method: 'DELETE',
     }),
 };
 
-// ✅ Auth APIs
 export const authApi = {
   login: (data: { email: string; password: string }) =>
     api.post<AuthResponse>('/auth/login', data),
@@ -122,7 +104,8 @@ export const authApi = {
 
   logout: () => api.post<{ message: string }>('/auth/logout', {}),
 
-  refreshToken: () => api.post<{ token: string }>('/auth/refresh-token', {}),
+  refreshToken: (refreshToken: string) => 
+    api.post<{ accessToken: string; refreshToken: string }>('/auth/refresh-token', { refreshToken }),
 
   forgotPassword: (data: { email: string }) =>
     api.post<{ message: string }>('/auth/forgot-password', data),
@@ -130,23 +113,35 @@ export const authApi = {
   resetPassword: (token: string, data: { password: string }) =>
     api.post<{ message: string }>(`/auth/reset-password/${token}`, data),
 
-  // verifyEmail: (token: string) =>
-  //   api.post<{ message: string }>(`/api/auth/verify-email/${token}`, {}),
   verifyEmail: (token: string) =>
-  api.get<{ message: string }>(`/auth/verify-email/${token}`, {}),
-
+    api.get<{ message: string }>(`/auth/verify-email/${token}`),
 
   resendVerification: (data: { email: string }) =>
     api.post<{ message: string }>('/auth/resend-verification', data),
 };
 
-// ✅ Product APIs
+// Product APIs with proper authentication
 export const productApi = {
   getAllProducts: (query?: string) =>
     api.get<{ products: any[] }>(`/products${query ? `?${query}` : ''}`),
 
   getProduct: (id: string) =>
     api.get<{ product: any }>(`/products/${id}`),
+
+  createProduct: (formData: FormData) =>
+    api.post<{ product: any }>('/products', formData),
+
+  updateProduct: (id: string, formData: FormData) =>
+    api.put<{ product: any }>(`/products/${id}`, formData),
+
+  deleteProduct: (id: string) =>
+    api.delete<{ message: string }>(`/products/${id}`),
+
+  updateProductStatus: (id: string, status: string) =>
+    api.patch<{ product: any }>(`/products/${id}/status`, { status }),
+
+  toggleFeatured: (id: string) =>
+    api.patch<{ product: any }>(`/products/${id}/featured`, {}),
 
   getCategories: () =>
     api.get<{ categories: any[] }>('/categories'),
@@ -155,13 +150,38 @@ export const productApi = {
     api.get<{ products: any[] }>(`/categories/${categoryId}/products`),
 
   searchProducts: (query: string) =>
-    api.get<{ products: any[] }>(`/products/search?${query}`),
+    api.get<{ products: any[] }>(`/products/search?q=${encodeURIComponent(query)}`),
 
   getFeaturedProducts: () =>
     api.get<{ products: any[] }>('/products/featured'),
 };
 
-// ✅ Cart APIs
+// Admin APIs
+export const adminApi = {
+  getDashboard: () => api.get<any>('/admin/dashboard'),
+  
+  // Customer management
+  getCustomers: (params?: string) => 
+    api.get<any>(`/admin/customers${params ? `?${params}` : ''}`),
+  
+  toggleEmailVerification: (customerId: string, emailVerified: boolean) =>
+    api.patch<any>(`/admin/customers/${customerId}/email-verification`, { emailVerified }),
+  
+  updateUserRole: (customerId: string, role: string) =>
+    api.patch<any>(`/admin/customers/${customerId}/role`, { role }),
+  
+  // Order management
+  getOrders: (params?: string) =>
+    api.get<any>(`/admin/orders${params ? `?${params}` : ''}`),
+  
+  getOrder: (orderId: string) =>
+    api.get<any>(`/admin/orders/${orderId}`),
+  
+  updateOrderStatus: (orderId: string, status: string) =>
+    api.patch<any>(`/admin/orders/${orderId}/status`, { status }),
+};
+
+// Cart APIs
 export const cartApi = {
   getCart: () => api.get<{ cart: any }>('/cart'),
 
@@ -182,7 +202,7 @@ export const cartApi = {
   removeCoupon: () => api.delete<{ cart: any }>('/cart/remove-coupon'),
 };
 
-// ✅ Wishlist APIs
+// Wishlist APIs
 export const wishlistApi = {
   getWishlist: () => api.get<{ wishlist: any }>('/wishlist'),
 
@@ -193,7 +213,7 @@ export const wishlistApi = {
     api.delete<{ wishlist: any }>(`/wishlist/${productId}`),
 };
 
-// ✅ Order APIs
+// Order APIs
 export const orderApi = {
   createOrder: (data: {
     shippingAddress: any;

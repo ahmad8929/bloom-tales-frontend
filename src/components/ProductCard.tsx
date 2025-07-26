@@ -14,7 +14,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const hasMultipleImages = product.imageUrls.length > 1;
+  const hasMultipleImages = product.images?.length > 1;
+  const defaultImage = 'https://placehold.co/600x800.png';
+  const mainImage = product.images?.[0] || defaultImage;
+  const hoverImage = hasMultipleImages ? product.images[1] : mainImage;
 
   return (
     <Card 
@@ -23,10 +26,10 @@ export function ProductCard({ product }: ProductCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardHeader className="p-0 relative">
-        <Link href={`/shop/${product.id}`}>
+        <Link href={`/shop/${product._id}`}>
           <div className="aspect-[3/4] relative">
             <Image
-              src={(isHovered && hasMultipleImages) ? product.imageUrls[1] : product.imageUrls[0]}
+              src={isHovered ? hoverImage : mainImage}
               alt={product.name}
               fill
               className="object-cover transition-opacity duration-300"
@@ -41,10 +44,19 @@ export function ProductCard({ product }: ProductCardProps) {
       </CardHeader>
       <CardContent className="flex-grow p-4">
         <CardTitle className="text-lg leading-tight">
-          <Link href={`/shop/${product.id}`} className="hover:text-primary transition-colors">
+          <Link href={`/shop/${product._id}`} className="hover:text-primary transition-colors">
             {product.name}
           </Link>
         </CardTitle>
+        <div className="mt-2 text-sm text-muted-foreground">
+          {product.stockStatus === 'inStock' ? (
+            <span className="text-green-600">In Stock</span>
+          ) : product.stockStatus === 'lowStock' ? (
+            <span className="text-amber-600">Low Stock</span>
+          ) : (
+            <span className="text-red-600">Out of Stock</span>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="p-4 flex justify-between items-center">
         <div className="font-semibold text-lg">

@@ -1,21 +1,31 @@
-import { Product } from './product';
+import type { Product } from './product';
 
 export interface CartItem {
-  productId: string;
+  product: Product;
   quantity: number;
-  size?: string;
+}
+
+export interface CartResponse {
+  cart: {
+    items: CartItem[];
+    total: number;
+    subtotal: number;
+    tax?: number;
+    shipping?: number;
+  };
+}
+
+export interface ProductResponse {
   product: Product;
 }
 
-export interface CartState {
-  items: CartItem[];
-  isLoading: boolean;
-  error: string | null;
+// Legacy interface for compatibility - can be removed later
+export interface CartContextType {
+  cartItems: CartItem[];
+  loading: boolean;
+  addToCart: (productId: string, quantity: number) => Promise<void>;
+  updateCartItem: (productId: string, quantity: number) => Promise<void>;
+  removeFromCart: (productId: string) => Promise<void>;
+  clearCart: () => Promise<void>;
+  mergeGuestCart: () => Promise<void>;
 }
-
-export interface CartTotals {
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  total: number;
-} 

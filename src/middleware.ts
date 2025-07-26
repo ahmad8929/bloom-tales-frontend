@@ -1,37 +1,39 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Paths that don't require authentication
-const publicPaths = [
-  '/login',
-  '/signup',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-  '/api/auth/login',
-  '/api/auth/signup',
-  '/api/auth/google',
+// Paths that require authentication
+const protectedPaths = [
+  '/cart',
+  '/checkout',
+  '/admin',
+  '/api/cart',
+  '/api/orders',
 ];
 
-// Paths that require admin role
+// Admin-only paths
 const adminPaths = ['/admin'];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get('auth-token');
+  const token = request.cookies.get('auth-token')?.value;
   const userRole = request.cookies.get('user-role')?.value;
 
-  // Allow public paths
-  if (publicPaths.some(path => pathname.startsWith(path))) {
-    // Redirect to home if already authenticated
-    if (token && (pathname === '/login' || pathname === '/signup')) {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
+  console.log('Middleware - Path:', pathname);
+  console.log('Middleware - Token exists:', !!token);
+  console.log('Middleware - User role:', userRole);
+
+  // Check if current path requires authentication
+  const requiresAuth = protectedPaths.some(path => pathname.startsWith(path));
+  const requiresAdmin = adminPaths.some(path => pathname.startsWith(path));
+
+  // Allow public access to non-protected paths
+  if (!requiresAuth) {
     return NextResponse.next();
   }
 
   // Check authentication for protected routes
   if (!token) {
+    console.log('Middleware - No token, redirecting to login');
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.set({
       name: 'redirect-url',
@@ -42,23 +44,23 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // Check admin access
-  if (pathname.startsWith('/admin') && userRole !== 'admin') {
+  // For admin routes, check if user has admin role
+  if (requiresAdmin && userRole !== 'admin') {
+    console.log('Middleware - Not admin, redirecting to home');
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  // If we have a token and proper role, allow access
+  console.log('Middleware - Access granted');
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * 1. /api/auth/* (authentication endpoints)
-     * 2. /_next/* (Next.js internals)
-     * 3. /static/* (static files)
-     * 4. /favicon.ico, /robots.txt (static files)
-     */
-    '/((?!api/auth/|_next/|static/|favicon.ico|robots.txt).*)',
+    '/admin/:path*', 
+    '/cart', 
+    '/checkout',
+    '/api/cart/:path*',
+    '/api/orders/:path*'
   ],
-}; 
+};

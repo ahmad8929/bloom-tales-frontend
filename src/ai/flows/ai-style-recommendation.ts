@@ -3,7 +3,8 @@
 
 'use server';
 
-import {ai} from '@/ai/genkit';
+import ai from '@/genkit';
+// import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
 const ReviewSchema = z.object({
