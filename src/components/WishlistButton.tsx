@@ -22,7 +22,7 @@ export function WishlistButton({
 }: WishlistButtonProps) {
   const { items, addToWishlist, removeFromWishlist } = useWishlist();
   const [isLoading, setIsLoading] = useState(false);
-  const isInWishlist = items.some(item => item.productId === product.id);
+  const isInWishlist = items.some(item => item.id === product.id);
 
   const handleWishlistToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

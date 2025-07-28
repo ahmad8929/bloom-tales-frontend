@@ -3,7 +3,6 @@
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '@/store';
-import { Toaster } from '@/components/ui/toaster';
 
 const SkeletonLoading = () => (
   <div className="min-h-screen bg-gray-50">
@@ -41,7 +40,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <Provider store={store}>
       <PersistGate loading={<SkeletonLoading />} persistor={persistor}>
         {children}
-        <Toaster />
       </PersistGate>
     </Provider>
   );

@@ -57,6 +57,8 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
   
   const { accessToken } = useSelector((state: RootState) => state.auth);
 
+  console.log(products, "products")
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -65,9 +67,9 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
     try {
       setLoading(true);
       const response = await productApi.getAllProducts();
-      if (response.data?.products) {
-        setProducts(response.data.products);
-      }
+      console.log(response,"response")
+      setProducts(response.data.data.products || []);
+      
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({

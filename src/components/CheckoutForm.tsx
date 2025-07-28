@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const checkoutSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -39,9 +40,13 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export function CheckoutForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { state, getCartTotals, clearCart } = useCart();
-  const { items } = state;
-  const { subtotal, shipping, tax, total } = getCartTotals();
+  const { cartItems, clearCart } = useCart();
+
+  // Calculate totals manually
+  const subtotal = cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  const shipping = 10; // Fixed shipping cost
+  const tax = subtotal * 0.08; // 8% tax
+  const total = subtotal + shipping + tax;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -68,17 +73,27 @@ export function CheckoutForm() {
       // and backend API to create the order
       console.log('Order data:', {
         ...data,
-        items,
+        items: cartItems,
         totals: { subtotal, shipping, tax, total }
       });
       
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
       clearCart();
+      
+      toast({
+        title: 'Order placed successfully!',
+        description: 'Thank you for your purchase. You will receive a confirmation email shortly.',
+      });
+      
       // Redirect to success page
       window.location.href = '/checkout/success';
     } catch (error) {
       console.error('Checkout error:', error);
-      // Handle error
+      toast({
+        title: 'Checkout failed',
+        description: 'There was an error processing your order. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -244,7 +259,7 @@ export function CheckoutForm() {
             </div>
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span>{shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}</span>
+              <span>${shipping.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Tax</span>

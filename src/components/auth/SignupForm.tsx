@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const signupSchema = z.object({
   firstName: z.string().min(2, 'First name is required'),
@@ -52,7 +53,19 @@ export function SignupForm() {
 
   const onSubmit = async (data: SignupFormData) => {
     const { confirmPassword, ...signupData } = data;
-    await signup(signupData);
+    try {
+      const result = await signup(signupData);
+      toast({
+        title: 'Account created successfully!',
+        description: 'Please check your email to verify your account.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Signup failed',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleGoogleSignup = async () => {
