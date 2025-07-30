@@ -167,7 +167,7 @@ export function NewArrival({ limit = 4, showViewAll = true }: NewArrivalProps) {
         {showViewAll && (
           <div className="text-center mt-12">
             <Button asChild variant="outline" size="lg">
-              <Link href="/shop?isNewArrival=true">
+              <Link href="/products?isNewArrival=true">
                 View All New Arrivals
               </Link>
             </Button>

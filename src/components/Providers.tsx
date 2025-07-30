@@ -38,9 +38,14 @@ const SkeletonLoading = () => (
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <PersistGate loading={<SkeletonLoading />} persistor={persistor}>
-        {children}
-      </PersistGate>
+      {persistor ? (
+        <PersistGate loading={<SkeletonLoading />} persistor={persistor}>
+          {children}
+        </PersistGate>
+      ) : (
+        // Fallback for server-side rendering when persistor is null
+        children
+      )}
     </Provider>
   );
 }
