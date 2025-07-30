@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddToCartButton } from './AddToCartButton';
 import { useState } from 'react';
-import { WishlistButton } from './WishlistButton';
 import type { Product } from '@/types/product';
 
 interface ProductCardProps {
@@ -16,8 +15,16 @@ export function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const hasMultipleImages = product.images?.length > 1;
   const defaultImage = 'https://placehold.co/600x800.png';
-  const mainImage = product.images?.[0] || defaultImage;
-  const hoverImage = hasMultipleImages ? product.images[1] : mainImage;
+  const mainImage = product.images?.[0]?.url || defaultImage;
+  const hoverImage = hasMultipleImages ? product.images[1]?.url : mainImage;
+
+  const totalStock = product.sizes.reduce((acc, size) => acc + size.quantity, 0);
+  const getStockStatus = () => {
+    if (totalStock === 0) return 'Out of Stock';
+    if (totalStock < 10) return 'Low Stock';
+    return 'In Stock';
+  };
+  const stockStatus = getStockStatus();
 
   return (
     <Card 
@@ -26,10 +33,10 @@ export function ProductCard({ product }: ProductCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardHeader className="p-0 relative">
-        <Link href={`/shop/${product._id}`}>
+        <Link href={`/shop/${product.id}`}>
           <div className="aspect-[3/4] relative">
             <Image
-              src={isHovered ? hoverImage : mainImage}
+              src={isHovered && hoverImage ? hoverImage : mainImage}
               alt={product.name}
               fill
               className="object-cover transition-opacity duration-300"
@@ -37,21 +44,17 @@ export function ProductCard({ product }: ProductCardProps) {
             />
           </div>
         </Link>
-        <WishlistButton 
-          product={product}
-          className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/80 hover:bg-white transition-all opacity-0 group-hover:opacity-100" 
-        />
       </CardHeader>
       <CardContent className="flex-grow p-4">
         <CardTitle className="text-lg leading-tight">
-          <Link href={`/shop/${product._id}`} className="hover:text-primary transition-colors">
+          <Link href={`/shop/${product.id}`} className="hover:text-primary transition-colors">
             {product.name}
           </Link>
         </CardTitle>
         <div className="mt-2 text-sm text-muted-foreground">
-          {product.stockStatus === 'inStock' ? (
+          {stockStatus === 'In Stock' ? (
             <span className="text-green-600">In Stock</span>
-          ) : product.stockStatus === 'lowStock' ? (
+          ) : stockStatus === 'Low Stock' ? (
             <span className="text-amber-600">Low Stock</span>
           ) : (
             <span className="text-red-600">Out of Stock</span>

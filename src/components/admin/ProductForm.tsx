@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,73 +32,126 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Plus, Upload, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Plus, Upload, X, Pencil } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { productApi } from '@/lib/api';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
-const CATEGORIES = ['Dresses', 'Tops', 'Bottoms', 'Outerwear', 'Accessories'] as const;
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   price: z.coerce.number().positive('Price must be positive'),
   comparePrice: z.coerce.number().positive('Compare price must be positive').optional(),
-  category: z.enum(CATEGORIES),
+  size: z.enum(SIZES, {
+    required_error: 'Please select a size',
+  }),
   material: z.string().min(2, 'Material is required'),
   careInstructions: z.string().min(10, 'Care instructions are required'),
-  status: z.enum(['active', 'inactive', 'draft']).default('draft'),
-  featured: z.boolean().default(false),
+  isNewArrival: z.boolean().default(false),
+  isSale: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface ProductFormProps {
-  initialData?: Partial<ProductFormData>;
+  initialData?: any; // Changed from Partial<Product> to any to match your data structure
   onSubmit: () => Promise<void>;
+  isEditing?: boolean;
 }
 
-export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
+export function ProductForm({ initialData, onSubmit, isEditing = false }: ProductFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: initialData?.name || '',
-      description: initialData?.description || '',
-      price: initialData?.price || 0,
-      comparePrice: initialData?.comparePrice,
-      category: (initialData?.category as typeof CATEGORIES[number]) || 'Dresses',
-      material: initialData?.material || '',
-      careInstructions: initialData?.careInstructions?.join('\n') || '',
-      status: initialData?.status || 'draft',
-      featured: initialData?.featured || false,
+      name: '',
+      description: '',
+      price: 0,
+      comparePrice: undefined,
+      size: undefined,
+      material: '',
+      careInstructions: '',
+      isNewArrival: false,
+      isSale: false,
     }
   });
+
+  // Auto-open dialog for editing
+  useEffect(() => {
+    if (isEditing && initialData) {
+      setIsOpen(true);
+    }
+  }, [isEditing, initialData]);
+
+  // Update form when initialData changes (for editing)
+  useEffect(() => {
+    if (initialData && isOpen) {
+      form.reset({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        price: initialData.price || 0,
+        comparePrice: initialData.comparePrice || undefined,
+        size: (initialData.size as typeof SIZES[number]) || undefined,
+        material: initialData.material || '',
+        careInstructions: Array.isArray(initialData.careInstructions) 
+          ? initialData.careInstructions.join('\n') 
+          : initialData.careInstructions || '',
+        isNewArrival: initialData.isNewArrival || false,
+        isSale: initialData.isSale || false,
+      });
+
+      // Set existing images for editing
+      if (initialData.images) {
+        const imageUrls = initialData.images.map((img: any) => 
+          typeof img === 'string' ? img : img.url
+        );
+        setExistingImages(imageUrls);
+      }
+    }
+  }, [initialData, isOpen, form]);
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    // Limit to 5 images
-    const limitedFiles = files.slice(0, 5);
-    setSelectedImages(prev => [...prev, ...limitedFiles].slice(0, 5));
+    // Limit total images (existing + new) to 5
+    const totalImages = existingImages.length + selectedImages.length;
+    const availableSlots = 5 - totalImages;
+    const limitedFiles = files.slice(0, availableSlots);
+
+    if (limitedFiles.length < files.length) {
+      toast({
+        title: 'Image Limit',
+        description: 'Maximum 5 images allowed. Some images were not added.',
+        variant: 'destructive',
+      });
+    }
+
+    setSelectedImages(prev => [...prev, ...limitedFiles]);
 
     // Create preview URLs
     const newPreviews = limitedFiles.map(file => URL.createObjectURL(file));
-    setImagePreview(prev => [...prev, ...newPreviews].slice(0, 5));
+    setImagePreview(prev => [...prev, ...newPreviews]);
   };
 
-  const removeImage = (index: number) => {
+  const removeNewImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
     setImagePreview(prev => {
       // Revoke the URL to prevent memory leaks
       URL.revokeObjectURL(prev[index]);
       return prev.filter((_, i) => i !== index);
     });
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   async function handleSubmit(data: FormValues) {
@@ -115,35 +168,46 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
         }
       });
 
-      // Append default sizes and colors as JSON strings
-      formData.append('sizes', JSON.stringify([{ size: 'M', quantity: 10 }]));
-      formData.append('colors', JSON.stringify([{ name: 'Black', hexCode: '#000000' }]));
+      // Append default colors as JSON string
+      formData.append('colors', JSON.stringify([{ name: 'Default', hexCode: '#000000' }]));
 
-      // Append images
+      // Append existing images that weren't removed
+      if (existingImages.length > 0) {
+        formData.append('existingImages', JSON.stringify(existingImages));
+      }
+
+      // Append new images
       selectedImages.forEach((image, index) => {
         formData.append('images', image, `image-${index}.${image.name.split('.').pop()}`);
       });
 
       console.log('Submitting product with form data...');
-      const response = await productApi.createProduct(formData);
       
-      if (response.data) {
-        await onSubmit();
-        setIsOpen(false);
-        resetForm();
-        
-        toast({
-          title: 'Success',
-          description: 'Product created successfully.',
-        });
-      } else if (response.error) {
+      let response;
+      if (isEditing && (initialData?.id || initialData?._id)) {
+        const productId = initialData.id || initialData._id;
+        response = await productApi.updateProduct(productId, formData);
+      } else {
+        response = await productApi.createProduct(formData);
+      }
+      
+      if (response.error) {
         throw new Error(response.error);
       }
+      
+      await onSubmit();
+      setIsOpen(false);
+      resetForm();
+      
+      toast({
+        title: 'Success',
+        description: isEditing ? 'Product updated successfully.' : 'Product created successfully.',
+      });
     } catch (error: any) {
-      console.error('Product creation error:', error);
+      console.error('Product operation error:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create product. Please try again.',
+        description: error.message || `Failed to ${isEditing ? 'update' : 'create'} product. Please try again.`,
         variant: 'destructive',
       });
     } finally {
@@ -156,22 +220,35 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
     setSelectedImages([]);
     imagePreview.forEach(url => URL.revokeObjectURL(url));
     setImagePreview([]);
+    setExistingImages([]);
+  };
+
+  const handleClose = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      resetForm();
+      if (isEditing) {
+        // Call onSubmit to refresh the table and close editing mode
+        onSubmit();
+      }
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      setIsOpen(open);
-      if (!open) resetForm();
-    }}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Product
-        </Button>
+        {!isEditing && (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Product
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Edit Product' : 'Add New Product'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -210,49 +287,82 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
             {/* Image Upload */}
             <div className="space-y-2">
               <FormLabel>Product Images</FormLabel>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="mt-2">
-                    <label htmlFor="images" className="cursor-pointer">
-                      <span className="mt-2 block text-sm font-medium text-gray-900">
-                        Upload product images
-                      </span>
-                      <span className="block text-sm text-gray-500">
-                        PNG, JPG, GIF up to 5MB each (max 5 images)
-                      </span>
-                    </label>
-                    <input
-                      id="images"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      className="hidden"
-                    />
+              
+              {/* Existing Images */}
+              {existingImages.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Current Images:</p>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {existingImages.map((url, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={url}
+                          alt={`Existing ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-              
-              {/* Image Previews */}
-              {imagePreview.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  {imagePreview.map((url, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border"
+              )}
+
+              {/* Upload New Images */}
+              {(existingImages.length + selectedImages.length) < 5 && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <div className="text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="mt-2">
+                      <label htmlFor="images" className="cursor-pointer">
+                        <span className="mt-2 block text-sm font-medium text-gray-900">
+                          Upload new images
+                        </span>
+                        <span className="block text-sm text-gray-500">
+                          PNG, JPG, GIF up to 5MB each 
+                          ({5 - existingImages.length - selectedImages.length} remaining)
+                        </span>
+                      </label>
+                      <input
+                        id="images"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* New Image Previews */}
+              {imagePreview.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">New Images:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {imagePreview.map((url, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={url}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -263,7 +373,7 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
+                    <FormLabel>Price (₹)</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
@@ -277,7 +387,7 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
                 name="comparePrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Compare Price ($)</FormLabel>
+                    <FormLabel>Compare Price (₹)</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
@@ -289,20 +399,20 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
 
             <FormField
               control={form.control}
-              name="category"
+              name="size"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Size</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder="Select a size" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {SIZES.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -343,36 +453,64 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            {/* Product Flags */}
+            <div className="space-y-4">
+              <FormLabel className="text-base font-medium">Product Flags</FormLabel>
+              
+              <FormField
+                control={form.control}
+                name="isNewArrival"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        New Arrival
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Mark this product as a new arrival
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isSale"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        On Sale
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Mark this product as being on sale
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => handleClose(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Product
+                {isEditing ? 'Update Product' : 'Save Product'}
               </Button>
             </DialogFooter>
           </form>

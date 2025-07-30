@@ -3,9 +3,8 @@
 
 'use server';
 
-import ai from '@/genkit';
-// import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { ai } from '@/genkit';
+import { z } from 'zod';
 
 const ReviewSchema = z.object({
   id: z.string(),
@@ -20,14 +19,23 @@ const ReviewSchema = z.object({
 const ClothingItemSchema = z.object({
   id: z.string().describe('Unique identifier for the clothing item.'),
   name: z.string().describe('Name of the clothing item.'),
+  slug: z.string(),
   description: z.string().describe('Detailed description of the clothing item.'),
   imageUrls: z.array(z.string()).describe('URLs of the clothing item images.'),
-  category: z.enum(['top', 'bottom', 'dress', 'shoes', 'accessory', 'saree', 'kurti', 'western dress', 'baby boy', 'baby girl', 'boy dress', 'girl dress', 'cuddler dress']).describe('Category of the clothing item.'),
+  images: z.array(z.object({ url: z.string(), alt: z.string(), isPrimary: z.boolean() })),
+  category: z.string(),
   availableSizes: z.array(z.string()).describe('Available sizes for the clothing item.'),
+  sizes: z.array(z.object({ size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL']), quantity: z.number() })),
+  colors: z.array(z.object({ name: z.string(), hexCode: z.string()})),
   price: z.number().describe('Price of the clothing item in INR.'),
+  comparePrice: z.number().optional(),
   material: z.string().describe('The materials used to create the item'),
-  careInstructions: z.string().describe('How to properly care for this item'),
-  reviews: z.array(ReviewSchema).optional().describe("Customer reviews for the item.")
+  careInstructions: z.array(z.string()).describe('How to properly care for this item'),
+  status: z.enum(['active', 'inactive', 'draft']),
+  featured: z.boolean(),
+  reviews: z.array(ReviewSchema).optional().describe("Customer reviews for the item."),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 const UserPreferencesSchema = z.object({
@@ -119,7 +127,7 @@ const aiStyleRecommendationFlow = ai.defineFlow({
     inputSchema: AIStyleRecommendationInputSchema,
     outputSchema: AIStyleRecommendationOutputSchema,
   },
-  async input => {
+  async (input: AIStyleRecommendationInput) => {
     const {output} = await outfitRecommendationPrompt(input);
     return output!;
   }

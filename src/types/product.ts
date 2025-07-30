@@ -4,23 +4,42 @@ export interface Product {
   description: string;
   price: number;
   comparePrice?: number;
-  category: string;
+  // category: string; // REMOVE THIS LINE
   slug: string;
   material: string;
   careInstructions: string[];
-  status: 'active' | 'inactive' | 'draft';
-  featured: boolean;
-  sizes: ProductSize[];
+  // status: 'active' | 'inactive' | 'draft'; // REMOVE THIS LINE
+  // featured: boolean; // REMOVE THIS LINE
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // ADD THIS - single size instead of sizes array
+  isNewArrival: boolean; // ADD THIS
+  isSale: boolean; // ADD THIS
   colors: ProductColor[];
   images: ProductImage[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface ProductSize {
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
-  quantity: number;
+export interface ProductFormData {
+  name: string;
+  description: string;
+  price: number;
+  comparePrice?: number;
+  // category: string; // REMOVE THIS LINE
+  material: string;
+  careInstructions: string[];
+  // status: 'active' | 'inactive' | 'draft'; // REMOVE THIS LINE
+  // featured: boolean; // REMOVE THIS LINE
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // ADD THIS - single size instead of sizes array
+  isNewArrival: boolean; // ADD THIS
+  isSale: boolean; // ADD THIS
+  colors: ProductColor[];
+  images: ProductImage[];
 }
+
+// export interface ProductSize {
+//   size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+//   quantity: number;
+// }
 
 export interface ProductColor {
   name: string;
@@ -33,20 +52,20 @@ export interface ProductImage {
   isPrimary: boolean;
 }
 
-export interface ProductFormData {
-  name: string;
-  description: string;
-  price: number;
-  comparePrice?: number;
-  category: string;
-  material: string;
-  careInstructions: string[];
-  status: 'active' | 'inactive' | 'draft';
-  featured: boolean;
-  sizes: ProductSize[];
-  colors: ProductColor[];
-  images: ProductImage[];
-}
+// export interface ProductFormData {
+//   name: string;
+//   description: string;
+//   price: number;
+//   comparePrice?: number;
+//   category: string;
+//   material: string;
+//   careInstructions: string[];
+//   status: 'active' | 'inactive' | 'draft';
+//   featured: boolean;
+//   sizes: ProductSize[];
+//   colors: ProductColor[];
+//   images: ProductImage[];
+// }
 
 export interface CartItem {
   product: Product;

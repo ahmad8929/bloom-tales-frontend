@@ -3,7 +3,8 @@ const nextConfig = {
   images: {
     domains: [
       'res.cloudinary.com',
-      'placehold.co'
+      'placehold.co',
+      'images.unsplash.com'
     ],
   },
   env: {

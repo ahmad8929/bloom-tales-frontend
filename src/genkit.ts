@@ -1,9 +1,7 @@
-import React from 'react'
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
-const ai = () => {
-  return (
-    ai
-  )
-}
-
-export default ai
+export const ai = genkit({
+  plugins: [googleAI()],
+  model: 'googleai/gemini-2.0-flash',
+});

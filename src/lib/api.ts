@@ -120,40 +120,117 @@ export const authApi = {
     api.post<{ message: string }>('/auth/resend-verification', data),
 };
 
-// Product APIs with proper authentication
+// Product APIs matching your backend structure
 export const productApi = {
-  getAllProducts: (query?: string) =>
-    api.get<{ products: any[] }>(`/products${query ? `?${query}` : ''}`),
+  // Get all products with optional query parameters
+  getAllProducts: (params?: Record<string, string>) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return api.get<{ 
+      status: string;
+      data: { 
+        products: any[]; 
+        pagination?: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      } 
+    }>(`/products${queryString ? `?${queryString}` : ''}`);
+  },
 
+  // Get single product by ID
   getProduct: (id: string) =>
-    api.get<{ product: any }>(`/products/${id}`),
+    api.get<{ 
+      status: string;
+      data: { 
+        product: any 
+      } 
+    }>(`/products/${id}`),
 
+  // Create new product
   createProduct: (formData: FormData) =>
-    api.post<{ product: any }>('/products', formData),
+    api.post<{ 
+      status: string;
+      message: string;
+      data: { 
+        product: any 
+      };
+    }>('/products', formData),
 
+  // Update existing product
   updateProduct: (id: string, formData: FormData) =>
-    api.put<{ product: any }>(`/products/${id}`, formData),
+    api.put<{ 
+      status: string;
+      message: string;
+      data: { 
+        product: any 
+      };
+    }>(`/products/${id}`, formData),
 
+  // Delete product
   deleteProduct: (id: string) =>
-    api.delete<{ message: string }>(`/products/${id}`),
+    api.delete<{ 
+      status: string;
+      message: string;
+    }>(`/products/${id}`),
 
-  updateProductStatus: (id: string, status: string) =>
-    api.patch<{ product: any }>(`/products/${id}/status`, { status }),
+  // Search products with filters
+  searchProducts: (query: string, filters?: Record<string, string>) => {
+    const params = new URLSearchParams({ q: query, ...filters });
+    return api.get<{ 
+      status: string;
+      data: { 
+        products: any[]; 
+        pagination?: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      } 
+    }>(`/products/search?${params.toString()}`);
+  },
 
-  toggleFeatured: (id: string) =>
-    api.patch<{ product: any }>(`/products/${id}/featured`, {}),
+  // Get new arrivals
+  getNewArrivals: (limit = 10) =>
+    api.get<{ 
+      status: string;
+      data: { 
+        products: any[] 
+      } 
+    }>(`/products/new-arrivals?limit=${limit}`),
 
-  getCategories: () =>
-    api.get<{ categories: any[] }>('/categories'),
+  // Get sale products
+  getSaleProducts: (limit = 10) =>
+    api.get<{ 
+      status: string;
+      data: { 
+        products: any[] 
+      } 
+    }>(`/products/sale?limit=${limit}`),
 
-  getProductsByCategory: (categoryId: string) =>
-    api.get<{ products: any[] }>(`/categories/${categoryId}/products`),
+  // Get products by size
+  getProductsBySize: (size: string) =>
+    api.get<{ 
+      status: string;
+      data: { 
+        products: any[] 
+      } 
+    }>(`/products?size=${size}`),
 
-  searchProducts: (query: string) =>
-    api.get<{ products: any[] }>(`/products/search?q=${encodeURIComponent(query)}`),
-
-  getFeaturedProducts: () =>
-    api.get<{ products: any[] }>('/products/featured'),
+  // Get products by material
+  getProductsByMaterial: (material: string) =>
+    api.get<{ 
+      status: string;
+      data: { 
+        products: any[] 
+      } 
+    }>(`/products?material=${encodeURIComponent(material)}`),
 };
 
 // Admin APIs
@@ -200,17 +277,6 @@ export const cartApi = {
     api.post<{ cart: any }>('/cart/apply-coupon', { code }),
 
   removeCoupon: () => api.delete<{ cart: any }>('/cart/remove-coupon'),
-};
-
-// Wishlist APIs
-export const wishlistApi = {
-  getWishlist: () => api.get<{ wishlist: any }>('/wishlist'),
-
-  addToWishlist: (productId: string) =>
-    api.post<{ wishlist: any }>('/wishlist', { productId }),
-
-  removeFromWishlist: (productId: string) =>
-    api.delete<{ wishlist: any }>(`/wishlist/${productId}`),
 };
 
 // Order APIs

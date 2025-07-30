@@ -1,9 +1,7 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/ProductCard';
-import type { ClothingItem } from '@/ai/flows/ai-style-recommendation';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,21 +16,16 @@ import {
 } from "@/components/ui/sheet"
 
 interface ShopClientProps {
-  products: ClothingItem[];
-  categories: readonly string[];
+  products: any[];
   allColors: string[];
   allSizes: string[];
-  initialCategory?: string;
 }
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc';
 
 const FilterSidebar = ({ 
-    categories, 
     allColors, 
     allSizes,
-    selectedCategory,
-    handleCategoryClick,
     selectedSizes,
     handleSizeChange,
     selectedColors,
@@ -41,17 +34,6 @@ const FilterSidebar = ({
     handlePriceChange
 }: any) => (
     <div className="space-y-6">
-        <div>
-            <h3 className="font-headline text-lg mb-4">Category</h3>
-            <div className="space-y-2">
-                <Button variant={!selectedCategory ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => handleCategoryClick(null)}>All</Button>
-                {categories.map((cat: string) => (
-                    <Button key={cat} variant={selectedCategory === cat ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => handleCategoryClick(cat)}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </Button>
-                ))}
-            </div>
-        </div>
         <div>
             <h3 className="font-headline text-lg mb-4">Size</h3>
             <div className="grid grid-cols-3 gap-2">
@@ -87,9 +69,7 @@ const FilterSidebar = ({
     </div>
 );
 
-
-export function ShopClient({ products, categories, allColors, allSizes, initialCategory }: ShopClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory || null);
+export function ShopClient({ products, allColors, allSizes }: ShopClientProps) {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number>(10000);
@@ -97,29 +77,6 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
 
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (selectedCategory) {
-      params.set('category', selectedCategory);
-    } else {
-      params.delete('category');
-    }
-    // Note: We are not pushing to router here to avoid re-renders on every filter change.
-    // A more advanced implementation might use `router.replace` with debouncing.
-  }, [selectedCategory, searchParams]);
-
-
-  const handleCategoryClick = (category: string | null) => {
-    setSelectedCategory(category);
-    const params = new URLSearchParams(searchParams.toString());
-    if (category) {
-      params.set('category', category);
-    } else {
-      params.delete('category');
-    }
-    router.push(`/shop?${params.toString()}`);
-  };
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
@@ -134,7 +91,6 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
   };
   
   const resetFilters = () => {
-    setSelectedCategory(initialCategory || null);
     setSelectedSizes([]);
     setSelectedColors([]);
     setPriceRange(10000);
@@ -145,16 +101,12 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products;
 
-    if (selectedCategory) {
-      filtered = filtered.filter(product => product.category === selectedCategory);
-    }
-
     if(selectedSizes.length > 0) {
-      filtered = filtered.filter(product => product.availableSizes.some(size => selectedSizes.includes(size)));
+      filtered = filtered.filter(product => product.availableSizes?.some((size: string) => selectedSizes.includes(size)));
     }
 
     if(selectedColors.length > 0) {
-      filtered = filtered.filter(product => selectedColors.some(color => product.material.toLowerCase().includes(color.toLowerCase())));
+      filtered = filtered.filter(product => selectedColors.some(color => product.material?.toLowerCase().includes(color.toLowerCase())));
     }
     
     filtered = filtered.filter(product => product.price <= priceRange);
@@ -166,22 +118,18 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
         return filtered.sort((a, b) => b.price - a.price);
       case 'newest':
       default:
-        return filtered; // Assuming default order is by newest
+        return filtered;
     }
-  }, [products, selectedCategory, selectedSizes, selectedColors, priceRange, sortOption]);
+  }, [products, selectedSizes, selectedColors, priceRange, sortOption]);
 
-  const activeFilterCount = (selectedCategory && selectedCategory !== initialCategory ? 1 : 0) + selectedSizes.length + selectedColors.length + (priceRange < 10000 ? 1 : 0);
+  const activeFilterCount = selectedSizes.length + selectedColors.length + (priceRange < 10000 ? 1 : 0);
 
   return (
     <div className="grid lg:grid-cols-4 gap-8">
-      {/* --- Filter Sidebar (Desktop) --- */}
       <aside className="hidden lg:block lg:col-span-1">
         <FilterSidebar
-            categories={categories}
             allColors={allColors}
             allSizes={allSizes}
-            selectedCategory={selectedCategory}
-            handleCategoryClick={handleCategoryClick}
             selectedSizes={selectedSizes}
             handleSizeChange={handleSizeChange}
             selectedColors={selectedColors}
@@ -191,11 +139,9 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
         />
       </aside>
       
-      {/* --- Main Content (Products Grid) --- */}
       <main className="lg:col-span-3">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <div className='flex items-center gap-4'>
-                {/* --- Filter Sheet (Mobile) --- */}
                 <div className="lg:hidden">
                     <Sheet>
                         <SheetTrigger asChild>
@@ -204,11 +150,8 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
                         <SheetContent side="left" className="w-[300px] sm:w-[400px] overflow-y-auto">
                             <div className="p-6">
                                 <FilterSidebar
-                                    categories={categories}
                                     allColors={allColors}
                                     allSizes={allSizes}
-                                    selectedCategory={selectedCategory}
-                                    handleCategoryClick={handleCategoryClick}
                                     selectedSizes={selectedSizes}
                                     handleSizeChange={handleSizeChange}
                                     selectedColors={selectedColors}
@@ -245,7 +188,7 @@ export function ShopClient({ products, categories, allColors, allSizes, initialC
         {filteredAndSortedProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredAndSortedProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product._id} product={product} />
             ))}
           </div>
         ) : (

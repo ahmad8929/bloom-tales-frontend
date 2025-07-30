@@ -3,10 +3,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Heart, User } from 'lucide-react';
+import { ShoppingBag, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
-import { useWishlist } from '@/hooks/useWishlist';
 import { Logo } from '@/components/Logo';
 import { CartItem } from '@/types/cart';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,14 +22,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 export function Header() {
   const pathname = usePathname();
   const { cartItems } = useCart();
-  const { itemCount: wishlistCount } = useWishlist();
   const { user, isAuthenticated, logoutUser } = useAuth();
 
   const itemCount = cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
 
   const navItems = [
     { href: '/shop', label: 'Shop' },
-    { href: '/categories', label: 'Categories' },
   ];
 
   return (
@@ -52,17 +49,6 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <Link href="/wishlist">
-            <Button variant="ghost" size="icon" className="relative">
-              <Heart className="h-5 w-5" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 text-xs bg-primary text-white rounded-full flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
-            </Button>
-          </Link>
-          
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingBag className="h-5 w-5" />

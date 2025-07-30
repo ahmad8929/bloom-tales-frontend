@@ -4,31 +4,15 @@ import { Suspense } from "react";
 
 async function getProducts() {
   const { data } = await productApi.getAllProducts();
-  return data?.products || [];
+  // Fix the data structure access based on your API response
+  return data?.data?.products || [];
 }
 
-async function getCategories() {
-  const { data } = await productApi.getCategories();
-  return data?.categories || [];
-}
-
-export default async function ShopPage({
-  searchParams,
-}: {
-  searchParams?: {
-    category?: string;
-  };
-}) {
-  const selectedCategory = searchParams?.category;
-  
-  // Fetch products and categories in parallel
-  const [products, categories] = await Promise.all([
-    getProducts(),
-    getCategories()
-  ]);
+export default async function ShopPage() {
+  const products = await getProducts();
 
   // Extract all available colors and sizes for filter options
-  const allColors = [...new Set(products.map(p => p.material?.split(" ")[0] || ''))];
+  const allColors = [...new Set(products.map(p => p.material?.split(" ")[0] || '').filter(Boolean))];
   const allSizes = [...new Set(products.flatMap(p => p.availableSizes || []))];
 
   return (
@@ -40,8 +24,6 @@ export default async function ShopPage({
       <Suspense fallback={<div>Loading...</div>}>
         <ShopClient 
           products={products} 
-          categories={categories} 
-          initialCategory={selectedCategory}
           allColors={allColors}
           allSizes={allSizes}
         />
