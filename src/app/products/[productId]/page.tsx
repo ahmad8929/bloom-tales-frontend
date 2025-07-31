@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { productApi } from "@/lib/api";
-import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2 } from "lucide-react";
+import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Plus, Minus, Heart } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { NewArrival } from "@/components/common/newArrival";
@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Product {
   _id: string;
@@ -37,6 +39,9 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const productId = params.productId as string;
 
@@ -79,12 +84,23 @@ export default function ProductDetailPage() {
       }
       
       setProduct(productData);
+      setSelectedSize(productData.size); // Set default size
     } catch (error: any) {
       console.error('Error fetching product:', error);
       setError(error.message || 'Failed to load product');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuantityChange = (change: number) => {
+    setQuantity(prev => Math.max(1, prev + change));
+  };
+
+  const handleBuyNow = () => {
+    // You can implement buy now functionality here
+    // For now, we'll just redirect to cart after adding
+    console.log('Buy now clicked');
   };
 
   if (loading) {
@@ -232,14 +248,46 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Size</h3>
+                <Label className="font-semibold text-base">Size</Label>
                 <Badge variant="outline" className="text-base px-4 py-2">
-                  {product.size}
+                  {selectedSize}
                 </Badge>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Material</h3>
+                <Label className="font-semibold text-base">Material</Label>
                 <p className="text-muted-foreground capitalize">{product.material}</p>
+              </div>
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="space-y-2">
+              <Label className="font-semibold text-base">Quantity</Label>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleQuantityChange(-1)}
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-20 text-center"
+                  min="1"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleQuantityChange(1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground ml-2">
+                  Total: ₹{(product.price * quantity).toLocaleString('en-IN')}
+                </span>
               </div>
             </div>
 
@@ -262,11 +310,34 @@ export default function ProductDetailPage() {
           {/* Action Buttons */}
           <div className="space-y-4">
             <div className="flex gap-4">
-              <AddToCartButton product={product} className="flex-1">
-                <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+              <AddToCartButton 
+                product={product} 
+                quantity={quantity}
+                size={selectedSize}
+                className="flex-1"
+                onSuccess={() => {
+                  // Reset quantity after adding to cart
+                  setQuantity(1);
+                }}
+              >
+                <ShoppingCart className="mr-2 h-5 w-5" /> 
+                Add {quantity > 1 ? `${quantity} ` : ''}to Cart
               </AddToCartButton>
-              <Button className="flex-1 bg-primary hover:bg-primary/90">
+              
+              <Button 
+                className="flex-1 bg-primary hover:bg-primary/90"
+                onClick={handleBuyNow}
+              >
                 Buy Now
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsWishlisted(!isWishlisted)}
+                className="shrink-0"
+              >
+                <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
               </Button>
             </div>
           </div>

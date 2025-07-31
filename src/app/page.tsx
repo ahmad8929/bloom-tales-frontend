@@ -239,7 +239,7 @@ useEffect(() => {
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">Join thousands of happy customers</p>
             <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
-              <Link href="/shop">Start Shopping Today</Link>
+              <Link href="/products">Start Shopping Today</Link>
             </Button>
           </div>
         </div>

@@ -259,24 +259,93 @@ export const adminApi = {
 };
 
 // Cart APIs
+// Updated Cart APIs with better error handling and response structure
 export const cartApi = {
-  getCart: () => api.get<{ cart: any }>('/cart'),
+  // Get user's cart
+  getCart: () => 
+    api.get<{ 
+      status: string;
+      data: { 
+        cart: {
+          _id: string;
+          userId: string;
+          items: Array<{
+            _id: string;
+            productId: string;
+            quantity: number;
+            size?: string;
+            product: {
+              _id: string;
+              name: string;
+              price: number;
+              comparePrice?: number;
+              images: Array<{ url: string; alt?: string }>;
+              size: string;
+              material: string;
+              slug?: string;
+            };
+          }>;
+          totalItems: number;
+          totalAmount: number;
+          createdAt: string;
+          updatedAt: string;
+        }
+      } 
+    }>('/cart'),
 
-  addToCart: (productId: string, quantity: number = 1) =>
-    api.post<{ cart: any }>('/cart/add', { productId, quantity }),
+  // Add item to cart
+  addToCart: (productId: string, quantity: number = 1, size?: string) =>
+    api.post<{ 
+      status: string;
+      message: string;
+      data: { 
+        cart: any;
+        item: any;
+      } 
+    }>('/cart/add', { 
+      productId, 
+      quantity,
+      ...(size && { size })
+    }),
 
+  // Update cart item quantity
   updateCartItem: (itemId: string, quantity: number) =>
-    api.put<{ cart: any }>(`/cart/update/${itemId}`, { quantity }),
+    api.put<{ 
+      status: string;
+      message: string;
+      data: { 
+        cart: any;
+        item: any;
+      } 
+    }>(`/cart/update/${itemId}`, { quantity }),
 
+  // Remove item from cart
   removeFromCart: (itemId: string) =>
-    api.delete<{ cart: any }>(`/cart/remove/${itemId}`),
+    api.delete<{ 
+      status: string;
+      message: string;
+      data: { 
+        cart: any 
+      } 
+    }>(`/cart/remove/${itemId}`),
 
-  clearCart: () => api.delete<{ message: string }>('/cart/clear'),
+  // Clear entire cart
+  clearCart: () =>
+    api.delete<{ 
+      status: string;
+      message: string;
+    }>('/cart/clear'),
 
-  applyCoupon: (code: string) =>
-    api.post<{ cart: any }>('/cart/apply-coupon', { code }),
-
-  removeCoupon: () => api.delete<{ cart: any }>('/cart/remove-coupon'),
+  // Get cart summary (totals only)
+  getCartSummary: () =>
+    api.get<{ 
+      status: string;
+      data: {
+        totalItems: number;
+        totalAmount: number;
+        itemCount: number;
+      }
+    }>('/cart/summary'),
 };
 
 // Order APIs
