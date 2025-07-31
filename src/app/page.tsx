@@ -17,6 +17,11 @@ import {
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { user, isAuthenticated } = useAuth();
+const [hasMounted, setHasMounted] = useState(false);
+
+useEffect(() => {
+  setHasMounted(true);
+}, []);
 
   // Auto-slide functionality
   useEffect(() => {
@@ -50,7 +55,8 @@ export default function Home() {
   return (
     <div className="flex flex-col">      
       {/* Hero Carousel Section */}
-      <section className="relative w-full h-[70vh] md:h-[80vh] overflow-hidden">
+      {hasMounted && (
+  <section className="relative w-full h-[70vh] md:h-[80vh] overflow-hidden">
         {/* Slides Container */}
         <div 
           className="flex transition-transform duration-500 ease-in-out h-full"
@@ -131,7 +137,8 @@ export default function Home() {
           />
         </div>
       </section>
-
+      )}
+      
       {/* New Arrivals - Using API Component */}
       <NewArrival limit={4} showViewAll={true} />
 

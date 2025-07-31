@@ -35,7 +35,7 @@ export const heroSlides: HeroSlide[] = [
     title: "Style That Blooms",
     subtitle: "Discover curated collections that blend timeless elegance with modern trends.",
     cta: "Shop New Arrivals",
-    link: "/shop?isNewArrival=true"
+    link: "/products?isNewArrival=true"
   },
   {
     id: 2,
@@ -43,7 +43,7 @@ export const heroSlides: HeroSlide[] = [
     title: "Summer Breeze Collection",
     subtitle: "Light, airy, and ready for sunshine. Explore our latest summer styles.",
     cta: "Explore Summer",
-    link: "/shop?material=cotton"
+    link: "/products?material=cotton"
   },
   {
     id: 3,
@@ -51,7 +51,7 @@ export const heroSlides: HeroSlide[] = [
     title: "For The Little Ones",
     subtitle: "Adorable outfits for every adventure. Dress them in comfort and style.",
     cta: "Shop Kids Wear",
-    link: "/shop?size=XS"
+    link: "/products?size=XS"
   },
   {
     id: 4,
@@ -59,7 +59,7 @@ export const heroSlides: HeroSlide[] = [
     title: "Traditional Elegance",
     subtitle: "Embrace heritage with our exquisite collection of sarees and ethnic wear.",
     cta: "Shop Traditional",
-    link: "/shop?material=silk"
+    link: "/products?material=silk"
   },
   {
     id: 5,
@@ -67,7 +67,7 @@ export const heroSlides: HeroSlide[] = [
     title: "Modern Chic",
     subtitle: "Contemporary styles for the modern woman. Sophistication meets comfort.",
     cta: "Shop Western",
-    link: "/shop?material=polyester"
+    link: "/products?material=polyester"
   }
 ];
 

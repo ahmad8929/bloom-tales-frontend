@@ -154,9 +154,10 @@ export function NewArrival({ limit = 4, showViewAll = true }: NewArrivalProps) {
                     asChild 
                     className="w-full mt-3 bg-primary hover:bg-primary/90"
                   >
-                    <Link href={`/products/${product.slug || product._id || product.id}`}>
-                      View Details
-                    </Link>
+                    <Link href={`/products/${product._id}`}>
+  View Details
+</Link>
+
                   </Button>
                 </CardContent>
               </Card>

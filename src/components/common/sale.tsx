@@ -205,7 +205,7 @@ export function Sale({ limit = 4, showViewAll = true, title = "Limited Time Sale
                     asChild 
                     className="w-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    <Link href={`/products/${product.slug || product._id || product.id}`}>
+                     <Link href={`/products/${product._id}`}>
                       Buy Now - Limited Time!
                     </Link>
                   </Button>
@@ -218,7 +218,7 @@ export function Sale({ limit = 4, showViewAll = true, title = "Limited Time Sale
         {showViewAll && (
           <div className="text-center mt-12">
             <Button asChild size="lg" className="bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl px-8 py-3">
-              <Link href="/shop?isSale=true">
+              <Link href="/products?isSale=true">
                 View All Sale Items
               </Link>
             </Button>
