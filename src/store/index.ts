@@ -34,6 +34,8 @@ const persistConfig = {
   // Add these options for better error handling
   serialize: true,
   deserialize: true,
+  // Add this to prevent hydration issues
+  timeout: 0,
 };
 
 const rootReducer = combineReducers({
@@ -63,7 +65,7 @@ export const store = configureStore({
 });
 
 // Only create persistor on client side
-export const persistor = isClient ? persistStore(store) : null;
+export const persistor = isClient ? persistStore(store) : undefined;
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

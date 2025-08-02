@@ -1,7 +1,7 @@
 import { getCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface ApiResponse<T> {
   data?: T;

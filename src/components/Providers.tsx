@@ -3,9 +3,10 @@
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '@/store';
+import { useEffect, useState } from 'react';
 
 const SkeletonLoading = () => (
-  <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
     {/* Header Skeleton */}
     <div className="bg-white border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,6 +37,20 @@ const SkeletonLoading = () => (
 );
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return (
+      <Provider store={store}>
+        <SkeletonLoading />
+      </Provider>
+    );
+  }
+
   return (
     <Provider store={store}>
       {persistor ? (
@@ -43,7 +58,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           {children}
         </PersistGate>
       ) : (
-        // Fallback for server-side rendering when persistor is null
         children
       )}
     </Provider>

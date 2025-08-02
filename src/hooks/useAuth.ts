@@ -1,6 +1,7 @@
 'use client';
 
 import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
 import { RootState } from '@/store';
 import { loginStart, loginSuccess, loginFailure, logout, updateTokens } from '@/store/slices/authSlice';
 import { authApi } from '@/lib/api';
@@ -28,7 +29,12 @@ interface TokenResponse {
 
 export function useAuth() {
   const dispatch = useDispatch();
+  const [isHydrated, setIsHydrated] = useState(false);
   const { user, accessToken, refreshToken, isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const login = async (credentials: { email: string; password: string }) => {
     dispatch(loginStart());
@@ -45,12 +51,13 @@ export function useAuth() {
       // Store tokens in Redux
       dispatch(loginSuccess({ user, accessToken, refreshToken }));
       
-      // Set cookies for middleware
-      setCookie('auth-token', accessToken);
-      setCookie('user-role', user.role);
-
-      // Force reload to ensure all providers are updated
-      window.location.href = '/';
+      // Set cookies for middleware (only on client)
+      if (typeof window !== 'undefined') {
+        setCookie('auth-token', accessToken);
+        setCookie('user-role', user.role);
+        // Force reload to ensure all providers are updated
+        window.location.href = '/';
+      }
       
       return { success: true };
     } catch (err: any) {
@@ -59,12 +66,9 @@ export function useAuth() {
     }
   };
 
-  // Add signup function
   const signup = async (signupData: { firstName: string; lastName: string; email: string; password: string }) => {
     try {
-      // Call your backend signup API
       const res = await authApi.register(signupData);
-      // Optionally, handle response (show message, auto-login, etc.)
       return res.data;
     } catch (err: any) {
       throw err;
@@ -87,8 +91,10 @@ export function useAuth() {
       // Update tokens in Redux
       dispatch(updateTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken }));
       
-      // Update cookie
-      setCookie('auth-token', newAccessToken);
+      // Update cookie (only on client)
+      if (typeof window !== 'undefined') {
+        setCookie('auth-token', newAccessToken);
+      }
       
       return { success: true };
     } catch (err: any) {
@@ -98,15 +104,20 @@ export function useAuth() {
   };
 
   const logoutUser = () => {
-    // Clear cookies
-    removeCookie('auth-token');
-    removeCookie('user-role');
+    // Only manipulate cookies and window on client side
+    if (typeof window !== 'undefined') {
+      // Clear cookies
+      removeCookie('auth-token');
+      removeCookie('user-role');
+    }
     
     // Clear Redux state
     dispatch(logout());
 
-    // Redirect to login page
-    window.location.href = '/login';
+    // Redirect to login page (only on client)
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   };
 
   return { 
@@ -115,10 +126,11 @@ export function useAuth() {
     refreshToken,
     isLoading, 
     error,
-    isAuthenticated,
+    isAuthenticated: isHydrated ? isAuthenticated : false, // Prevent hydration mismatch
     login, 
-    signup, // <-- add this
+    signup,
     refreshAccessToken,
-    logoutUser 
+    logoutUser,
+    isHydrated, // Export this for components that need to wait for hydration
   };
 }
