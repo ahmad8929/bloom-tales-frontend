@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, User, Package, Home } from 'lucide-react';
+import { ShoppingBag, User, Package, Home, ShoppingCart, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { Logo } from '@/components/Logo';
@@ -140,17 +140,34 @@ export function Header() {
                     <div className="text-xs text-muted-foreground">{user.email}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/orders" className="flex items-center gap-2">
+                      <ShoppingCart className="h-4 w-4" />
+                      My Orders
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/profile" className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Profile Settings
+                    </Link>
+                  </DropdownMenuItem>
+
                   {user.role === 'admin' && (
                     <>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/admin" className="flex items-center gap-2">
                           <Package className="h-4 w-4" />
                           Admin Panel
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                     </>
                   )}
+                  
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={logoutUser} 
                     className="text-red-600 cursor-pointer hover:text-red-700 hover:bg-red-50"

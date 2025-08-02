@@ -233,33 +233,276 @@ export const productApi = {
     }>(`/products?material=${encodeURIComponent(material)}`),
 };
 
-// Admin APIs
+// Updated Admin APIs with order approval functionality
 export const adminApi = {
-  getDashboard: () => api.get<any>('/admin/dashboard'),
+  getDashboard: () => api.get<{
+    status: string;
+    data: {
+      stats: {
+        totalOrders: number;
+        pendingApprovals: number;
+        totalUsers: number;
+        totalProducts: number;
+        recentOrders: any[];
+        ordersByStatus: Record<string, number>;
+        revenue: {
+          totalRevenue: number;
+          averageOrderValue: number;
+        };
+      };
+    };
+  }>('/admin/dashboard'),
   
   // Customer management
   getCustomers: (params?: string) => 
-    api.get<any>(`/admin/customers${params ? `?${params}` : ''}`),
+    api.get<{
+      status: string;
+      data: {
+        customers: Array<{
+          _id: string;
+          firstName: string;
+          lastName: string;
+          email: string;
+          role: string;
+          emailVerified: boolean;
+          isActive: boolean;
+          createdAt: string;
+          orderCount: number;
+          totalSpent: number;
+        }>;
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      };
+    }>(`/admin/customers${params ? `?${params}` : ''}`),
   
   toggleEmailVerification: (customerId: string, emailVerified: boolean) =>
-    api.patch<any>(`/admin/customers/${customerId}/email-verification`, { emailVerified }),
+    api.patch<{
+      status: string;
+      message: string;
+      data: { user: any };
+    }>(`/admin/customers/${customerId}/email-verification`, { emailVerified }),
   
   updateUserRole: (customerId: string, role: string) =>
-    api.patch<any>(`/admin/customers/${customerId}/role`, { role }),
+    api.patch<{
+      status: string;
+      message: string;
+      data: { user: any };
+    }>(`/admin/customers/${customerId}/role`, { role }),
   
-  // Order management
+  // Enhanced Order management with approval functionality
   getOrders: (params?: string) =>
-    api.get<any>(`/admin/orders${params ? `?${params}` : ''}`),
+    api.get<{
+      status: string;
+      data: {
+        orders: Array<{
+          _id: string;
+          orderNumber: string;
+          user: {
+            _id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+          };
+          status: string;
+          paymentStatus: string;
+          adminApproval: {
+            status: 'pending' | 'approved' | 'rejected';
+            approvedBy?: {
+              _id: string;
+              firstName: string;
+              lastName: string;
+            };
+            rejectedBy?: {
+              _id: string;
+              firstName: string;
+              lastName: string;
+            };
+            approvedAt?: string;
+            rejectedAt?: string;
+            remarks?: string;
+          };
+          totalAmount: number;
+          items: Array<{
+            _id: string;
+            product: {
+              _id: string;
+              name: string;
+              images: Array<{ url: string }>;
+            };
+            quantity: number;
+            price: number;
+          }>;
+          createdAt: string;
+          shippingAddress: {
+            fullName: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            pincode: string;
+          };
+          paymentMethod: string;
+          paymentDetails?: {
+            payerName?: string;
+            transactionId?: string;
+            paymentDate?: string;
+            paymentTime?: string;
+            amount?: number;
+          };
+        }>;
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      };
+    }>(`/admin/orders${params ? `?${params}` : ''}`),
   
   getOrder: (orderId: string) =>
-    api.get<any>(`/admin/orders/${orderId}`),
+    api.get<{
+      status: string;
+      data: {
+        order: {
+          _id: string;
+          orderNumber: string;
+          user: {
+            _id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone?: string;
+          };
+          status: string;
+          paymentStatus: string;
+          adminApproval: {
+            status: 'pending' | 'approved' | 'rejected';
+            approvedBy?: {
+              _id: string;
+              firstName: string;
+              lastName: string;
+            };
+            rejectedBy?: {
+              _id: string;
+              firstName: string;
+              lastName: string;
+            };
+            approvedAt?: string;
+            rejectedAt?: string;
+            remarks?: string;
+          };
+          totalAmount: number;
+          items: Array<{
+            _id: string;
+            product: {
+              _id: string;
+              name: string;
+              images: Array<{ url: string }>;
+              price: number;
+              size: string;
+              material: string;
+            };
+            quantity: number;
+            price: number;
+            size?: string;
+          }>;
+          shippingAddress: {
+            fullName: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            pincode: string;
+            nearbyPlaces?: string;
+          };
+          paymentMethod: string;
+          paymentDetails?: {
+            payerName?: string;
+            transactionId?: string;
+            paymentDate?: string;
+            paymentTime?: string;
+            amount?: number;
+            paymentProof?: {
+              url: string;
+              publicId: string;
+              uploadedAt: string;
+            };
+          };
+          timeline: Array<{
+            status: string;
+            note: string;
+            timestamp: string;
+            updatedBy: {
+              _id: string;
+              firstName: string;
+              lastName: string;
+            };
+          }>;
+          createdAt: string;
+          updatedAt: string;
+          trackingNumber?: string;
+          estimatedDelivery?: string;
+        };
+      };
+    }>(`/admin/orders/${orderId}`),
   
-  updateOrderStatus: (orderId: string, status: string) =>
-    api.patch<any>(`/admin/orders/${orderId}/status`, { status }),
+  // New approval endpoints
+  approveOrder: (orderId: string, remarks?: string) =>
+    api.patch<{
+      status: string;
+      message: string;
+      data: { order: any };
+    }>(`/admin/orders/${orderId}/approve`, { remarks }),
+  
+  rejectOrder: (orderId: string, remarks: string) =>
+    api.patch<{
+      status: string;
+      message: string;
+      data: { order: any };
+    }>(`/admin/orders/${orderId}/reject`, { remarks }),
+  
+  updateOrderStatus: (orderId: string, status: string, note?: string) =>
+    api.patch<{
+      status: string;
+      message: string;
+      data: { order: any };
+    }>(`/admin/orders/${orderId}/status`, { status, note }),
+
+  // Get orders by specific user
+  getOrdersByUser: (userId: string, params?: string) =>
+    api.get<{
+      status: string;
+      data: {
+        user: {
+          _id: string;
+          firstName: string;
+          lastName: string;
+          email: string;
+        };
+        orders: any[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      };
+    }>(`/admin/users/${userId}/orders${params ? `?${params}` : ''}`),
 };
 
 // Cart APIs
-// Updated Cart APIs with better error handling and response structure
 export const cartApi = {
   // Get user's cart
   getCart: () => 
@@ -348,21 +591,288 @@ export const cartApi = {
     }>('/cart/summary'),
 };
 
-// Order APIs
+// Enhanced Order APIs with new flow
 export const orderApi = {
+  // Create order with enhanced payment details
   createOrder: (data: {
-    shippingAddress: any;
+    shippingAddress: {
+      fullName: string;
+      email: string;
+      phone: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+      nearbyPlaces?: string;
+    };
     paymentMethod: string;
-  }) => api.post<{ order: any }>('/orders/create', data),
+    paymentDetails?: {
+      payerName: string;
+      transactionId: string;
+      paymentDate: string;
+      paymentTime: string;
+      amount: number;
+    };
+  }) => api.post<{ 
+    status: string;
+    message: string;
+    data: {
+      order: {
+        _id: string;
+        orderNumber: string;
+        userId: string;
+        items: Array<{
+          _id: string;
+          productId: string;
+          quantity: number;
+          price: number;
+          size?: string;
+          product: {
+            _id: string;
+            name: string;
+            price: number;
+            images: Array<{ url: string; alt?: string }>;
+            size: string;
+            material: string;
+            slug?: string;
+          };
+        }>;
+        totalAmount: number;
+        status: string;
+        paymentMethod: string;
+        paymentStatus: string;
+        adminApproval: {
+          status: 'pending' | 'approved' | 'rejected';
+        };
+        paymentDetails?: {
+          payerName: string;
+          transactionId: string;
+          paymentDate: string;
+          paymentTime: string;
+          amount: number;
+        };
+        shippingAddress: any;
+        createdAt: string;
+        updatedAt: string;
+        estimatedDelivery?: string;
+        trackingNumber?: string;
+      };
+    };
+  }>('/orders/create', data),
 
-  getOrders: () => api.get<{ orders: any[] }>('/orders'),
+  // Get user's orders with category support
+  getOrders: (category?: 'ongoing' | 'completed' | 'cancelled', page?: number, limit?: number) => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    
+    return api.get<{ 
+      status: string;
+      data: {
+        orders: Array<{
+          _id: string;
+          orderNumber: string;
+          userId: string;
+          items: Array<{
+            _id: string;
+            productId: string;
+            quantity: number;
+            price: number;
+            size?: string;
+            product: {
+              _id: string;
+              name: string;
+              price: number;
+              images: Array<{ url: string; alt?: string }>;
+              size: string;
+              material: string;
+              slug?: string;
+            };
+          }>;
+          totalAmount: number;
+          status: 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected';
+          paymentMethod: string;
+          paymentStatus: 'pending' | 'completed' | 'failed';
+          adminApproval: {
+            status: 'pending' | 'approved' | 'rejected';
+            remarks?: string;
+          };
+          paymentDetails?: {
+            payerName: string;
+            transactionId: string;
+            paymentDate: string;
+            paymentTime: string;
+            amount: number;
+          };
+          shippingAddress: {
+            fullName: string;
+            email: string;
+            phone: string;
+            address: string;
+            city: string;
+            state: string;
+            pincode: string;
+            nearbyPlaces?: string;
+          };
+          createdAt: string;
+          updatedAt: string;
+          estimatedDelivery?: string;
+          trackingNumber?: string;
+          category: 'ongoing' | 'completed' | 'cancelled';
+        }>;
+        pagination?: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      };
+    }>(`/orders${params.toString() ? `?${params.toString()}` : ''}`);
+  },
 
-  getOrder: (orderId: string) =>
-    api.get<{ order: any }>(`/orders/${orderId}`),
+  // Get single order by ID
+  getOrder: (orderId: string) => api.get<{
+    status: string;
+    data: {
+      order: {
+        _id: string;
+        orderNumber: string;
+        userId: string;
+        items: Array<{
+          _id: string;
+          productId: string;
+          quantity: number;
+          price: number;
+          size?: string;
+          product: {
+            _id: string;
+            name: string;
+            price: number;
+            images: Array<{ url: string; alt?: string }>;
+            size: string;
+            material: string;
+            slug?: string;
+          };
+        }>;
+        totalAmount: number;
+        status: string;
+        paymentMethod: string;
+        paymentStatus: string;
+        adminApproval: {
+          status: 'pending' | 'approved' | 'rejected';
+          remarks?: string;
+        };
+        paymentDetails?: {
+          payerName: string;
+          transactionId: string;
+          paymentDate: string;
+          paymentTime: string;
+          amount: number;
+        };
+        shippingAddress: any;
+        createdAt: string;
+        updatedAt: string;
+        estimatedDelivery?: string;
+        trackingNumber?: string;
+      };
+    };
+  }>(`/orders/${orderId}`),
 
-  cancelOrder: (orderId: string) =>
-    api.post<{ message: string }>(`/orders/${orderId}/cancel`, {}),
+  // Cancel order (only for ongoing orders)
+  cancelOrder: (orderId: string, reason?: string) => api.post<{ 
+    status: string;
+    message: string;
+    data: {
+      order: any;
+    };
+  }>(`/orders/${orderId}/cancel`, { reason }),
 
-  trackOrder: (orderId: string) =>
-    api.get<{ tracking: any }>(`/orders/${orderId}/track`),
+  // Track order with admin approval status
+  trackOrder: (orderId: string) => api.get<{ 
+    status: string;
+    data: {
+      tracking: {
+        orderId: string;
+        orderNumber: string;
+        status: string;
+        adminApproval: {
+          status: 'pending' | 'approved' | 'rejected';
+          remarks?: string;
+        };
+        trackingNumber?: string;
+        estimatedDelivery?: string;
+        trackingHistory: Array<{
+          status: string;
+          note: string;
+          timestamp: string;
+          updatedBy?: {
+            _id: string;
+            firstName: string;
+            lastName: string;
+          };
+        }>;
+      };
+    };
+  }>(`/orders/${orderId}/track`),
+
+  // Get order statistics with new categories
+  getOrderStats: () => api.get<{
+    status: string;
+    data: {
+      stats: {
+        total: number;
+        ongoing: number;
+        completed: number;
+        cancelled: number;
+        totalValue: number;
+      };
+    };
+  }>('/orders/stats'),
+
+  // Upload payment proof
+  uploadPaymentProof: (orderId: string, formData: FormData) =>
+    api.post<{
+      status: string;
+      message: string;
+      data: {
+        order: any;
+        paymentProof: {
+          url: string;
+          publicId: string;
+          uploadedAt: string;
+        };
+      };
+    }>(`/orders/${orderId}/payment-proof`, formData),
+
+  // Update payment details
+  updatePaymentDetails: (orderId: string, paymentDetails: any) =>
+    api.patch<{
+      status: string;
+      message: string;
+      data: {
+        order: any;
+      };
+    }>(`/orders/${orderId}/payment-details`, { paymentDetails }),
+
+  // Get order invoice
+  getOrderInvoice: (orderId: string) =>
+    api.get<{
+      status: string;
+      data: {
+        invoice: {
+          invoiceNumber: string;
+          orderId: string;
+          invoiceDate: string;
+          dueDate: string;
+          items: Array<any>;
+          subtotal: number;
+          tax: number;
+          total: number;
+          downloadUrl?: string;
+        };
+      };
+    }>(`/orders/${orderId}/invoice`),
 };
