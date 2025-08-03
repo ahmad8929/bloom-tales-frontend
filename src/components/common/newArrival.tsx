@@ -44,8 +44,7 @@ export function NewArrival({ limit = 4, showViewAll = true }: NewArrivalProps) {
       if (response.error) {
         throw new Error(response.error);
       }
-
-      const productsList = response.data?.data?.products || response.data?.products || [];
+const productsList = response.data?.data?.products || [];
       setProducts(productsList);
     } catch (error: any) {
       console.error('Error fetching new arrivals:', error);

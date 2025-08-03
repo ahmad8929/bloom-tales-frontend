@@ -65,16 +65,18 @@ export default function ProductDetailPage() {
         setError(response.error);
         return;
       }
-      
-      // Handle different response structures
-      let productData = null;
-      if (response.data?.data?.product) {
-        productData = response.data.data.product;
-      } else if (response.data?.product) {
-        productData = response.data.product;
-      } else if (response.data) {
-        productData = response.data;
-      }
+// Handle the API response structure
+let productData = null;
+if (response.data?.data?.product) {
+  productData = response.data.data.product;
+} else if (response.data && 'product' in response.data) {
+  productData = (response.data as any).product;
+} else {
+  productData = response.data;
+}
+
+// Use the correct API response structure
+// const productData = response.data?.data?.product || response.data?.product;
       
       console.log('Parsed product:', productData);
       
@@ -161,11 +163,11 @@ export default function ProductDetailPage() {
     : [];
 
   // Calculate discount if compare price exists
-  const hasDiscount = product.comparePrice && product.comparePrice > product.price;
-  const discountPercentage = hasDiscount 
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
-    : 0;
-  const savings = hasDiscount ? product.comparePrice - product.price : 0;
+const hasDiscount = product.comparePrice && product.comparePrice > product.price;
+const discountPercentage = hasDiscount && product.comparePrice
+  ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
+  : 0;
+const savings = hasDiscount && product.comparePrice ? product.comparePrice - product.price : 0;
 
   // Format images for gallery
   const imageUrls = product.images?.map((img: any) => 

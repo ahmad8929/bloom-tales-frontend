@@ -26,60 +26,79 @@ export const useCart = () => {
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const totalPrice = items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
 
-  // Fetch cart from server
-  const fetchCart = async () => {
-    if (!isAuthenticated) return;
+const fetchCart = async () => {
+  if (!isAuthenticated) return;
+  
+  try {
+    dispatch(setLoading(true));
+    const response = await cartApi.getCart();
     
-    try {
-      dispatch(setLoading(true));
-      const response = await cartApi.getCart();
+    if (response.data?.data?.cart?.items) {
+      // Transform the API data to match your CartItem type
+      const transformedItems = response.data.data.cart.items.map((item: any) => ({
+        ...item,
+        id: item._id, // Convert _id to id if needed
+        product: {
+          ...item.product,
+          id: item.product._id, // Convert product._id to id
+          description: item.product.description || '', // Provide defaults for missing fields
+          careInstructions: item.product.careInstructions || [],
+          isNewArrival: item.product.isNewArrival || false,
+          // Add other missing fields with appropriate defaults
+        }
+      }));
       
-      if (response.data?.cart?.items) {
-        dispatch(setCartItems(response.data.cart.items));
-      }
-    } catch (error: any) {
-      dispatch(setError(error.message || 'Failed to fetch cart'));
-      console.error('Error fetching cart:', error);
+      dispatch(setCartItems(transformedItems));
     }
-  };
+  } catch (error: any) {
+    dispatch(setError(error.message || 'Failed to fetch cart'));
+    console.error('Error fetching cart:', error);
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
 
   // Add item to cart
-  const addToCart = async (productId: string, quantity: number = 1) => {
-    try {
-      dispatch(setLoading(true));
+ // Add item to cart
+const addToCart = async (productId: string, quantity: number = 1) => {
+  try {
+    dispatch(setLoading(true));
+    
+    if (isAuthenticated) {
+      // Add to server cart
+      const response = await cartApi.addToCart(productId, quantity);
       
-      if (isAuthenticated) {
-        // Add to server cart
-        const response = await cartApi.addToCart(productId, quantity);
-        
-        if (response.data?.cart?.items) {
-          dispatch(setCartItems(response.data.cart.items));
-          toast({
-            title: 'Added to cart',
-            description: 'Item has been added to your cart.',
-          });
-        }
-      } else {
-        // For guest users, we need to fetch product details first
-        // This is a simplified version - you might want to improve this
+      // Fix: Use consistent path to access cart items
+      if (response.data?.data?.cart?.items) {
+        dispatch(setCartItems(response.data.data.cart.items));
         toast({
-          title: 'Please login',
-          description: 'Please log in to add items to your cart.',
-          action: {
-            label: 'Login',
-            onClick: () => router.push('/login'),
-          },
+          title: 'Added to cart',
+          description: 'Item has been added to your cart.',
         });
       }
-    } catch (error: any) {
-      dispatch(setError(error.message || 'Failed to add to cart'));
+    } else {
+      // For guest users, we need to fetch product details first
+      // This is a simplified version - you might want to improve this
       toast({
-        title: 'Error',
-        description: 'Failed to add item to cart. Please try again.',
-        variant: 'destructive',
+        title: 'Please login',
+        description: 'Please log in to add items to your cart.',
+        // action: {
+        //   label: 'Login',
+        //   onClick: () => router.push('/login'),
+        // },
       });
     }
-  };
+  } catch (error: any) {
+    dispatch(setError(error.message || 'Failed to add to cart'));
+    toast({
+      title: 'Error',
+      description: 'Failed to add item to cart. Please try again.',
+      variant: 'destructive',
+    });
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
 
   // Update cart item quantity
   const updateCartItem = async (productId: string, quantity: number) => {
@@ -89,9 +108,10 @@ export const useCart = () => {
       if (isAuthenticated) {
         const response = await cartApi.updateCartItem(productId, quantity);
         
-        if (response.data?.cart?.items) {
-          dispatch(setCartItems(response.data.cart.items));
-        }
+        if (response.data?.data?.cart?.items) {
+  dispatch(setCartItems(response.data.data.cart.items));
+}
+
       } else {
         dispatch(updateCartItemLocal({ productId, quantity }));
       }
@@ -113,9 +133,11 @@ export const useCart = () => {
       if (isAuthenticated) {
         const response = await cartApi.removeFromCart(productId);
         
-        if (response.data?.cart?.items) {
-          dispatch(setCartItems(response.data.cart.items));
-        }
+        
+        if (response.data?.data?.cart?.items) {
+  dispatch(setCartItems(response.data.data.cart.items));
+}
+
       } else {
         dispatch(removeFromCartLocal(productId));
       }

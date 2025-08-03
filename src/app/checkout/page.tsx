@@ -96,40 +96,33 @@ export default function CheckoutPage() {
     fetchCart();
   }, []);
 
-  const fetchCart = async () => {
-    try {
-      setIsLoading(true);
-      const response = await cartApi.getCart();
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      let cartData = null;
-      if (response.data?.data?.cart) {
-        cartData = response.data.data.cart;
-      } else if (response.data?.cart) {
-        cartData = response.data.cart;
-      } else if (response.data) {
-        cartData = response.data;
-      }
-
-      setCart(cartData);
-      if (cartData) {
-        setPaymentData(prev => ({ ...prev, amount: calculateTotal(cartData) }));
-      }
-    } catch (error: any) {
-      console.error('Error fetching cart:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load cart items',
-        variant: 'destructive',
-      });
-      router.push('/cart');
-    } finally {
-      setIsLoading(false);
+ const fetchCart = async () => {
+  try {
+    setIsLoading(true);
+    const response = await cartApi.getCart();
+    
+    if (response.error) {
+      throw new Error(response.error);
     }
-  };
+
+    const cartData = response.data?.data?.cart;
+
+    setCart(cartData || null);
+    if (cartData) {
+      setPaymentData(prev => ({ ...prev, amount: calculateTotal(cartData) }));
+    }
+  } catch (error: any) {
+    console.error('Error fetching cart:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to load cart items',
+      variant: 'destructive',
+    });
+    router.push('/cart');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const calculateTotals = (cartData: CartData) => {
     if (!cartData || !cartData.items.length) {

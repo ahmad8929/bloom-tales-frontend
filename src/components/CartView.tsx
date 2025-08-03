@@ -49,39 +49,31 @@ export function CartView() {
     fetchCart();
   }, []);
 
-  const fetchCart = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await cartApi.getCart();
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      // Handle different response structures
-      let cartData = null;
-      if (response.data?.data?.cart) {
-        cartData = response.data.data.cart;
-      } else if (response.data?.cart) {
-        cartData = response.data.cart;
-      } else if (response.data) {
-        cartData = response.data;
-      }
-
-      setCart(cartData);
-    } catch (error: any) {
-      console.error('Error fetching cart:', error);
-      setError(error.message || 'Failed to load cart');
-      toast({
-        title: 'Error',
-        description: 'Failed to load cart items',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+ const fetchCart = async () => {
+  try {
+    setIsLoading(true);
+    setError(null);
+    const response = await cartApi.getCart();
+    
+    if (response.error) {
+      throw new Error(response.error);
     }
-  };
+
+    // Handle the API response structure: { status: string; data: { cart: {...} } }
+    const cartData = response.data?.data?.cart || null;
+    setCart(cartData);
+  } catch (error: any) {
+    console.error('Error fetching cart:', error);
+    setError(error.message || 'Failed to load cart');
+    toast({
+      title: 'Error',
+      description: 'Failed to load cart items',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;

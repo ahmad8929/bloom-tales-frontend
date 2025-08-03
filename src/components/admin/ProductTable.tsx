@@ -67,35 +67,35 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await productApi.getAllProducts();
-      console.log(response,"response")
-      
-      // Handle different response structures
-      let productsList = [];
-      if (response.data?.data?.products) {
-        productsList = response.data.data.products;
-      } else if (response.data?.products) {
-        productsList = response.data.products;
-      } else if (Array.isArray(response.data)) {
-        productsList = response.data;
-      }
-      
-      setProducts(productsList);
-      
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch products',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+ const fetchProducts = async () => {
+  try {
+    setLoading(true);
+    const response = await productApi.getAllProducts();
+    console.log(response,"response")
+    
+    // Handle the API response structure: { status: string; data: { products: any[]; pagination?: {...} } }
+    let productsList = [];
+    if (response.data?.data?.products) {
+      productsList = response.data.data.products;
+    } else if (response.data && 'products' in response.data) {
+      productsList = (response.data as any).products;
+    } else if (Array.isArray(response.data)) {
+      productsList = response.data;
     }
-  };
+    
+    setProducts(productsList);
+    
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch products',
+      variant: 'destructive',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleCreateProduct = async () => {
     try {

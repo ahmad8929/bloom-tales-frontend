@@ -62,11 +62,24 @@ export default function AdminCustomersPage() {
       setLoading(true);
       const response = await adminApi.getCustomers();
       
-      if (response.data?.customers) {
-        setCustomers(response.data.customers);
+      if (response.data?.data?.customers) {
+        // Map API response to match Customer interface
+        const mappedCustomers = response.data.data.customers.map(customer => ({
+          id: customer._id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          emailVerified: customer.emailVerified,
+          role: customer.role as 'user' | 'admin',
+          totalOrders: customer.orderCount,
+          totalSpent: customer.totalSpent,
+          createdAt: customer.createdAt,
+          lastLoginAt: undefined // API doesn't provide this field
+        }));
+        setCustomers(mappedCustomers);
       } else {
         // Fallback to mock data if API doesn't return expected structure
-        console.log('API Response:', response);
+        console.log('API Response:', response.data);
         setCustomers([
           {
             id: '1',

@@ -46,7 +46,7 @@ export function Sale({ limit = 4, showViewAll = true, title = "Limited Time Sale
         throw new Error(response.error);
       }
 
-      const productsList = response.data?.data?.products || response.data?.products || [];
+      const productsList = response.data?.data?.products || [];
       setProducts(productsList);
     } catch (error: any) {
       console.error('Error fetching sale products:', error);

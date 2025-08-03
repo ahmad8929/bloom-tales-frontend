@@ -76,32 +76,37 @@ export function useAuth() {
   };
 
   const refreshAccessToken = async () => {
-    try {
-      if (!refreshToken) throw new Error('No refresh token available');
-      
-      const res = await authApi.refreshToken(refreshToken);
-      const response = res?.data as TokenResponse;
-      
-      if (response?.status !== 'success' || !response.data) {
-        throw new Error('Token refresh failed');
-      }
-      
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
-      
-      // Update tokens in Redux
-      dispatch(updateTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken }));
-      
-      // Update cookie (only on client)
-      if (typeof window !== 'undefined') {
-        setCookie('auth-token', newAccessToken);
-      }
-      
-      return { success: true };
-    } catch (err: any) {
-      logoutUser();
-      return { success: false, error: err.message };
+  try {
+    if (!refreshToken) throw new Error('No refresh token available');
+    
+    const res = await authApi.refreshToken(refreshToken);
+    
+    // Handle the actual API response structure
+    if (res.error) {
+      throw new Error(res.error);
     }
-  };
+    
+    // Check if the response has the expected structure
+    if (!res.data?.accessToken || !res.data?.refreshToken) {
+      throw new Error('Invalid token response format');
+    }
+    
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = res.data;
+    
+    // Update tokens in Redux
+    dispatch(updateTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken }));
+    
+    // Update cookie (only on client)
+    if (typeof window !== 'undefined') {
+      setCookie('auth-token', newAccessToken);
+    }
+    
+    return { success: true };
+  } catch (err: any) {
+    logoutUser();
+    return { success: false, error: err.message };
+  }
+};
 
   const logoutUser = () => {
     // Only manipulate cookies and window on client side

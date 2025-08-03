@@ -1,4 +1,3 @@
-// File: src/hooks/useReduxAuth.ts
 'use client';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -72,12 +71,34 @@ export function useReduxAuth() {
       const res = await authApi.refreshToken(refreshToken);
       console.log('Token refresh response:', res);
 
-      const response = res?.data as TokenResponse;
-      if (response?.status !== 'success' || !response.data) {
-        throw new Error('Token refresh failed');
+      // Handle both possible response structures
+      let newAccessToken: string;
+      let newRefreshToken: string;
+
+      // Check if response has nested structure (status/data) or flat structure
+      if (res?.data && typeof res.data === 'object') {
+        if ('status' in res.data && 'data' in res.data) {
+          // Nested structure: { status, data: { accessToken, refreshToken } }
+          const response = res.data as TokenResponse;
+          if (response.status !== 'success' || !response.data) {
+            throw new Error(response.message || 'Token refresh failed');
+          }
+          newAccessToken = response.data.accessToken;
+          newRefreshToken = response.data.refreshToken;
+        } else if ('accessToken' in res.data && 'refreshToken' in res.data) {
+          // Flat structure: { accessToken, refreshToken }
+          newAccessToken = res.data.accessToken;
+          newRefreshToken = res.data.refreshToken;
+        } else {
+          throw new Error('Invalid token response structure');
+        }
+      } else {
+        throw new Error('No token data received');
       }
-      
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+
+      if (!newAccessToken || !newRefreshToken) {
+        throw new Error('Token refresh failed - missing tokens');
+      }
       
       // Update tokens in Redux
       dispatch(updateTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken }));

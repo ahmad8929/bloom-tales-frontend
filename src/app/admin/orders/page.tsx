@@ -508,13 +508,23 @@ export default function AdminOrdersPage() {
   }, []);
 
   const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const response = await adminApi.getOrders();
-      if (response.data?.data?.orders) {
-        setOrders(response.data.data.orders);
-      }
-    } catch (error) {
+  try {
+    setLoading(true);
+    const response = await adminApi.getOrders();
+    if (response.data?.data?.orders) {
+      // Map API response to match Order interface
+      const mappedOrders = response.data.data.orders.map(order => ({
+        ...order,
+        status: order.status as 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected',
+        paymentStatus: order.paymentStatus as 'pending' | 'completed' | 'failed' | 'refunded',
+        adminApproval: {
+          ...order.adminApproval,
+          status: order.adminApproval.status as 'pending' | 'approved' | 'rejected'
+        }
+      }));
+      setOrders(mappedOrders);
+    }
+ } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
         title: 'Error',

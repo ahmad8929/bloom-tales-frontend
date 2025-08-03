@@ -44,42 +44,42 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, user]);
 
-  const fetchDashboardStats = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch products
-      const productsResponse = await productApi.getAllProducts();
-      const totalProducts = productsResponse.data?.products?.length || 0;
+ const fetchDashboardStats = async () => {
+  try {
+    setLoading(true);
+    
+    // Fetch products
+    const productsResponse = await productApi.getAllProducts();
+    const totalProducts = productsResponse.data?.data?.products?.length || 0;
 
-      // Fetch orders (if available)
-      try {
-        const ordersResponse = await orderApi.getOrders();
-        const orders = ordersResponse.data?.orders || [];
-        const totalOrders = orders.length;
-        const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-        
-        setStats({
-          totalProducts,
-          totalOrders,
-          totalCustomers: 0, // You can implement this later
-          totalRevenue,
-          recentOrders: orders.slice(0, 5), // Latest 5 orders
-          topProducts: [], // You can implement this later
-        });
-      } catch (orderError) {
-        // If orders endpoint doesn't exist yet, just set products
-        setStats(prev => ({
-          ...prev,
-          totalProducts,
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-    } finally {
-      setLoading(false);
+    // Fetch orders (if available)
+    try {
+      const ordersResponse = await orderApi.getOrders();
+      const orders = ordersResponse.data?.data?.orders || [];
+      const totalOrders = orders.length;
+      const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+      
+      setStats({
+        totalProducts,
+        totalOrders,
+        totalCustomers: 0, // You can implement this later
+        totalRevenue,
+        recentOrders: orders.slice(0, 5), // Latest 5 orders
+        topProducts: [], // You can implement this later
+      });
+    } catch (orderError) {
+      // If orders endpoint doesn't exist yet, just set products
+      setStats(prev => ({
+        ...prev,
+        totalProducts,
+      }));
     }
-  };
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Show loading state
   if (loading) {

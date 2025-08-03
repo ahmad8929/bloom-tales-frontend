@@ -43,13 +43,16 @@ export default function ProductsPage() {
       let productsList: Product[] = [];
       
       if (response.data?.data?.products) {
+        // Standard API response structure: { data: { data: { products: [...] } } }
         productsList = response.data.data.products;
-      } else if (response.data?.products) {
-        productsList = response.data.products;
-      } else if (Array.isArray(response.data)) {
+      } else if (response.data && Array.isArray(response.data)) {
+        // Direct array response: { data: [...] }
         productsList = response.data;
       } else if (response.error) {
         throw new Error(response.error);
+      } else {
+        // If no products found but no error, set empty array
+        productsList = [];
       }
       
       console.log('Processed products:', productsList);
