@@ -11,15 +11,31 @@ interface VerifyEmailResponse {
   message: string;
 }
 
-export default function VerifyEmail({ params }: { params: { token: string } }) {
+export default function VerifyEmail({ 
+  params 
+}: { 
+  params: Promise<{ token: string }> 
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your email...');
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setToken(resolvedParams.token);
+    };
+    
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (!token) return;
+
     const verifyEmail = async () => {
       try {
-        const { data } = await api.get<VerifyEmailResponse>(`/auth/verify-email/${params.token}`);
+        const { data } = await api.get<VerifyEmailResponse>(`/auth/verify-email/${token}`);
         if (data?.status === 'success') {
           setStatus('success');
           setMessage('Your email has been verified successfully!');
@@ -38,7 +54,20 @@ export default function VerifyEmail({ params }: { params: { token: string } }) {
     };
 
     verifyEmail();
-  }, [params.token, router]);
+  }, [token, router]);
+
+  if (!token) {
+    return (
+      <div className="container flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-md p-6 text-center">
+          <h1 className="text-2xl font-bold mb-4">Email Verification</h1>
+          <div className="animate-pulse">
+            <p>Loading...</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -71,4 +100,4 @@ export default function VerifyEmail({ params }: { params: { token: string } }) {
       </Card>
     </div>
   );
-} 
+}
