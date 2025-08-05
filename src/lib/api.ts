@@ -90,23 +90,179 @@ export const api = {
     }),
 };
 
+
+// Add these new functions to your existing authApi object
+
 export const authApi = {
-  login: (data: { email: string; password: string }) =>
-    api.post<AuthResponse>('/auth/login', data),
+  // Existing functions
+  login: async (credentials: { email: string; password: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
 
-  register: (data: { firstName: string; lastName: string; email: string; password: string }) =>
-    api.post<AuthResponse>('/auth/signup', data),
+      const data = await response.json();
+      
+      if (!response.ok) {
+        const error = new Error(data.message || 'Login failed');
+        (error as any).response = { data };
+        throw error;
+      }
 
-  getProfile: () => api.get<AuthResponse>('/auth/me'),
+      return { data };
+    } catch (error) {
+      throw error;
+    }
+  },
 
-  updatePassword: (data: { currentPassword: string; newPassword: string }) =>
-    api.post<AuthResponse>('/auth/update-password', data),
+  register: async (signupData: { firstName: string; lastName: string; email: string; password: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupData),
+      });
 
-  logout: () => api.post<{ message: string }>('/auth/logout', {}),
+      const data = await response.json();
+      
+      if (!response.ok) {
+        const error = new Error(data.message || 'Signup failed');
+        (error as any).response = { data };
+        throw error;
+      }
 
-  refreshToken: (refreshToken: string) => 
-    api.post<{ accessToken: string; refreshToken: string }>('/auth/refresh-token', { refreshToken }),
+      return { data };
+    } catch (error) {
+      throw error;
+    }
+  },
 
+  resendVerification: async (email: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        const error = new Error(data.message || 'Failed to resend verification');
+        (error as any).response = { data };
+        throw error;
+      }
+
+      return { data };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  refreshToken: async (refreshToken: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return { error: data.message || 'Token refresh failed' };
+      }
+
+      return { data: data.data };
+    } catch (error: any) {
+      return { error: error.message || 'Network error' };
+    }
+  },
+
+  // NEW OTP-based password reset functions
+  sendResetOTP: async (data: { email: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/send-reset-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        const error = new Error(responseData.message || 'Failed to send OTP');
+        (error as any).response = { data: responseData };
+        throw error;
+      }
+
+      return { data: responseData };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  verifyResetOTP: async (data: { email: string; otp: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/verify-reset-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        const error = new Error(responseData.message || 'Failed to verify OTP');
+        (error as any).response = { data: responseData };
+        throw error;
+      }
+
+      return { data: responseData };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  resetPasswordWithToken: async (data: { resetToken: string; password: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        const error = new Error(responseData.message || 'Failed to reset password');
+        (error as any).response = { data: responseData };
+        throw error;
+      }
+
+      return { data: responseData };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Keep existing functions for backward compatibility
   forgotPassword: (data: { email: string }) =>
     api.post<{ message: string }>('/auth/forgot-password', data),
 
@@ -116,8 +272,12 @@ export const authApi = {
   verifyEmail: (token: string) =>
     api.get<{ message: string }>(`/auth/verify-email/${token}`),
 
-  resendVerification: (data: { email: string }) =>
-    api.post<{ message: string }>('/auth/resend-verification', data),
+  getProfile: () => api.get<AuthResponse>('/auth/me'),
+
+  updatePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.post<AuthResponse>('/auth/update-password', data),
+
+  logout: () => api.post<{ message: string }>('/auth/logout', {}),
 };
 
 // Product APIs matching your backend structure

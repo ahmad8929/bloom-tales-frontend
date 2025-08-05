@@ -38,7 +38,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
   const { signup } = useAuth();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -53,29 +53,49 @@ export function SignupForm() {
 
   const onSubmit = async (data: SignupFormData) => {
     const { confirmPassword, ...signupData } = data;
+    setIsLoading(true);
+    
     try {
       const result = await signup(signupData);
-      toast({
-        title: 'Account created successfully!',
-        description: 'Please check your email to verify your account.',
-      });
+      
+      // Only show success message if signup actually succeeded
+      // Check if result indicates success (adjust based on your API response structure)
+      if (result && !result.error) {
+        toast({
+          title: 'Account created successfully!',
+          description: 'Please check your email to verify your account.',
+        });
+        // Optionally reset form on success
+        form.reset();
+      } else {
+        // Handle case where signup returns an error object
+        throw new Error(result?.error || 'Signup failed');
+      }
     } catch (error: any) {
+      console.error('Signup error:', error);
+      
+      // Show appropriate error message based on error type
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Signup endpoint not found. Please check your API configuration.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid signup data. Please check your input.';
+      } else if (error.response?.status === 409) {
+        errorMessage = 'An account with this email already exists.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
       toast({
         title: 'Signup failed',
-        description: error.message || 'An unexpected error occurred',
+        description: errorMessage,
         variant: 'destructive',
       });
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    setIsGoogleLoading(true);
-    try {
-      window.location.href = '/api/auth/google';
-    } catch (error) {
-      console.error('Google signup failed:', error);
     } finally {
-      setIsGoogleLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -100,7 +120,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -114,7 +134,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,6 +153,7 @@ export function SignupForm() {
                     type="email"
                     placeholder="name@example.com"
                     {...field}
+                    disabled={isLoading}
                   />
                 </FormControl>
                 <FormMessage />
@@ -147,7 +168,7 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <Input type="password" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,7 +182,7 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <Input type="password" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -171,55 +192,15 @@ export function SignupForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={false}
+            disabled={isLoading}
           >
-            {false && (
+            {isLoading && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
             Create Account
           </Button>
         </form>
       </Form>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
-      </div>
-
-      <Button
-        variant="outline"
-        type="button"
-        className="w-full"
-        onClick={handleGoogleSignup}
-        disabled={isGoogleLoading}
-      >
-        {isGoogleLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <svg
-            className="mr-2 h-4 w-4"
-            aria-hidden="true"
-            focusable="false"
-            data-prefix="fab"
-            data-icon="google"
-            role="img"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 488 512"
-          >
-            <path
-              fill="currentColor"
-              d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
-            ></path>
-          </svg>
-        )}
-        Google
-      </Button>
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
@@ -232,4 +213,4 @@ export function SignupForm() {
       </p>
     </div>
   );
-} 
+}
