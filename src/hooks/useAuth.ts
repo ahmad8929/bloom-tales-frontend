@@ -70,7 +70,7 @@ export function useAuth() {
           setCookie('auth-token', accessToken);
           setCookie('user-role', user.role);
           // Force reload to ensure all providers are updated
-          window.location.href = '/dashboard';
+          window.location.href = '/';
         }
         
         return { success: true, user };

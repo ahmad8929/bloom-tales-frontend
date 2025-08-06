@@ -424,9 +424,10 @@ export const adminApi = {
           lastName: string;
           email: string;
           role: string;
-          emailVerified: boolean;
+          isEmailVerified: boolean; // Note: backend uses isEmailVerified, not emailVerified
           isActive: boolean;
           createdAt: string;
+          lastLogin?: string; // Note: backend uses lastLogin, not lastLoginAt
           orderCount: number;
           totalSpent: number;
         }>;
@@ -441,13 +442,15 @@ export const adminApi = {
       };
     }>(`/admin/customers${params ? `?${params}` : ''}`),
   
-  toggleEmailVerification: (customerId: string, emailVerified: boolean) =>
+  // Fixed - backend expects isEmailVerified field
+  toggleEmailVerification: (customerId: string, isEmailVerified: boolean) =>
     api.patch<{
       status: string;
       message: string;
       data: { user: any };
-    }>(`/admin/customers/${customerId}/email-verification`, { emailVerified }),
+    }>(`/admin/customers/${customerId}/email-verification`, { isEmailVerified }),
   
+  // This one is correct
   updateUserRole: (customerId: string, role: string) =>
     api.patch<{
       status: string;

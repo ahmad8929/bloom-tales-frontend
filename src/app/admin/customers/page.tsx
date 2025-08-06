@@ -6,33 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  MoreHorizontal, 
-  Eye, 
-  Mail,
-  UserCheck,
-  UserX,
-  Shield,
-  ShieldOff
-} from 'lucide-react';
+import { Search, UserCheck, Mail, UserX, Shield } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { adminApi } from '@/lib/api';
+import { CustomerStatsCards } from '@/components/admin/Customer/CustomerStatsCards';
+import { CustomerTable } from '@/components/admin/Customer/CustomerTable';
 
 interface Customer {
   id: string;
@@ -41,6 +19,7 @@ interface Customer {
   email: string;
   emailVerified: boolean;
   role: 'user' | 'admin';
+  isActive: boolean;
   totalOrders: number;
   totalSpent: number;
   createdAt: string;
@@ -52,15 +31,26 @@ export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [currentPage, searchTerm]);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.getCustomers();
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '20'
+      });
+      
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm);
+      }
+
+      const response = await adminApi.getCustomers(params.toString());
       
       if (response.data?.data?.customers) {
         // Map API response to match Customer interface
@@ -69,67 +59,32 @@ export default function AdminCustomersPage() {
           firstName: customer.firstName,
           lastName: customer.lastName,
           email: customer.email,
-          emailVerified: customer.emailVerified,
+          emailVerified: customer.isEmailVerified || false, // Note: backend uses isEmailVerified
           role: customer.role as 'user' | 'admin',
-          totalOrders: customer.orderCount,
-          totalSpent: customer.totalSpent,
+          isActive: customer.isActive || true,
+          totalOrders: customer.orderCount || 0,
+          totalSpent: customer.totalSpent || 0,
           createdAt: customer.createdAt,
-          lastLoginAt: undefined // API doesn't provide this field
+          lastLoginAt: customer.lastLogin // backend uses lastLogin
         }));
         setCustomers(mappedCustomers);
+        
+        // Set pagination
+        if (response.data.data.pagination) {
+          setTotalPages(response.data.data.pagination.totalPages);
+        }
       } else {
-        // Fallback to mock data if API doesn't return expected structure
-        console.log('API Response:', response.data);
-        setCustomers([
-          {
-            id: '1',
-            firstName: 'Alice',
-            lastName: 'Johnson',
-            email: 'alice@example.com',
-            emailVerified: true,
-            role: 'user',
-            totalOrders: 5,
-            totalSpent: 450.75,
-            createdAt: '2024-01-10T10:30:00Z',
-            lastLoginAt: '2024-01-15T14:22:00Z'
-          },
-          {
-            id: '2',
-            firstName: 'Bob',
-            lastName: 'Smith',
-            email: 'bob@example.com',
-            emailVerified: false,
-            role: 'user',
-            totalOrders: 2,
-            totalSpent: 189.50,
-            createdAt: '2024-01-12T09:15:00Z',
-            lastLoginAt: '2024-01-14T16:45:00Z'
-          }
-        ]);
+        console.log('Unexpected API response structure:', response.data);
+        setCustomers([]);
       }
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch customers. Using demo data.',
+        description: 'Failed to fetch customers. Please try again.',
         variant: 'destructive',
       });
-      
-      // Use mock data on error
-      setCustomers([
-        {
-          id: '1',
-          firstName: 'Demo',
-          lastName: 'User',
-          email: 'demo@example.com',
-          emailVerified: true,
-          role: 'user',
-          totalOrders: 3,
-          totalSpent: 299.99,
-          createdAt: '2024-01-10T10:30:00Z',
-          lastLoginAt: '2024-01-15T14:22:00Z'
-        }
-      ]);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
@@ -137,9 +92,10 @@ export default function AdminCustomersPage() {
 
   const toggleEmailVerification = async (customerId: string, currentStatus: boolean) => {
     try {
+      // Note: backend expects isEmailVerified field
       const response = await adminApi.toggleEmailVerification(customerId, !currentStatus);
       
-      if (response.data) {
+      if (response.data?.data?.user) {
         setCustomers(prev => prev.map(customer => 
           customer.id === customerId 
             ? { ...customer, emailVerified: !currentStatus }
@@ -166,7 +122,7 @@ export default function AdminCustomersPage() {
       const newRole = currentRole === 'admin' ? 'user' : 'admin';
       const response = await adminApi.updateUserRole(customerId, newRole);
       
-      if (response.data) {
+      if (response.data?.data?.user) {
         setCustomers(prev => prev.map(customer => 
           customer.id === customerId 
             ? { ...customer, role: newRole as 'user' | 'admin' }
@@ -188,25 +144,28 @@ export default function AdminCustomersPage() {
     }
   };
 
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page on search
+  };
+
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
-      customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
     if (activeTab === 'verified') {
-      return matchesSearch && customer.emailVerified;
+      return customer.emailVerified;
     } else if (activeTab === 'unverified') {
-      return matchesSearch && !customer.emailVerified;
+      return !customer.emailVerified;
+    } else if (activeTab === 'admins') {
+      return customer.role === 'admin';
     }
-    
-    return matchesSearch;
+    return true; // 'all' tab
   });
 
+  // Calculate stats
   const verifiedCustomers = customers.filter(c => c.emailVerified);
   const unverifiedCustomers = customers.filter(c => !c.emailVerified);
+  const adminCustomers = customers.filter(c => c.role === 'admin');
 
-  if (loading) {
+  if (loading && customers.length === 0) {
     return (
       <AdminLayout>
         <div className="space-y-6">
@@ -228,59 +187,14 @@ export default function AdminCustomersPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-green-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Total Customers</p>
-                  <p className="text-xl font-semibold">{customers.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-blue-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Verified</p>
-                  <p className="text-xl font-semibold">{verifiedCustomers.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <UserX className="h-4 w-4 text-orange-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Unverified</p>
-                  <p className="text-xl font-semibold">{unverifiedCustomers.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-purple-500" />
-                <div>
-                  <p className="text-sm text-gray-600">Admins</p>
-                  <p className="text-xl font-semibold">
-                    {customers.filter(c => c.role === 'admin').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <CustomerStatsCards
+          totalCustomers={customers.length}
+          verifiedCount={verifiedCustomers.length}
+          unverifiedCount={unverifiedCustomers.length}
+          adminCount={adminCustomers.length}
+        />
 
-        {/* Customer Lists */}
+        {/* Customer Management */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -290,7 +204,7 @@ export default function AdminCustomersPage() {
                 <Input
                   placeholder="Search customers..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -298,179 +212,48 @@ export default function AdminCustomersPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all">All Customers ({customers.length})</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all">All ({customers.length})</TabsTrigger>
                 <TabsTrigger value="verified">Verified ({verifiedCustomers.length})</TabsTrigger>
                 <TabsTrigger value="unverified">Unverified ({unverifiedCustomers.length})</TabsTrigger>
+                <TabsTrigger value="admins">Admins ({adminCustomers.length})</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="all" className="mt-6">
-                <CustomerTable 
+              <div className="mt-6">
+                <CustomerTable
                   customers={filteredCustomers}
+                  loading={loading}
                   onToggleEmailVerification={toggleEmailVerification}
                   onToggleUserRole={toggleUserRole}
                 />
-              </TabsContent>
+              </div>
 
-              <TabsContent value="verified" className="mt-6">
-                <CustomerTable 
-                  customers={filteredCustomers}
-                  onToggleEmailVerification={toggleEmailVerification}
-                  onToggleUserRole={toggleUserRole}
-                />
-              </TabsContent>
-
-              <TabsContent value="unverified" className="mt-6">
-                <CustomerTable 
-                  customers={filteredCustomers}
-                  onToggleEmailVerification={toggleEmailVerification}
-                  onToggleUserRole={toggleUserRole}
-                />
-              </TabsContent>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center mt-6 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
             </Tabs>
           </CardContent>
         </Card>
       </div>
     </AdminLayout>
-  );
-}
-
-interface CustomerTableProps {
-  customers: Customer[];
-  onToggleEmailVerification: (id: string, currentStatus: boolean) => void;
-  onToggleUserRole: (id: string, currentRole: string) => void;
-}
-
-function CustomerTable({ customers, onToggleEmailVerification, onToggleUserRole }: CustomerTableProps) {
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Customer</TableHead>
-            <TableHead>Email Status</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Orders</TableHead>
-            <TableHead>Total Spent</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead>Last Login</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {customers.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center py-8">
-                No customers found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            customers.map((customer) => (
-              <TableRow key={customer.id}>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{customer.firstName} {customer.lastName}</p>
-                    <p className="text-sm text-gray-500">{customer.email}</p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {customer.emailVerified ? (
-                      <>
-                        <UserCheck className="h-4 w-4 text-green-500" />
-                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                          Verified
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <UserX className="h-4 w-4 text-orange-500" />
-                        <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
-                          Unverified
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {customer.role === 'admin' ? (
-                      <>
-                        <Shield className="h-4 w-4 text-purple-500" />
-                        <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                          Admin
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldOff className="h-4 w-4 text-gray-500" />
-                        <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
-                          User
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{customer.totalOrders}</TableCell>
-                <TableCell>${customer.totalSpent.toFixed(2)}</TableCell>
-                <TableCell>
-                  {new Date(customer.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {customer.lastLoginAt 
-                    ? new Date(customer.lastLoginAt).toLocaleDateString()
-                    : 'Never'
-                  }
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" /> View Profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Mail className="mr-2 h-4 w-4" /> Send Email
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => onToggleEmailVerification(customer.id, customer.emailVerified)}
-                      >
-                        {customer.emailVerified ? (
-                          <>
-                            <UserX className="mr-2 h-4 w-4" /> Unverify Email
-                          </>
-                        ) : (
-                          <>
-                            <UserCheck className="mr-2 h-4 w-4" /> Verify Email
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onToggleUserRole(customer.id, customer.role)}
-                      >
-                        {customer.role === 'admin' ? (
-                          <>
-                            <ShieldOff className="mr-2 h-4 w-4" /> Remove Admin
-                          </>
-                        ) : (
-                          <>
-                            <Shield className="mr-2 h-4 w-4" /> Make Admin
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
   );
 }
