@@ -24,7 +24,9 @@ import {
   ChevronDown,
   Package,
   Star,
-  Tag
+  Tag,
+  Search,
+  Filter
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,53 +55,54 @@ interface ProductTableProps {
 export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState<string>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [filter, setFilter] = useState('');
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [searchFilter, setSearchFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   
   const { accessToken } = useSelector((state: RootState) => state.auth);
-
-  console.log(products, "products")
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
- const fetchProducts = async () => {
-  try {
-    setLoading(true);
-    const response = await productApi.getAllProducts();
-    console.log(response,"response")
-    
-    // Handle the API response structure: { status: string; data: { products: any[]; pagination?: {...} } }
-    let productsList = [];
-    if (response.data?.data?.products) {
-      productsList = response.data.data.products;
-    } else if (response.data && 'products' in response.data) {
-      productsList = (response.data as any).products;
-    } else if (Array.isArray(response.data)) {
-      productsList = response.data;
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await productApi.getAllProducts();
+      console.log('Products API response:', response);
+      
+      // Handle the API response structure
+      let productsList = [];
+      if (response.data?.data?.products) {
+        productsList = response.data.data.products;
+      } else if (response.data && 'products' in response.data) {
+        productsList = (response.data as any).products;
+      } else if (Array.isArray(response.data)) {
+        productsList = response.data;
+      }
+      
+      console.log('Processed products:', productsList);
+      setProducts(productsList);
+      
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch products',
+        variant: 'destructive',
+      });
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
-    
-    setProducts(productsList);
-    
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to fetch products',
-      variant: 'destructive',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleCreateProduct = async () => {
     try {
-      await fetchProducts(); // Refresh the list
+      await fetchProducts();
       toast({
         title: 'Success',
         description: 'Product created successfully',
@@ -111,7 +114,7 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
 
   const handleEditProduct = async () => {
     try {
-      await fetchProducts(); // Refresh the list
+      await fetchProducts();
       setEditingProduct(null);
       toast({
         title: 'Success',
@@ -133,7 +136,7 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
             throw new Error(response.error);
           }
         }
-        await fetchProducts(); // Refresh the list
+        await fetchProducts();
         toast({
           title: 'Success',
           description: 'Product deleted successfully',
@@ -149,13 +152,23 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
     }
   };
 
-  const sortedAndFilteredProducts = products
+  // Filter and sort products
+  const filteredAndSortedProducts = products
     .filter(product => {
+      // Search filter
+      const matchesSearch = !searchFilter || 
+        product.name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        product.material?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        product.category?.toLowerCase().includes(searchFilter.toLowerCase());
+      
+      // Size filter
       const matchesSize = sizeFilter === 'all' || product.size === sizeFilter;
-      const matchesSearch = product.name?.toLowerCase().includes(filter.toLowerCase()) ||
-                           product.description?.toLowerCase().includes(filter.toLowerCase()) ||
-                           product.material?.toLowerCase().includes(filter.toLowerCase());
-      return matchesSize && matchesSearch;
+      
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+      
+      return matchesSearch && matchesSize && matchesCategory;
     })
     .sort((a, b) => {
       let aValue = a[sortField];
@@ -163,12 +176,23 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
       
       const direction = sortDirection === 'asc' ? 1 : -1;
       
+      // Handle different data types
+      if (sortField === 'price' || sortField === 'comparePrice') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+        return (aValue - bValue) * direction;
+      }
+      
+      if (sortField === 'createdAt') {
+        aValue = new Date(aValue || 0).getTime();
+        bValue = new Date(bValue || 0).getTime();
+        return (aValue - bValue) * direction;
+      }
+      
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return aValue.localeCompare(bValue) * direction;
       }
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return (aValue - bValue) * direction;
-      }
+      
       return 0;
     });
 
@@ -181,21 +205,50 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
     }
   };
 
-  // Get unique sizes for filter
-  const uniqueSizes = Array.from(new Set(products.map(p => p.size))).filter(Boolean);
+  // Get unique values for filters
+  const uniqueSizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort();
+  const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | string) => {
+    const numPrice = Number(price) || 0;
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-    }).format(price);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(numPrice);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return null;
+    return (
+      <ChevronDown 
+        className={`ml-1 h-3 w-3 inline transition-transform ${
+          sortDirection === 'desc' ? 'rotate-180' : ''
+        }`} 
+      />
+    );
   };
 
   if (loading) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center">Loading products...</div>
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 animate-pulse text-muted-foreground" />
+              <span className="text-muted-foreground">Loading products...</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -203,164 +256,296 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
-          Products ({products.length})
+          Products
+          <Badge variant="secondary" className="ml-2">
+            {filteredAndSortedProducts.length}
+          </Badge>
         </CardTitle>
         <div className="flex gap-2">
           <ProductForm onSubmit={handleCreateProduct} />
         </div>
       </CardHeader>
+      
       <CardContent>
-        <div className="flex items-center gap-4 mb-4">
-          <Input
-            placeholder="Search products..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="max-w-sm"
-          />
-          <Select value={sizeFilter} onValueChange={setSizeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Size" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sizes</SelectItem>
-              {uniqueSizes.map(size => (
-                <SelectItem key={size} value={size}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search products by name, description, material, or category..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {uniqueCategories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sizeFilter} onValueChange={setSizeFilter}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sizes</SelectItem>
+                {uniqueSizes.map(size => (
+                  <SelectItem key={size} value={size}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(searchFilter || categoryFilter !== 'all' || sizeFilter !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchFilter('');
+                  setCategoryFilter('all');
+                  setSizeFilter('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </div>
 
+        {/* Table */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Image</TableHead>
-                <TableHead onClick={() => toggleSort('name')} className="cursor-pointer">
-                  Name {sortField === 'name' && <ChevronDown className={`ml-2 h-4 w-4 inline ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />}
+                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead 
+                  onClick={() => toggleSort('name')} 
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  Product {getSortIcon('name')}
                 </TableHead>
-                <TableHead onClick={() => toggleSort('size')} className="cursor-pointer">
-                  Size {sortField === 'size' && <ChevronDown className={`ml-2 h-4 w-4 inline ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />}
+                <TableHead 
+                  onClick={() => toggleSort('category')} 
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  Category {getSortIcon('category')}
                 </TableHead>
-                <TableHead onClick={() => toggleSort('material')} className="cursor-pointer">
-                  Material {sortField === 'material' && <ChevronDown className={`ml-2 h-4 w-4 inline ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />}
+                <TableHead 
+                  onClick={() => toggleSort('size')} 
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  Size {getSortIcon('size')}
                 </TableHead>
-                <TableHead onClick={() => toggleSort('price')} className="cursor-pointer">
-                  Price {sortField === 'price' && <ChevronDown className={`ml-2 h-4 w-4 inline ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />}
+                <TableHead 
+                  onClick={() => toggleSort('material')} 
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  Material {getSortIcon('material')}
                 </TableHead>
-                <TableHead>Flags</TableHead>
+                <TableHead 
+                  onClick={() => toggleSort('price')} 
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  Price {getSortIcon('price')}
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead 
+                  onClick={() => toggleSort('createdAt')} 
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  Created {getSortIcon('createdAt')}
+                </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedAndFilteredProducts.length === 0 ? (
+              {filteredAndSortedProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    <div className="flex flex-col items-center gap-2">
-                      <Package className="h-8 w-8 text-gray-400" />
-                      <p className="text-gray-500">No products found.</p>
-                      <p className="text-sm text-gray-400">Create your first product to get started.</p>
+                  <TableCell colSpan={9} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <Package className="h-12 w-12 text-muted-foreground/50" />
+                      <div>
+                        <p className="text-lg font-medium text-muted-foreground">
+                          {products.length === 0 ? 'No products yet' : 'No products match your filters'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {products.length === 0 
+                            ? 'Create your first product to get started.' 
+                            : 'Try adjusting your search or filter criteria.'
+                          }
+                        </p>
+                      </div>
+                      {products.length === 0 && (
+                        <ProductForm onSubmit={handleCreateProduct} />
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedAndFilteredProducts.map((product) => (
-                  <TableRow key={product.id || product._id}>
-                    <TableCell>
-                      {product.images?.[0]?.url ? (
-                        <Image
-                          src={product.images[0].url}
-                          alt={product.images[0].alt || product.name}
-                          width={50}
-                          height={50}
-                          className="rounded-md object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
-                          <Package className="h-6 w-6 text-gray-400" />
+                filteredAndSortedProducts.map((product) => {
+                  const productId = product.id || product._id;
+                  return (
+                    <TableRow key={productId} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted">
+                          {product.images?.[0]?.url ? (
+                            <Image
+                              src={product.images[0].url}
+                              alt={product.images[0].alt || product.name}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-medium line-clamp-1">{product.name}</p>
-                        <p className="text-sm text-gray-500 line-clamp-1">{product.description}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{product.size}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">{product.material}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-semibold">{formatPrice(product.price)}</p>
-                        {product.comparePrice && (
-                          <p className="text-sm text-gray-500 line-through">
-                            {formatPrice(product.comparePrice)}
+                      </TableCell>
+                      
+                      <TableCell className="max-w-[200px]">
+                        <div className="space-y-1">
+                          <p className="font-medium line-clamp-1" title={product.name}>
+                            {product.name || 'Untitled Product'}
                           </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {product.isNewArrival && (
-                          <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
-                            <Star className="w-3 h-3 mr-1" />
-                            New
+                          <p className="text-sm text-muted-foreground line-clamp-2" title={product.description}>
+                            {product.description || 'No description'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      
+                      <TableCell>
+                        {product.category ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {product.category}
                           </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not set</span>
                         )}
-                        {product.isSale && (
-                          <Badge variant="destructive" className="text-xs">
-                            <Tag className="w-3 h-3 mr-1" />
-                            Sale
-                          </Badge>
-                        )}
-                        {!product.isNewArrival && !product.isSale && (
-                          <span className="text-xs text-gray-400">No flags</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => window.open(`/shop/${product.slug}`, '_blank')}>
-                            <Eye className="mr-2 h-4 w-4" /> View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditingProduct(product)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteProduct(product.id || product._id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {product.size || 'N/A'}
+                        </Badge>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {product.material || 'Not specified'}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <div className="space-y-1">
+                          <p className="font-semibold">
+                            {formatPrice(product.price)}
+                          </p>
+                          {product.comparePrice && Number(product.comparePrice) > Number(product.price) && (
+                            <p className="text-sm text-muted-foreground line-through">
+                              {formatPrice(product.comparePrice)}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {product.isNewArrival && (
+                            <Badge variant="default" className="bg-green-100 text-green-800 text-xs border-green-200">
+                              <Star className="w-3 h-3 mr-1" />
+                              New
+                            </Badge>
+                          )}
+                          {product.isSale && (
+                            <Badge variant="destructive" className="text-xs">
+                              <Tag className="w-3 h-3 mr-1" />
+                              Sale
+                            </Badge>
+                          )}
+                          {!product.isNewArrival && !product.isSale && (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(product.createdAt)}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem 
+                              onClick={() => window.open(`/products/${productId}`, '_blank')}
+                            >
+                              <Eye className="mr-2 h-4 w-4" /> 
+                              View Product
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditingProduct(product)}>
+                              <Pencil className="mr-2 h-4 w-4" /> 
+                              Edit Product
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteProduct(productId)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> 
+                              Delete Product
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
 
+        {/* Results info */}
+        {products.length > 0 && (
+          <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
+            <div>
+              Showing {filteredAndSortedProducts.length} of {products.length} products
+            </div>
+            <div className="flex items-center gap-4">
+              <span>
+                Sort by {sortField} ({sortDirection === 'asc' ? 'ascending' : 'descending'})
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Edit Product Dialog */}
         {editingProduct && (
           <ProductForm 
-            key={editingProduct.id || editingProduct._id} 
+            key={`edit-${editingProduct.id || editingProduct._id}`}
             initialData={editingProduct} 
             onSubmit={handleEditProduct}
             isEditing={true}

@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, User, Package, Home, ShoppingCart, Settings } from 'lucide-react';
+import { ShoppingBag, User, Settings, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { Logo } from '@/components/Logo';
 import { CartItem } from '@/types/cart';
 import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { productApi } from "@/lib/api";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,17 +26,70 @@ import {
 } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
+interface Category {
+  name: string;
+  count: number;
+  slug: string;
+}
+
 export function Header() {
   const pathname = usePathname();
   const { cartItems } = useCart();
   const { user, isAuthenticated, logoutUser } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const itemCount = cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
 
-  const navItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/products', label: 'Products', icon: Package },
-  ];
+  // Fetch categories from API
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      console.log('=== FETCHING CATEGORIES FOR NAVBAR ===');
+      
+      const response = await productApi.getCategories();
+      console.log('Categories API response:', response);
+      
+      if (response.data?.data?.categories) {
+        const categoriesData = response.data.data.categories;
+        console.log('Categories data:', categoriesData);
+        setCategories(categoriesData.slice(0, 6)); // Limit to 6 categories
+      } else if (response.error) {
+        console.error('Error in categories API response:', response.error);
+        // Show default categories
+        setCategories([
+          { name: 'Saree', count: 0, slug: 'saree' },
+          { name: 'Kurti', count: 0, slug: 'kurti' },
+          { name: 'Suite', count: 0, slug: 'suite' },
+          { name: 'Night Dress', count: 0, slug: 'night-dress' },
+          { name: 'Skirt', count: 0, slug: 'skirt' },
+          { name: 'Top', count: 0, slug: 'top' },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fallback to default categories
+      setCategories([
+        { name: 'Saree', count: 0, slug: 'saree' },
+        { name: 'Kurti', count: 0, slug: 'kurti' },
+        { name: 'Suite', count: 0, slug: 'suite' },
+        { name: 'Night Dress', count: 0, slug: 'night-dress' },
+        { name: 'Skirt', count: 0, slug: 'skirt' },
+        { name: 'Top', count: 0, slug: 'top' },
+      ]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  // Check if current path matches a category route
+  const isActiveCategory = (slug: string) => {
+    return pathname === `/category/${slug}`;
+  };
 
   return (
     <TooltipProvider>
@@ -45,37 +100,115 @@ export function Header() {
             <Logo className="flex-shrink-0" />
           </div>
 
-          {/* Navigation with icons */}
-          <nav className="hidden md:flex items-center gap-2">
-            {navItems.map(({ href, label, icon: Icon }) => (
-              <Tooltip key={href}>
-                <TooltipTrigger asChild>
-                  <Link href={href}>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className={`relative transition-all duration-300 hover:scale-110 hover:bg-primary/10 group
-                        ${pathname === href 
-                          ? 'text-primary bg-primary/10 shadow-lg' 
-                          : 'text-muted-foreground hover:text-primary'
-                        }`}
-                    >
-                      <Icon className={`h-5 w-5 transition-all duration-300 group-hover:scale-110
-                        ${pathname === href ? 'animate-pulse' : ''}`} />
-                      
-                      {/* Active indicator */}
-                      {pathname === href && (
-                        <div className="absolute inset-0 rounded-md bg-primary/20 animate-pulse"></div>
-                      )}
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{label}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
+          {/* Category Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {loadingCategories ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading...</span>
+              </div>
+            ) : (
+              <>
+                {/* All Products Link */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/products">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className={`transition-all duration-300 hover:scale-105 hover:bg-primary/10 group px-3
+                          ${pathname === '/products' 
+                            ? 'text-primary bg-primary/10 shadow-lg' 
+                            : 'text-muted-foreground hover:text-primary'
+                          }`}
+                      >
+                        <span className={`transition-all duration-300 group-hover:scale-110 text-sm font-medium
+                          ${pathname === '/products' ? 'animate-pulse' : ''}`}>
+                          All Products
+                        </span>
+                        
+                        {/* Active indicator */}
+                        {pathname === '/products' && (
+                          <div className="absolute inset-0 rounded-md bg-primary/20 animate-pulse"></div>
+                        )}
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>View All Products</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Category Links */}
+                {categories.map((category) => (
+                  <Tooltip key={category.slug}>
+                    <TooltipTrigger asChild>
+                      <Link href={`/category/${category.slug}`}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className={`transition-all duration-300 hover:scale-105 hover:bg-primary/10 group px-3 relative
+                            ${isActiveCategory(category.slug)
+                              ? 'text-primary bg-primary/10 shadow-lg' 
+                              : 'text-muted-foreground hover:text-primary'
+                            }`}
+                        >
+                          <span className={`transition-all duration-300 group-hover:scale-110 text-sm font-medium
+                            ${isActiveCategory(category.slug) ? 'animate-pulse' : ''}`}>
+                            {category.name}
+                          </span>
+                          
+                          {/* Product count badge */}
+                          {category.count > 0 && (
+                            <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full group-hover:bg-primary/20 transition-colors">
+                              {category.count}
+                            </span>
+                          )}
+                          
+                          {/* Active indicator */}
+                          {isActiveCategory(category.slug) && (
+                            <div className="absolute inset-0 rounded-md bg-primary/20 animate-pulse"></div>
+                          )}
+                        </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{category.count > 0 ? `${category.count} ${category.name} products` : `${category.name} products`}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </>
+            )}
           </nav>
+
+          {/* Mobile Navigation Dropdown */}
+          <div className="lg:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Categories
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href="/products" className="w-full cursor-pointer">
+                    All Products
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {categories.map((category) => (
+                  <DropdownMenuItem key={category.slug} asChild>
+                    <Link href={`/category/${category.slug}`} className="w-full cursor-pointer flex justify-between">
+                      <span>{category.name}</span>
+                      {category.count > 0 && (
+                        <span className="text-xs text-muted-foreground">{category.count}</span>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
@@ -160,7 +293,7 @@ export function Header() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/admin" className="flex items-center gap-2">
-                          <Package className="h-4 w-4" />
+                          <Settings className="h-4 w-4" />
                           Admin Panel
                         </Link>
                       </DropdownMenuItem>
@@ -195,30 +328,6 @@ export function Header() {
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        <div className="md:hidden border-t bg-background/95">
-          <div className="container mx-auto px-4 py-2">
-            <nav className="flex items-center justify-center gap-2">
-              {navItems.map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href}>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className={`flex items-center gap-2 transition-all duration-300 hover:scale-105
-                      ${pathname === href 
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-muted-foreground hover:text-primary'
-                      }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="text-xs">{label}</span>
-                  </Button>
-                </Link>
-              ))}
-            </nav>
           </div>
         </div>
 

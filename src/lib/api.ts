@@ -90,9 +90,6 @@ export const api = {
     }),
 };
 
-
-// Add these new functions to your existing authApi object
-
 export const authApi = {
   // Existing functions
   login: async (credentials: { email: string; password: string }) => {
@@ -280,117 +277,129 @@ export const authApi = {
   logout: () => api.post<{ message: string }>('/auth/logout', {}),
 };
 
-// Product APIs matching your backend structure
+// UPDATED productApi with FIXED category endpoints
 export const productApi = {
-  // Get all products with optional query parameters
-  getAllProducts: (params?: Record<string, string>) => {
-    const queryString = params ? new URLSearchParams(params).toString() : '';
+  // Get all products with enhanced logging
+  getAllProducts: (params?: Record<string, string | number>) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const queryString = queryParams.toString();
+    console.log('🔍 API CALL:', `/products${queryString ? `?${queryString}` : ''}`);
+    
     return api.get<{ 
       status: string;
       data: { 
         products: any[]; 
-        pagination?: {
-          page: number;
-          limit: number;
-          total: number;
-          totalPages: number;
-          hasNext: boolean;
-          hasPrev: boolean;
-        };
+        pagination?: any;
       } 
     }>(`/products${queryString ? `?${queryString}` : ''}`);
   },
 
-  // Get single product by ID
-  getProduct: (id: string) =>
-    api.get<{ 
+  // FIXED: Get all categories - correct endpoint
+  getCategories: () => {
+    console.log('🔍 CATEGORIES API CALL:', '/products/categories');
+    return api.get<{
       status: string;
-      data: { 
-        product: any 
-      } 
-    }>(`/products/${id}`),
-
-  // Create new product
-  createProduct: (formData: FormData) =>
-    api.post<{ 
-      status: string;
-      message: string;
-      data: { 
-        product: any 
-      };
-    }>('/products', formData),
-
-  // Update existing product
-  updateProduct: (id: string, formData: FormData) =>
-    api.put<{ 
-      status: string;
-      message: string;
-      data: { 
-        product: any 
-      };
-    }>(`/products/${id}`, formData),
-
-  // Delete product
-  deleteProduct: (id: string) =>
-    api.delete<{ 
-      status: string;
-      message: string;
-    }>(`/products/${id}`),
-
-  // Search products with filters
-  searchProducts: (query: string, filters?: Record<string, string>) => {
-    const params = new URLSearchParams({ q: query, ...filters });
-    return api.get<{ 
-      status: string;
-      data: { 
-        products: any[]; 
-        pagination?: {
-          page: number;
-          limit: number;
-          total: number;
-          totalPages: number;
-          hasNext: boolean;
-          hasPrev: boolean;
+      data: {
+        categories: Array<{
+          name: string;
+          count: number;
+          slug: string;
+        }>;
+        metadata?: {
+          totalProducts: number;
+          productsWithoutCategory: number;
         };
-      } 
-    }>(`/products/search?${params.toString()}`);
+      };
+    }>('/products/categories');
   },
 
-  // Get new arrivals
+  // FIXED: Get products by category - correct endpoint structure
+  getProductsByCategory: (categoryId: string, params?: Record<string, string | number>) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const queryString = queryParams.toString();
+    const endpoint = `/categories/${categoryId}${queryString ? `?${queryString}` : ''}`;
+    console.log('🔍 CATEGORY API CALL:', endpoint);
+    
+    return api.get<{
+      status: string;
+      data: {
+        products: any[];
+        category: string;
+        pagination?: any;
+      };
+    }>(endpoint);
+  },
+
+  // Alternative method using products endpoint with category filter (fallback)
+  getProductsByCategoryFallback: (categoryName: string, params?: Record<string, string | number>) => {
+    const allParams = {
+      category: categoryName,
+      ...params
+    };
+    
+    const queryParams = new URLSearchParams();
+    Object.entries(allParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+    
+    const endpoint = `/products?${queryParams.toString()}`;
+    console.log('🔍 CATEGORY FALLBACK API CALL:', endpoint);
+    
+    return api.get<{
+      status: string;
+      data: {
+        products: any[];
+        pagination?: any;
+      };
+    }>(endpoint);
+  },
+
+  // Existing methods...
+  getProduct: (id: string) =>
+    api.get(`/products/${id}`),
+
+  createProduct: (formData: FormData) =>
+    api.post('/products', formData),
+
+  updateProduct: (id: string, formData: FormData) =>
+    api.put(`/products/${id}`, formData),
+
+  deleteProduct: (id: string) =>
+    api.delete(`/products/${id}`),
+
+  searchProducts: (query: string, filters?: Record<string, string>) => {
+    const params = new URLSearchParams({ q: query, ...filters });
+    return api.get(`/products/search?${params.toString()}`);
+  },
+
   getNewArrivals: (limit = 10) =>
-    api.get<{ 
-      status: string;
-      data: { 
-        products: any[] 
-      } 
-    }>(`/products/new-arrivals?limit=${limit}`),
+    api.get(`/products/new-arrivals?limit=${limit}`),
 
-  // Get sale products
   getSaleProducts: (limit = 10) =>
-    api.get<{ 
-      status: string;
-      data: { 
-        products: any[] 
-      } 
-    }>(`/products/sale?limit=${limit}`),
+    api.get(`/products/sale?limit=${limit}`),
 
-  // Get products by size
-  getProductsBySize: (size: string) =>
-    api.get<{ 
-      status: string;
-      data: { 
-        products: any[] 
-      } 
-    }>(`/products?size=${size}`),
-
-  // Get products by material
-  getProductsByMaterial: (material: string) =>
-    api.get<{ 
-      status: string;
-      data: { 
-        products: any[] 
-      } 
-    }>(`/products?material=${encodeURIComponent(material)}`),
+  getProductsBySize: (size: string) => 
+    productApi.getAllProducts({ size }),
 };
 
 // Updated Admin APIs with order approval functionality
