@@ -48,11 +48,6 @@ export function CustomerActionsDropdown({
     console.log('View profile for:', customer.id);
   };
 
-  const handleSendEmail = () => {
-    // Open email compose modal/page
-    console.log('Send email to:', customer.email);
-  };
-
   const handleViewOrders = () => {
     // Navigate to customer orders page
     console.log('View orders for:', customer.id);
@@ -74,11 +69,6 @@ export function CustomerActionsDropdown({
         <DropdownMenuItem onClick={handleViewOrders}>
           <History className="mr-2 h-4 w-4" /> 
           View Orders ({customer.totalOrders})
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={handleSendEmail}>
-          <Mail className="mr-2 h-4 w-4" /> 
-          Send Email
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

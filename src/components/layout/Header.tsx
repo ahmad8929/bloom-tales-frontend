@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, User, Package, Home, ShoppingCart, Settings } from 'lucide-react';
+import { ShoppingBag, User, Settings, ShoppingCart, Loader2, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { Logo } from '@/components/Logo';
 import { CartItem } from '@/types/cart';
 import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { productApi } from "@/lib/api";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,80 +26,171 @@ import {
 } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
+interface Category {
+  name: string;
+  count: number;
+  slug: string;
+}
+
 export function Header() {
   const pathname = usePathname();
   const { cartItems } = useCart();
   const { user, isAuthenticated, logoutUser } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const itemCount = cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
 
-  const navItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/products', label: 'Products', icon: Package },
-  ];
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fetch categories from API
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await productApi.getCategories();
+      
+      if (response.data?.data?.categories) {
+        const categoriesData = response.data.data.categories;
+        setCategories(categoriesData.slice(0, 6));
+      } else {
+        setCategories([
+          { name: 'Saree', count: 0, slug: 'saree' },
+          { name: 'Kurti', count: 0, slug: 'kurti' },
+          { name: 'Suite', count: 0, slug: 'suite' },
+          { name: 'Night Dress', count: 0, slug: 'night-dress' },
+          { name: 'Skirt', count: 0, slug: 'skirt' },
+          { name: 'Top', count: 0, slug: 'top' },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([
+        { name: 'Saree', count: 0, slug: 'saree' },
+        { name: 'Kurti', count: 0, slug: 'kurti' },
+        { name: 'Suite', count: 0, slug: 'suite' },
+        { name: 'Night Dress', count: 0, slug: 'night-dress' },
+        { name: 'Skirt', count: 0, slug: 'skirt' },
+        { name: 'Top', count: 0, slug: 'top' },
+      ]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const isActiveCategory = (slug: string) => {
+    return pathname === `/category/${slug}`;
+  };
+
+  const NavigationLink = ({ href, children, isActive = false, onClick }: any) => (
+    <Link href={href} onClick={onClick}>
+      <Button 
+        variant="ghost" 
+        size="sm"
+        className={`relative transition-all duration-200 hover:scale-105 hover:bg-primary/10 group px-3 ${
+          isActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary'
+        }`}
+      >
+        {children}
+        {isActive && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full"></div>
+        )}
+      </Button>
+    </Link>
+  );
 
   return (
     <TooltipProvider>
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 transition-all duration-300">
+      <header className={`border-b sticky top-0 z-50 transition-all duration-300 ${
+        scrolled 
+          ? 'bg-background/95 backdrop-blur-md shadow-lg' 
+          : 'bg-background/80 backdrop-blur-sm'
+      }`}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo with animation */}
+          {/* Logo */}
           <div className="transform transition-all duration-300 hover:scale-105">
             <Logo className="flex-shrink-0" />
           </div>
 
-          {/* Navigation with icons */}
-          <nav className="hidden md:flex items-center gap-2">
-            {navItems.map(({ href, label, icon: Icon }) => (
-              <Tooltip key={href}>
-                <TooltipTrigger asChild>
-                  <Link href={href}>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className={`relative transition-all duration-300 hover:scale-110 hover:bg-primary/10 group
-                        ${pathname === href 
-                          ? 'text-primary bg-primary/10 shadow-lg' 
-                          : 'text-muted-foreground hover:text-primary'
-                        }`}
-                    >
-                      <Icon className={`h-5 w-5 transition-all duration-300 group-hover:scale-110
-                        ${pathname === href ? 'animate-pulse' : ''}`} />
-                      
-                      {/* Active indicator */}
-                      {pathname === href && (
-                        <div className="absolute inset-0 rounded-md bg-primary/20 animate-pulse"></div>
-                      )}
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{label}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {loadingCategories ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading...</span>
+              </div>
+            ) : (
+              <>
+                <NavigationLink href="/products" isActive={pathname === '/products'}>
+                  All Products
+                </NavigationLink>
+                {categories.map((category) => (
+                  <Tooltip key={category.slug}>
+                    <TooltipTrigger asChild>
+                      <NavigationLink 
+                        href={`/category/${category.slug}`} 
+                        isActive={isActiveCategory(category.slug)}
+                      >
+                        <span className="text-sm font-medium">{category.name}</span>
+                        {/* {category.count > 0 && (
+                          <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                            {category.count}
+                          </span>
+                        )} */}
+                      </NavigationLink>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{category.count > 0 ? `${category.count} ${category.name} products` : `${category.name} products`}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </>
+            )}
           </nav>
+
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="relative"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
-            {/* Cart Icon with Animation */}
+            {/* Cart Icon */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link href="/cart">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="relative transition-all duration-300 hover:scale-110 hover:bg-primary/10 group"
+                    className="relative transition-all duration-200 hover:scale-110 hover:bg-primary/10"
                   >
-                    <ShoppingBag className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+                    <ShoppingBag className="h-5 w-5" />
                     {itemCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-primary text-primary-foreground rounded-full flex items-center justify-center animate-bounce font-medium shadow-lg">
-                        {itemCount > 99 ? '99+' : itemCount}
-                      </span>
-                    )}
-                    
-                    {/* Ripple effect for cart updates */}
-                    {itemCount > 0 && (
-                      <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary/30 rounded-full animate-ping"></div>
+                      <>
+                        <span className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-primary text-primary-foreground rounded-full flex items-center justify-center font-medium shadow-lg z-10">
+                          {itemCount > 99 ? '99+' : itemCount}
+                        </span>
+                        <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary/30 rounded-full animate-ping"></div>
+                      </>
                     )}
                   </Button>
                 </Link>
@@ -116,9 +209,9 @@ export function Header() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="transition-all duration-300 hover:scale-110 hover:bg-primary/10 group"
+                        className="transition-all duration-200 hover:scale-110 hover:bg-primary/10"
                       >
-                        <Avatar className="transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
+                        <Avatar className="transition-all duration-200">
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                             {user.firstName?.[0] ?? 'U'}
                           </AvatarFallback>
@@ -131,10 +224,7 @@ export function Header() {
                   </TooltipContent>
                 </Tooltip>
                 
-                <DropdownMenuContent 
-                  align="end" 
-                  className="w-56 animate-in slide-in-from-top-2 duration-200"
-                >
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="font-semibold">{user.firstName} {user.lastName}</div>
                     <div className="text-xs text-muted-foreground">{user.email}</div>
@@ -160,7 +250,7 @@ export function Header() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href="/admin" className="flex items-center gap-2">
-                          <Package className="h-4 w-4" />
+                          <Settings className="h-4 w-4" />
                           Admin Panel
                         </Link>
                       </DropdownMenuItem>
@@ -184,9 +274,9 @@ export function Header() {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className="transition-all duration-300 hover:scale-110 hover:bg-primary/10 group"
+                      className="transition-all duration-200 hover:scale-110 hover:bg-primary/10"
                     >
-                      <User className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+                      <User className="h-5 w-5" />
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -198,29 +288,33 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="md:hidden border-t bg-background/95">
-          <div className="container mx-auto px-4 py-2">
-            <nav className="flex items-center justify-center gap-2">
-              {navItems.map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href}>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className={`flex items-center gap-2 transition-all duration-300 hover:scale-105
-                      ${pathname === href 
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-muted-foreground hover:text-primary'
-                      }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="text-xs">{label}</span>
-                  </Button>
-                </Link>
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t bg-background/95 backdrop-blur-md">
+            <div className="container mx-auto px-4 py-4 space-y-2">
+              <NavigationLink 
+                href="/products" 
+                isActive={pathname === '/products'}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                All Products
+              </NavigationLink>
+              {categories.map((category) => (
+                <NavigationLink 
+                  key={category.slug}
+                  href={`/category/${category.slug}`} 
+                  isActive={isActiveCategory(category.slug)}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span>{category.name}</span>
+                  {category.count > 0 && (
+                    <span className="ml-1 text-xs text-muted-foreground">{category.count}</span>
+                  )}
+                </NavigationLink>
               ))}
-            </nav>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Animated border bottom */}
         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>

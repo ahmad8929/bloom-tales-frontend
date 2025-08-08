@@ -38,6 +38,7 @@ import { toast } from '@/hooks/use-toast';
 import { productApi } from '@/lib/api';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+const PRODUCT_CATEGORIES = ['Saree', 'Kurti', 'Suite', 'Night Dress', 'Skirt', 'Top'] as const;
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters'),
@@ -48,6 +49,9 @@ const formSchema = z.object({
     required_error: 'Please select a size',
   }),
   material: z.string().min(2, 'Material is required'),
+  category: z.enum(PRODUCT_CATEGORIES, {
+    required_error: 'Please select a category',
+  }),
   careInstructions: z.string().min(10, 'Care instructions are required'),
   isNewArrival: z.boolean().default(false),
   isSale: z.boolean().default(false),
@@ -77,6 +81,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       comparePrice: undefined,
       size: undefined,
       material: '',
+      category: undefined,
       careInstructions: '',
       isNewArrival: false,
       isSale: false,
@@ -100,6 +105,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         comparePrice: initialData.comparePrice || undefined,
         size: (initialData.size as typeof SIZES[number]) || undefined,
         material: initialData.material || '',
+        category: (initialData.category as typeof PRODUCT_CATEGORIES[number]) || undefined,
         careInstructions: Array.isArray(initialData.careInstructions) 
           ? initialData.careInstructions.join('\n') 
           : initialData.careInstructions || '',
@@ -397,30 +403,57 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="size"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Size</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a size" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {SIZES.map((size) => (
-                        <SelectItem key={size} value={size}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="size"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Size</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a size" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SIZES.map((size) => (
+                          <SelectItem key={size} value={size}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category <span className="text-red-500">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PRODUCT_CATEGORIES.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
