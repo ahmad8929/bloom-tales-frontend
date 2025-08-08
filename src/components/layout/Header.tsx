@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, User, Settings, ShoppingCart, Loader2 } from 'lucide-react';
+import { ShoppingBag, User, Settings, ShoppingCart, Loader2, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { Logo } from '@/components/Logo';
@@ -38,8 +38,19 @@ export function Header() {
   const { user, isAuthenticated, logoutUser } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const itemCount = cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch categories from API
   useEffect(() => {
@@ -49,18 +60,12 @@ export function Header() {
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true);
-      console.log('=== FETCHING CATEGORIES FOR NAVBAR ===');
-      
       const response = await productApi.getCategories();
-      console.log('Categories API response:', response);
       
       if (response.data?.data?.categories) {
         const categoriesData = response.data.data.categories;
-        console.log('Categories data:', categoriesData);
-        setCategories(categoriesData.slice(0, 6)); // Limit to 6 categories
-      } else if (response.error) {
-        console.error('Error in categories API response:', response.error);
-        // Show default categories
+        setCategories(categoriesData.slice(0, 6));
+      } else {
         setCategories([
           { name: 'Saree', count: 0, slug: 'saree' },
           { name: 'Kurti', count: 0, slug: 'kurti' },
@@ -72,7 +77,6 @@ export function Header() {
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Fallback to default categories
       setCategories([
         { name: 'Saree', count: 0, slug: 'saree' },
         { name: 'Kurti', count: 0, slug: 'kurti' },
@@ -86,21 +90,41 @@ export function Header() {
     }
   };
 
-  // Check if current path matches a category route
   const isActiveCategory = (slug: string) => {
     return pathname === `/category/${slug}`;
   };
 
+  const NavigationLink = ({ href, children, isActive = false, onClick }: any) => (
+    <Link href={href} onClick={onClick}>
+      <Button 
+        variant="ghost" 
+        size="sm"
+        className={`relative transition-all duration-200 hover:scale-105 hover:bg-primary/10 group px-3 ${
+          isActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary'
+        }`}
+      >
+        {children}
+        {isActive && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full"></div>
+        )}
+      </Button>
+    </Link>
+  );
+
   return (
     <TooltipProvider>
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 transition-all duration-300">
+      <header className={`border-b sticky top-0 z-50 transition-all duration-300 ${
+        scrolled 
+          ? 'bg-background/95 backdrop-blur-md shadow-lg' 
+          : 'bg-background/80 backdrop-blur-sm'
+      }`}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo with animation */}
+          {/* Logo */}
           <div className="transform transition-all duration-300 hover:scale-105">
             <Logo className="flex-shrink-0" />
           </div>
 
-          {/* Category Navigation */}
+          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
             {loadingCategories ? (
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -109,68 +133,23 @@ export function Header() {
               </div>
             ) : (
               <>
-                {/* All Products Link */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/products">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={`transition-all duration-300 hover:scale-105 hover:bg-primary/10 group px-3
-                          ${pathname === '/products' 
-                            ? 'text-primary bg-primary/10 shadow-lg' 
-                            : 'text-muted-foreground hover:text-primary'
-                          }`}
-                      >
-                        <span className={`transition-all duration-300 group-hover:scale-110 text-sm font-medium
-                          ${pathname === '/products' ? 'animate-pulse' : ''}`}>
-                          All Products
-                        </span>
-                        
-                        {/* Active indicator */}
-                        {pathname === '/products' && (
-                          <div className="absolute inset-0 rounded-md bg-primary/20 animate-pulse"></div>
-                        )}
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View All Products</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Category Links */}
+                <NavigationLink href="/products" isActive={pathname === '/products'}>
+                  All Products
+                </NavigationLink>
                 {categories.map((category) => (
                   <Tooltip key={category.slug}>
                     <TooltipTrigger asChild>
-                      <Link href={`/category/${category.slug}`}>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className={`transition-all duration-300 hover:scale-105 hover:bg-primary/10 group px-3 relative
-                            ${isActiveCategory(category.slug)
-                              ? 'text-primary bg-primary/10 shadow-lg' 
-                              : 'text-muted-foreground hover:text-primary'
-                            }`}
-                        >
-                          <span className={`transition-all duration-300 group-hover:scale-110 text-sm font-medium
-                            ${isActiveCategory(category.slug) ? 'animate-pulse' : ''}`}>
-                            {category.name}
+                      <NavigationLink 
+                        href={`/category/${category.slug}`} 
+                        isActive={isActiveCategory(category.slug)}
+                      >
+                        <span className="text-sm font-medium">{category.name}</span>
+                        {/* {category.count > 0 && (
+                          <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                            {category.count}
                           </span>
-                          
-                          {/* Product count badge */}
-                          {category.count > 0 && (
-                            <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full group-hover:bg-primary/20 transition-colors">
-                              {category.count}
-                            </span>
-                          )}
-                          
-                          {/* Active indicator */}
-                          {isActiveCategory(category.slug) && (
-                            <div className="absolute inset-0 rounded-md bg-primary/20 animate-pulse"></div>
-                          )}
-                        </Button>
-                      </Link>
+                        )} */}
+                      </NavigationLink>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{category.count > 0 ? `${category.count} ${category.name} products` : `${category.name} products`}</p>
@@ -181,56 +160,37 @@ export function Header() {
             )}
           </nav>
 
-          {/* Mobile Navigation Dropdown */}
+          {/* Mobile Menu Button */}
           <div className="lg:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Categories
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link href="/products" className="w-full cursor-pointer">
-                    All Products
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {categories.map((category) => (
-                  <DropdownMenuItem key={category.slug} asChild>
-                    <Link href={`/category/${category.slug}`} className="w-full cursor-pointer flex justify-between">
-                      <span>{category.name}</span>
-                      {category.count > 0 && (
-                        <span className="text-xs text-muted-foreground">{category.count}</span>
-                      )}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="relative"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
-            {/* Cart Icon with Animation */}
+            {/* Cart Icon */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link href="/cart">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="relative transition-all duration-300 hover:scale-110 hover:bg-primary/10 group"
+                    className="relative transition-all duration-200 hover:scale-110 hover:bg-primary/10"
                   >
-                    <ShoppingBag className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+                    <ShoppingBag className="h-5 w-5" />
                     {itemCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-primary text-primary-foreground rounded-full flex items-center justify-center animate-bounce font-medium shadow-lg">
-                        {itemCount > 99 ? '99+' : itemCount}
-                      </span>
-                    )}
-                    
-                    {/* Ripple effect for cart updates */}
-                    {itemCount > 0 && (
-                      <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary/30 rounded-full animate-ping"></div>
+                      <>
+                        <span className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-primary text-primary-foreground rounded-full flex items-center justify-center font-medium shadow-lg z-10">
+                          {itemCount > 99 ? '99+' : itemCount}
+                        </span>
+                        <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary/30 rounded-full animate-ping"></div>
+                      </>
                     )}
                   </Button>
                 </Link>
@@ -249,9 +209,9 @@ export function Header() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="transition-all duration-300 hover:scale-110 hover:bg-primary/10 group"
+                        className="transition-all duration-200 hover:scale-110 hover:bg-primary/10"
                       >
-                        <Avatar className="transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
+                        <Avatar className="transition-all duration-200">
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                             {user.firstName?.[0] ?? 'U'}
                           </AvatarFallback>
@@ -264,10 +224,7 @@ export function Header() {
                   </TooltipContent>
                 </Tooltip>
                 
-                <DropdownMenuContent 
-                  align="end" 
-                  className="w-56 animate-in slide-in-from-top-2 duration-200"
-                >
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="font-semibold">{user.firstName} {user.lastName}</div>
                     <div className="text-xs text-muted-foreground">{user.email}</div>
@@ -317,9 +274,9 @@ export function Header() {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className="transition-all duration-300 hover:scale-110 hover:bg-primary/10 group"
+                      className="transition-all duration-200 hover:scale-110 hover:bg-primary/10"
                     >
-                      <User className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+                      <User className="h-5 w-5" />
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -330,6 +287,34 @@ export function Header() {
             )}
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t bg-background/95 backdrop-blur-md">
+            <div className="container mx-auto px-4 py-4 space-y-2">
+              <NavigationLink 
+                href="/products" 
+                isActive={pathname === '/products'}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                All Products
+              </NavigationLink>
+              {categories.map((category) => (
+                <NavigationLink 
+                  key={category.slug}
+                  href={`/category/${category.slug}`} 
+                  isActive={isActiveCategory(category.slug)}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span>{category.name}</span>
+                  {category.count > 0 && (
+                    <span className="ml-1 text-xs text-muted-foreground">{category.count}</span>
+                  )}
+                </NavigationLink>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Animated border bottom */}
         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>

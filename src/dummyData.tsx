@@ -1,5 +1,3 @@
-// src/store/datahome.tsx
-
 export interface HeroSlide {
   id: number;
   image: string;
@@ -25,6 +23,20 @@ export interface Category {
   slug: string;
   image: string;
   description: string;
+  itemCount?: number;
+}
+
+export interface Feature {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export interface BannerOffer {
+  id: number;
+  text: string;
+  emoji: string;
 }
 
 // Hero Slides Data
@@ -80,7 +92,7 @@ export const testimonials: Testimonial[] = [
     rating: 5,
     review: "The sarees from Bloomtales are absolutely stunning! The fabric quality is exceptional and the intricate embroidery work is breathtaking. I wore one to my cousin's wedding and received so many compliments.",
     purchase: "Silk Banarasi Saree",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b601?w=100&h=100&fit=crop&crop=face"
+    avatar: "https://images.unsplash.com/photo-1488716820095-cbe80883c496?w=100&h=100&fit=crop&crop=face"
   },
   {
     id: 2,
@@ -126,5 +138,119 @@ export const testimonials: Testimonial[] = [
     review: "I was skeptical about online shopping for clothes, but Bloomtales exceeded my expectations. The return policy is genuine and the quality matches the photos perfectly.",
     purchase: "Handloom Cotton Saree",
     avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=100&h=100&fit=crop&crop=face"
+  }
+];
+
+// Categories Data
+export const categories: Category[] = [
+  {
+    id: 1,
+    name: "Saree",
+    slug: "saree",
+    image: "/shopByCategory/Saree.jpeg",
+    description: "Traditional and contemporary sarees for every occasion",
+    itemCount: 45
+  },
+  {
+    id: 2,
+    name: "Kurti",
+    slug: "kurti",
+    image: "/shopByCategory/Kurti.jpeg",
+    description: "Stylish kurtis perfect for daily wear and special events",
+    itemCount: 38
+  },
+  {
+    id: 3,
+    name: "Suite",
+    slug: "suite",
+    image: "/shopByCategory/Suite.jpeg",
+    description: "Elegant suits and palazzo sets",
+    itemCount: 22
+  },
+  {
+    id: 4,
+    name: "Night Dress",
+    slug: "night-dress",
+    image: "/shopByCategory/NightDress.jpeg",
+    description: "Comfortable nightwear and loungewear",
+    itemCount: 15
+  },
+  {
+    id: 5,
+    name: "Skirt",
+    slug: "skirt",
+    image: "/shopByCategory/Skirt.jpeg",
+    description: "Trendy skirts for modern fashionistas",
+    itemCount: 18
+  },
+  {
+    id: 6,
+    name: "Top",
+    slug: "top",
+    image: "/shopByCategory/Top.jpeg",
+    description: "Casual and formal tops for every wardrobe",
+    itemCount: 32
+  }
+];
+
+// Features Data
+export const features: Feature[] = [
+  {
+    id: 1,
+    title: "Free Delivery",
+    description: "Free shipping on orders above ₹999",
+    icon: "truck"
+  },
+  {
+    id: 2,
+    title: "Secure Payment",
+    description: "100% secure payment gateway",
+    icon: "shield"
+  },
+  {
+    id: 3,
+    title: "Quality Assured",
+    description: "Premium materials and craftsmanship",
+    icon: "heart"
+  },
+  {
+    id: 4,
+    title: "Gift Wrapping",
+    description: "Beautiful packaging for special occasions",
+    icon: "gift"
+  }
+];
+
+// Banner Offers
+export const bannerOffers: BannerOffer[] = [
+  {
+    id: 1,
+    emoji: "🎉",
+    text: "Get 30% OFF on your first order! Use code: WELCOME30"
+  },
+  {
+    id: 2,
+    emoji: "🚚",
+    text: "Free shipping on all orders above ₹999"
+  },
+  {
+    id: 3,
+    emoji: "⭐",
+    text: "New arrivals every week - Stay tuned!"
+  },
+  {
+    id: 4,
+    emoji: "💝",
+    text: "Special gift wrapping available for all orders"
+  },
+  {
+    id: 5,
+    emoji: "🔥",
+    text: "Flash Sale: Up to 50% off on selected items!"
+  },
+  {
+    id: 6,
+    emoji: "🌟",
+    text: "Join our newsletter for exclusive deals and updates"
   }
 ];
