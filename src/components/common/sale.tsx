@@ -23,21 +23,13 @@ interface Product {
   slug: string;
 }
 
-interface ApiResponse {
-  data?: {
-    data?: {
-      products?: Product[];
-    };
-  };
-  error?: string;
-}
-
 interface SaleProps {
   limit?: number;
   title?: string;
+  showViewAll?: boolean; // Added this prop
 }
 
-export function Sale({ limit = 8, title = "🔥 Limited Time Sale!" }: SaleProps) {
+export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll = true }: SaleProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -62,9 +54,37 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!" }: SaleProps
   const fetchSaleProducts = async () => {
     try {
       setLoading(true);
-      const response: ApiResponse = await productApi.getSaleProducts(limit);
-      if (response.error) throw new Error(response.error);
-      setProducts(response.data?.data?.products || []);
+      
+      console.log('Fetching sale products...');
+      const response = await productApi.getSaleProducts(limit);
+      console.log('Sale products API response:', response);
+      
+      // Handle different response structures (same pattern as products/customers page)
+      let productsList: Product[] = [];
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Check for nested data structure
+      if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+        const nestedData = (response.data as any).data;
+        if (nestedData && typeof nestedData === 'object' && 'products' in nestedData) {
+          productsList = nestedData.products || [];
+        }
+      } 
+      // Check for direct products array in response.data
+      else if (response.data && Array.isArray((response.data as any))) {
+        productsList = response.data as any;
+      }
+      // Check if products are directly in response.data
+      else if (response.data && typeof response.data === 'object' && 'products' in (response.data as any)) {
+        productsList = (response.data as any).products || [];
+      }
+      
+      console.log('Processed sale products:', productsList);
+      setProducts(productsList);
+      
     } catch (error: any) {
       console.error('Error fetching sale products:', error);
       toast({
@@ -213,13 +233,16 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!" }: SaleProps
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Don't miss out on these incredible deals! Limited time offers on selected items.
           </p>
-          <div className="absolute top-0 right-0">
-            <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-              <Link href="/products?isSale=true" className="flex items-center gap-2">
-                View All Sale <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </div>
+          {/* Conditionally render View All button based on showViewAll prop */}
+          {showViewAll && (
+            <div className="absolute top-0 right-0">
+              <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                <Link href="/products?isSale=true" className="flex items-center gap-2">
+                  View All Sale <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="relative">

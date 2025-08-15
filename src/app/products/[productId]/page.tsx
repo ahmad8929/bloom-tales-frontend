@@ -52,48 +52,55 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   const fetchProduct = async (id: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('Fetching product with ID:', id);
-      const response = await productApi.getProduct(id);
-      console.log('Product detail API response:', response);
-      
-      if (response.error) {
-        console.error('API Error:', response.error);
-        setError(response.error);
-        return;
-      }
-// Handle the API response structure
-let productData = null;
-if (response.data?.data?.product) {
-  productData = response.data.data.product;
-} else if (response.data && 'product' in response.data) {
-  productData = (response.data as any).product;
-} else {
-  productData = response.data;
-}
-
-// Use the correct API response structure
-// const productData = response.data?.data?.product || response.data?.product;
-      
-      console.log('Parsed product:', productData);
-      
-      if (!productData) {
-        setError('Product not found');
-        return;
-      }
-      
-      setProduct(productData);
-      setSelectedSize(productData.size); // Set default size
-    } catch (error: any) {
-      console.error('Error fetching product:', error);
-      setError(error.message || 'Failed to load product');
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    setError(null);
+    
+    console.log('Fetching product with ID:', id);
+    const response = await productApi.getProduct(id);
+    console.log('Product detail API response:', response);
+    
+    if (response.error) {
+      console.error('API Error:', response.error);
+      setError(response.error);
+      return;
     }
-  };
+
+    // Handle the API response structure with safe type checking
+    let productData = null;
+    
+    // Check for nested data structure: { data: { data: { product: {...} } } }
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      const nestedData = (response.data as any).data;
+      if (nestedData && typeof nestedData === 'object' && 'product' in nestedData) {
+        productData = nestedData.product;
+      }
+    }
+    // Check for direct product in response.data: { data: { product: {...} } }
+    else if (response.data && typeof response.data === 'object' && 'product' in (response.data as any)) {
+      productData = (response.data as any).product;
+    }
+    // Check if product data is directly in response.data
+    else if (response.data && typeof response.data === 'object') {
+      productData = response.data;
+    }
+    
+    console.log('Parsed product:', productData);
+    
+    if (!productData) {
+      setError('Product not found');
+      return;
+    }
+    
+    setProduct(productData);
+    setSelectedSize(productData.size); // Set default size
+  } catch (error: any) {
+    console.error('Error fetching product:', error);
+    setError(error.message || 'Failed to load product');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleQuantityChange = (change: number) => {
     setQuantity(prev => Math.max(1, prev + change));

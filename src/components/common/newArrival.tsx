@@ -64,13 +64,37 @@ export function NewArrival({ limit = 8, showViewAll = true }: NewArrivalProps) {
   const fetchNewArrivals = async () => {
     try {
       setLoading(true);
+      
+      console.log('Fetching new arrivals...');
       const response = await productApi.getNewArrivals(limit);
+      console.log('New arrivals API response:', response);
+      
+      // Handle different response structures (same pattern as Sale component)
+      let productsList: Product[] = [];
       
       if (response.error) {
         throw new Error(response.error);
       }
-      const productsList = response.data?.data?.products || [];
+      
+      // Check for nested data structure
+      if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+        const nestedData = (response.data as any).data;
+        if (nestedData && typeof nestedData === 'object' && 'products' in nestedData) {
+          productsList = nestedData.products || [];
+        }
+      } 
+      // Check for direct products array in response.data
+      else if (response.data && Array.isArray((response.data as any))) {
+        productsList = response.data as any;
+      }
+      // Check if products are directly in response.data
+      else if (response.data && typeof response.data === 'object' && 'products' in (response.data as any)) {
+        productsList = (response.data as any).products || [];
+      }
+      
+      console.log('Processed new arrivals:', productsList);
       setProducts(productsList);
+      
     } catch (error: any) {
       console.error('Error fetching new arrivals:', error);
       toast({
