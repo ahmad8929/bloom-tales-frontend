@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Users,
   LogOut,
+  Webcam,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -28,6 +29,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { icon: Package, label: 'Products', href: '/admin/products' },
     { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
     { icon: Users, label: 'Customers', href: '/admin/customers' },
+    { icon: Webcam, label: 'Go to Website', href: '/' },
   ];
 
   return (

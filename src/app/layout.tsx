@@ -3,9 +3,8 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/components/Providers';
 import { AuthInitializer } from '@/components/AuthInitializer';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Toaster } from '@/components/ui/toaster';
+import { ConditionalLayout } from '@/components/ConditionalLayout';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -63,13 +62,9 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
           <AuthInitializer />
-          <div className="flex flex-col min-h-screen bg-background">
-            <Header />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
           <Toaster />
         </Providers>
       </body>
