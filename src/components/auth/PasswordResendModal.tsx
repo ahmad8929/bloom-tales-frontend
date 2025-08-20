@@ -314,6 +314,7 @@ export function ResetPasswordModal({
                 </Button>
                 <Button
                   type="submit"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-shadow duration-300 w-full sm:w-auto"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -334,7 +335,8 @@ export function ResetPasswordModal({
         {currentStep === 'otp' && (
           <Form {...otpForm}>
             <form onSubmit={otpForm.handleSubmit(handleVerifyOTP)} className="space-y-4">
-              <Alert className="border-blue-200 bg-blue-50">
+              <Alert className="border-blue-200 bg-blue-50 rounded-lg">
+
                 <Mail className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
                   <div className="space-y-1">

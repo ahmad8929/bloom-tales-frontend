@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -38,10 +38,10 @@ interface ResendVerificationModalProps {
   defaultEmail?: string;
 }
 
-export function ResendVerificationModal({ 
-  open, 
-  onOpenChange, 
-  defaultEmail = '' 
+export function ResendVerificationModal({
+  open,
+  onOpenChange,
+  defaultEmail = '',
 }: ResendVerificationModalProps) {
   const [isResending, setIsResending] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -53,8 +53,7 @@ export function ResendVerificationModal({
     },
   });
 
-  // Update form when defaultEmail changes
-  React.useEffect(() => {
+  useEffect(() => {
     form.setValue('email', defaultEmail);
   }, [defaultEmail, form]);
 
@@ -62,10 +61,10 @@ export function ResendVerificationModal({
     setIsResending(true);
     try {
       const response = await authApi.resendVerification(data.email);
-      
+
       if (response.data?.status === 'success') {
         setVerificationSent(true);
-        
+
         toast({
           title: 'Verification email sent!',
           description: 'Please check your inbox and click the verification link.',
@@ -75,17 +74,10 @@ export function ResendVerificationModal({
       }
     } catch (err: any) {
       console.error('Resend verification error:', err);
-      
-      let errorMessage = 'Failed to send verification email';
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
+
       toast({
         title: 'Error',
-        description: errorMessage,
+        description: err.response?.data?.message || err.message || 'Failed to send verification email',
         variant: 'destructive',
       });
     } finally {
@@ -101,20 +93,20 @@ export function ResendVerificationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl shadow-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
+          <DialogTitle className="flex items-center space-x-2 text-xl font-semibold">
             <Mail className="h-5 w-5 text-primary" />
             <span>Resend Verification Email</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-muted-foreground">
             Enter your email address to receive a new verification link.
           </DialogDescription>
         </DialogHeader>
 
         {!verificationSent ? (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleResendVerification)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleResendVerification)} className="space-y-4 mt-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -134,10 +126,11 @@ export function ResendVerificationModal({
                 )}
               />
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 flex flex-col sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
+                  className="w-full sm:w-auto"
                   onClick={handleCloseModal}
                   disabled={isResending}
                 >
@@ -145,6 +138,7 @@ export function ResendVerificationModal({
                 </Button>
                 <Button
                   type="submit"
+                  className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-shadow duration-300"
                   disabled={isResending}
                 >
                   {isResending ? (
@@ -169,9 +163,13 @@ export function ResendVerificationModal({
               Please check your inbox and click the verification link to activate your account.
             </p>
             <DialogFooter>
-              <Button onClick={handleCloseModal} className="w-full">
-                Close
+
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-shadow duration-300"
+                  onClick={handleCloseModal}
+>
+                    Close
               </Button>
+
             </DialogFooter>
           </div>
         )}
