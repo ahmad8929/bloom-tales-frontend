@@ -1,0 +1,143 @@
+import Link from 'next/link';
+import { User, Settings, ShoppingCart, Crown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+interface User {
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  role?: string;
+}
+
+interface UserMenuProps {
+  user: User | null;
+  isAuthenticated: boolean;
+  logoutUser: () => void;
+}
+
+export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
+  if (!isAuthenticated || !user) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link href="/login">
+            <Button 
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105 border-none font-medium px-4 sm:px-6 text-sm"
+            >
+              <User className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Login</span>
+            </Button>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
+          <p className="font-medium">Join Bloomtales Family</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="group bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200/50 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-purple-200/50 w-10 h-10 sm:w-11 sm:h-11"
+            >
+              <Avatar className="transition-all duration-300 group-hover:scale-110 w-6 h-6 sm:w-8 sm:h-8">
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-xs sm:text-sm">
+                  {user.firstName?.[0] ?? 'U'}
+                </AvatarFallback>
+              </Avatar>
+              {user.role === 'admin' && (
+                <Crown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-500 absolute -top-1 -right-1 animate-pulse" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
+          <p className="font-medium">Welcome, {user.firstName}!</p>
+        </TooltipContent>
+      </Tooltip>
+      
+      <DropdownMenuContent 
+        align="end" 
+        className="w-56 sm:w-64 bg-white/95 backdrop-blur-lg border border-purple-100 shadow-2xl shadow-purple-500/20"
+      >
+        <DropdownMenuLabel className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-8 h-8">
+              <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold">
+                {user.firstName?.[0] ?? 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-gray-800 truncate">
+                {user.firstName} {user.lastName}
+              </div>
+              <div className="text-xs text-gray-600 truncate">{user.email}</div>
+              {user.role === 'admin' && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  <span className="text-xs text-yellow-600 font-medium">Administrator</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem asChild className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200">
+          <Link href="/orders" className="flex items-center gap-3 px-3 py-2">
+            <ShoppingCart className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <span className="font-medium">My Orders</span>
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem asChild className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200">
+          <Link href="/profile" className="flex items-center gap-3 px-3 py-2">
+            <Settings className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <span className="font-medium">Profile Settings</span>
+          </Link>
+        </DropdownMenuItem>
+
+        {user.role === 'admin' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-all duration-200">
+              <Link href="/admin" className="flex items-center gap-3 px-3 py-2">
+                <Crown className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                <span className="font-medium text-yellow-800">Admin Panel</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+        
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={logoutUser} 
+          className="text-red-600 cursor-pointer hover:text-red-700 hover:bg-red-50 transition-all duration-200"
+        >
+          <User className="h-4 w-4 mr-3 flex-shrink-0" />
+          <span className="font-medium">Logout</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
