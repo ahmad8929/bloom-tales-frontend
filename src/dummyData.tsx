@@ -22,8 +22,6 @@ export interface Category {
   name: string;
   slug: string;
   image: string;
-  description: string;
-  itemCount?: number;
 }
 
 export interface Feature {
@@ -147,49 +145,37 @@ export const categories: Category[] = [
     id: 1,
     name: "Saree",
     slug: "saree",
-    image: "/shopByCategory/Saree.jpeg",
-    description: "Traditional and contemporary sarees for every occasion",
-    itemCount: 45
+    image: "/shopByCategory/Saree.jpeg"
   },
   {
     id: 2,
     name: "Kurti",
     slug: "kurti",
-    image: "/shopByCategory/Kurti.jpeg",
-    description: "Stylish kurtis perfect for daily wear and special events",
-    itemCount: 38
+    image: "/shopByCategory/Kurti.jpeg"
   },
   {
     id: 3,
     name: "Suite",
     slug: "suite",
-    image: "/shopByCategory/Suite.jpeg",
-    description: "Elegant suits and palazzo sets",
-    itemCount: 22
+    image: "/shopByCategory/Suite.jpeg"
   },
   {
     id: 4,
     name: "Night Dress",
     slug: "night-dress",
-    image: "/shopByCategory/NightDress.jpeg",
-    description: "Comfortable nightwear and loungewear",
-    itemCount: 15
+    image: "/shopByCategory/NightDress.jpeg"
   },
   {
     id: 5,
     name: "Skirt",
     slug: "skirt",
-    image: "/shopByCategory/Skirt.jpeg",
-    description: "Trendy skirts for modern fashionistas",
-    itemCount: 18
+    image: "/shopByCategory/Skirt.jpeg"
   },
   {
     id: 6,
     name: "Top",
     slug: "top",
-    image: "/shopByCategory/Top.jpeg",
-    description: "Casual and formal tops for every wardrobe",
-    itemCount: 32
+    image: "/shopByCategory/Top.jpeg"
   }
 ];
 
