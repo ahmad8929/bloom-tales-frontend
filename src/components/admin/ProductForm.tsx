@@ -38,7 +38,8 @@ import { toast } from '@/hooks/use-toast';
 import { productApi } from '@/lib/api';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
-const PRODUCT_CATEGORIES = ['Saree', 'Kurti', 'Suite', 'Night Dress', 'Skirt', 'Top'] as const;
+// const PRODUCT_CATEGORIES = ['Saree', 'Kurti', 'Suite', 'Night Dress', 'Skirt', 'Top'] as const;
+const PRODUCT_CATEGORIES = ['Cordset', 'Anarkali', 'Suite', 'Kurti', 'Saree', 'Lehenga', 'Western Dress'] as const;
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters'),

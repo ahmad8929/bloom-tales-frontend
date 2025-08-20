@@ -27,25 +27,34 @@ interface SaleProps {
   limit?: number;
   title?: string;
   showViewAll?: boolean;
+  autoPlay?: boolean;
+  autoPlayInterval?: number;
 }
 
-export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll = true }: SaleProps) {
+export function Sale({ 
+  limit = 8, 
+  title = "Limited Time Sale", 
+  showViewAll = true,
+  autoPlay = true,
+  autoPlayInterval = 4000
+}: SaleProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-
-  // refs
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const autoScrollRef = useRef<NodeJS.Timeout>();
-
-  // Responsive visible cards
+  const [currentIndex, setCurrentIndex] = useState(1); // Start from first real slide
   const [visibleCards, setVisibleCards] = useState(4);
-  
-  const autoScrollDelay = 4000; // ms
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+
+  // Clone products for infinite loop: [last, ...real, first]
+  const slides = products.length > 0 ? [
+    products[products.length - 1],
+    ...products,
+    products[0]
+  ] : [];
 
   useEffect(() => {
+    setHasMounted(true);
     fetchSaleProducts();
   }, [limit]);
 
@@ -66,29 +75,38 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
 
   // Auto-scroll functionality
   useEffect(() => {
-    if (products.length > visibleCards && isAutoScrolling) {
-      autoScrollRef.current = setInterval(() => {
-        setCurrentIndex(prev => {
-          const maxIndex = Math.max(0, products.length - visibleCards);
-          return prev >= maxIndex ? 0 : prev + 1;
-        });
-      }, autoScrollDelay);
+    if (!isPlaying || !hasMounted || products.length <= visibleCards) return;
 
-      return () => {
-        if (autoScrollRef.current) {
-          clearInterval(autoScrollRef.current);
-        }
-      };
-    }
-  }, [products.length, visibleCards, isAutoScrolling]);
+    const timer = setInterval(() => {
+      nextSlide();
+    }, autoPlayInterval);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, autoPlayInterval, hasMounted, products.length, visibleCards]);
+
+  // Handle infinite loop transitions
+  useEffect(() => {
+    if (!isTransitioning || slides.length === 0) return;
+
+    const handle = setTimeout(() => {
+      if (currentIndex === slides.length - 1) {
+        setIsTransitioning(false);
+        setCurrentIndex(1); // Jump to first real product
+      }
+      if (currentIndex === 0) {
+        setIsTransitioning(false);
+        setCurrentIndex(slides.length - 2); // Jump to last real product
+      }
+    }, 500); // Match transition duration
+
+    return () => clearTimeout(handle);
+  }, [currentIndex, slides.length, isTransitioning]);
 
   const fetchSaleProducts = async () => {
     try {
       setLoading(true);
       
-      console.log('Fetching sale products...');
       const response = await productApi.getSaleProducts(limit);
-      console.log('Sale products API response:', response);
       
       let productsList: Product[] = [];
       
@@ -110,7 +128,6 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
         productsList = (response.data as any).products || [];
       }
       
-      console.log('Processed sale products:', productsList);
       setProducts(productsList);
       
     } catch (error: any) {
@@ -125,29 +142,22 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
     }
   };
 
-  const handlePrevious = () => {
-    setIsAutoScrolling(false);
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    const maxIndex = Math.max(0, products.length - visibleCards);
-    setCurrentIndex(prev => prev > 0 ? prev - 1 : maxIndex);
-    // Resume auto-scroll after 3 seconds
-    setTimeout(() => setIsAutoScrolling(true), 3000);
+  const nextSlide = () => {
+    setCurrentIndex((prev) => prev + 1);
+    setIsTransitioning(true);
   };
 
-  const handleNext = () => {
-    setIsAutoScrolling(false);
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    const maxIndex = Math.max(0, products.length - visibleCards);
-    setCurrentIndex(prev => prev < maxIndex ? prev + 1 : 0);
-    // Resume auto-scroll after 3 seconds
-    setTimeout(() => setIsAutoScrolling(true), 3000);
+  const prevSlide = () => {
+    setCurrentIndex((prev) => prev - 1);
+    setIsTransitioning(true);
   };
 
-  const handleIndicatorClick = (index: number) => {
-    setIsAutoScrolling(false);
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setCurrentIndex(index);
-    setTimeout(() => setIsAutoScrolling(true), 3000);
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index + 1); // Offset for clone
+    setIsTransitioning(true);
+    setIsPlaying(false);
+    // Resume auto-play after 3 seconds
+    setTimeout(() => setIsPlaying(true), 3000);
   };
 
   const formatPrice = (price: number) =>
@@ -159,136 +169,148 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
   const calculateSavings = (price: number, comparePrice: number) =>
     comparePrice - price;
 
-  // UI states
+  // Loading state
   if (loading) {
     return (
-      <section className="bg-gradient-to-br from-purple-50/50 to-pink-50/50 py-16 md:py-24 relative overflow-hidden">
+      <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
         {/* Background decorations */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-24 h-24 bg-pink-300 rounded-full animate-bounce"></div>
+          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
         </div>
         
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg shadow-lg mb-4">
-            <Flame className="w-5 h-5 animate-pulse" />
-            <h2 className="font-headline text-2xl md:text-3xl font-bold">{title}</h2>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
+            <Flame className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              {title}
+            </h2>
           </div>
           <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-            <span className="ml-2 text-muted-foreground">Loading sale products...</span>
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <span className="ml-3 text-gray-600 font-medium">Loading sale products...</span>
           </div>
         </div>
       </section>
     );
   }
 
+  // Empty state
   if (products.length === 0) {
     return (
-      <section className="bg-gradient-to-br from-purple-50/50 to-pink-50/50 py-16 md:py-24 relative overflow-hidden">
+      <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-24 h-24 bg-pink-300 rounded-full animate-bounce"></div>
+          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
         </div>
         
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg shadow-lg mb-4">
-            <Flame className="w-5 h-5" />
-            <h2 className="font-headline text-2xl md:text-3xl font-bold">{title}</h2>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
+            <Flame className="w-5 h-5 md:w-6 md:h-6" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              {title}
+            </h2>
           </div>
-          <p className="text-lg text-muted-foreground py-12">No sale items available at the moment.</p>
-          <p className="text-sm text-muted-foreground">Check back soon for amazing deals!</p>
+          <p className="text-lg text-gray-600 py-12 font-medium">No sale items available at the moment.</p>
+          <p className="text-sm text-gray-500">Check back soon for amazing deals!</p>
         </div>
       </section>
     );
   }
 
-  const maxIndex = Math.max(0, products.length - visibleCards);
+  if (!hasMounted) return null;
+
+  // Calculate active indicator
+  const realIndex = currentIndex - 1;
+  const activeIndex =
+    realIndex === -1
+      ? products.length - 1
+      : realIndex === products.length
+      ? 0
+      : realIndex;
 
   return (
-    <section className="bg-gradient-to-br from-purple-50/50 to-pink-50/50 py-16 md:py-24 relative overflow-hidden">
+    <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-24 h-24 bg-pink-300 rounded-full animate-bounce"></div>
-        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-purple-400 rounded-full animate-pulse delay-100"></div>
-        <div className="absolute bottom-32 right-1/3 w-12 h-12 bg-pink-400 rounded-full animate-bounce delay-200"></div>
+        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full blur-md animate-pulse delay-100"></div>
+        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full blur-sm animate-bounce delay-200"></div>
       </div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg shadow-lg mb-4">
-            <Flame className="w-5 h-5 animate-pulse" />
-            <h2 className="font-headline text-2xl md:text-3xl font-bold">{title}</h2>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Header Section */}
+        <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+            <Flame className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              {title}
+            </h2>
           </div>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6">
+          <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium mb-6">
             Don't miss out on these incredible deals! Limited time offers on selected items.
           </p>
-          
-          {/* Progress indicator for mobile */}
-          {products.length > visibleCards && (
-            <div className="max-w-md mx-auto mb-4 block md:hidden">
-              <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Showing {currentIndex + 1}-{Math.min(currentIndex + visibleCards, products.length)} of {products.length}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
-                  style={{ width: `${((currentIndex + 1) / (maxIndex + 1)) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
 
+          {/* View All Button */}
           {showViewAll && (
-            <div className="mt-6 md:absolute md:top-0 md:right-0 md:mt-0">
-              <Button asChild className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-                <Link href="/products?isSale=true" className="flex items-center gap-2">
-                  View All Sale <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
-            </div>
+            <Button 
+              asChild 
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-6 py-2 md:px-8 md:py-3 rounded-full font-semibold backdrop-blur-lg"
+            >
+              <Link href="/products?isSale=true" className="flex items-center gap-2">
+                View All Sale <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              </Link>
+            </Button>
           )}
         </div>
 
-        <div className="relative">
-          {/* Navigation controls */}
+        {/* Products Carousel */}
+        <div className="relative group">
+          {/* Navigation Buttons */}
           {products.length > visibleCards && (
             <>
               <button
-                onClick={handlePrevious}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-300 border border-purple-200"
-                style={{ marginLeft: '-20px' }}
+                onClick={() => {
+                  prevSlide();
+                  setIsPlaying(false);
+                  setTimeout(() => setIsPlaying(true), 3000);
+                }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 -translate-x-2 md:-translate-x-4 opacity-0 group-hover:opacity-100"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
               </button>
               <button
-                onClick={handleNext}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-300 border border-purple-200"
-                style={{ marginRight: '-20px' }}
+                onClick={() => {
+                  nextSlide();
+                  setIsPlaying(false);
+                  setTimeout(() => setIsPlaying(true), 3000);
+                }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 translate-x-2 md:translate-x-4 opacity-0 group-hover:opacity-100"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </>
           )}
 
           {/* Products Container */}
-          <div className="overflow-hidden rounded-lg">
+          <div className="overflow-hidden mx-2 md:mx-4 lg:mx-8">
             <div 
               className="flex transition-transform duration-500 ease-in-out gap-4 md:gap-6"
               style={{ 
                 transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
-                width: `${(products.length / visibleCards) * 100}%`
+                transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
+                width: `${(slides.length / visibleCards) * 100}%`
               }}
             >
-              {products.map((product, index) => (
+              {slides.map((product, index) => (
                 <div 
-                  key={product._id || product.id} 
+                  key={`${product._id}-${index}`}
                   className="group flex-shrink-0"
-                  style={{ width: `${100 / products.length}%` }}
+                  style={{ width: `${100 / slides.length}%` }}
                 >
                   <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-purple-200 bg-white/80 backdrop-blur-sm h-full">
-                    <div className="relative h-48 md:h-56">
+                    <div className="relative h-48 md:h-56 lg:h-64">
                       <Image
                         src={product.images?.[0]?.url || '/placeholder-product.jpg'}
                         alt={product.images?.[0]?.alt || product.name}
@@ -296,47 +318,55 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
-                      <div className="absolute top-2 left-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 text-sm rounded-full font-bold shadow-lg animate-pulse">
+                      
+                      {/* Sale Badge */}
+                      <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 text-xs md:text-sm rounded-full font-bold shadow-lg animate-pulse">
                         SALE
                       </div>
+                      
+                      {/* Discount Badge */}
                       {product.comparePrice && product.comparePrice > product.price && (
-                        <div className="absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 text-xs rounded-full font-bold shadow-lg">
+                        <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 text-xs rounded-full font-bold shadow-lg">
                           {calculateDiscount(product.price, product.comparePrice)}% OFF
                         </div>
                       )}
-                      {/* Heart icon for favorites */}
-                      <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button className="bg-white/90 hover:bg-white p-2 rounded-full shadow-lg">
+                      
+                      {/* Heart Icon */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button className="bg-white/90 hover:bg-white p-2 rounded-full shadow-lg hover:scale-110 transition-all duration-300">
                           <Heart className="w-4 h-4 text-purple-500 hover:text-pink-500 transition-colors" />
                         </button>
                       </div>
+
+                      {/* Overlay Gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
 
-                    <CardContent className="p-4 bg-gradient-to-br from-white to-purple-50/30">
-                      <h3 className="font-semibold mb-2 line-clamp-2 text-gray-800 min-h-[3rem] leading-tight">
+                    <CardContent className="p-4 md:p-6 bg-gradient-to-br from-white to-purple-50/30">
+                      <h3 className="font-semibold mb-3 line-clamp-2 text-gray-800 min-h-[3rem] leading-tight text-sm md:text-base">
                         {product.name}
                       </h3>
 
-                      <div className="mb-3 text-sm text-gray-600">
+                      <div className="mb-3 text-xs md:text-sm text-gray-600">
                         <p>Size: <span className="font-medium">{product.size}</span></p>
                         <p>Material: <span className="font-medium capitalize">{product.material}</span></p>
                       </div>
 
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="font-bold text-lg text-purple-600">{formatPrice(product.price)}</span>
+                        <span className="font-bold text-lg md:text-xl text-purple-600">{formatPrice(product.price)}</span>
                         {product.comparePrice && product.comparePrice > product.price && (
                           <span className="text-sm text-gray-500 line-through">{formatPrice(product.comparePrice)}</span>
                         )}
                       </div>
 
-                      {/* Savings badge */}
-                      <div className="mb-3 min-h-[1.5rem] flex justify-center">
+                      {/* Savings Badge */}
+                      <div className="mb-4 min-h-[1.5rem] flex justify-center">
                         {product.comparePrice && product.comparePrice > product.price ? (
-                          <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full shadow-sm">
+                          <span className="text-xs font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full shadow-sm">
                             Save {formatPrice(calculateSavings(product.price, product.comparePrice))}!
                           </span>
                         ) : (
-                          <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full shadow-sm">
+                          <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full shadow-sm">
                             Special Price
                           </span>
                         )}
@@ -344,11 +374,11 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
 
                       <Button
                         asChild
-                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium hover:scale-105 rounded-full"
                       >
                         <Link href={`/products/${product._id}`} className="flex items-center justify-center gap-2">
                           <Sparkles className="w-4 h-4" />
-                          View Details
+                          <span className="text-sm md:text-base">View Details</span>
                         </Link>
                       </Button>
                     </CardContent>
@@ -358,8 +388,34 @@ export function Sale({ limit = 8, title = "🔥 Limited Time Sale!", showViewAll
             </div>
           </div>
 
+          {/* Indicators */}
+          {products.length > visibleCards && (
+            <div className="flex justify-center mt-8 md:mt-12 gap-2">
+              {products.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
+                    index === activeIndex 
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 scale-125 shadow-lg' 
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </section>
   );
 }
