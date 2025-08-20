@@ -43,7 +43,28 @@ export default function Home() {
         className="mb-0"
       />
 
-      {/* Features Section */}
+     {/* Shop by Category Component */}
+      <ShopByCategory 
+        showViewAll={true}
+        title="Shop by Category"
+      />
+      
+      {/* New Arrivals - Using Enhanced API Component */}
+      <NewArrival 
+        limit={8} 
+        showViewAll={true}
+      />
+
+      
+
+      {/* Limited Time Sale - Using Enhanced API Component */}
+      <Sale 
+        limit={8} 
+        showViewAll={true} 
+        title="🔥 Limited Time Sale!" 
+      />
+
+ {/* Features Section */}
      <section className="py-8 md:py-12 lg:py-16 bg-gradient-to-br from-gray-50 to-gray-100 hidden lg:block">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -79,25 +100,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      {/* New Arrivals - Using Enhanced API Component */}
-      <NewArrival 
-        limit={8} 
-        showViewAll={true}
-      />
-
-      {/* Shop by Category Component */}
-      <ShopByCategory 
-        showViewAll={true}
-        title="Shop by Category"
-      />
-
-      {/* Limited Time Sale - Using Enhanced API Component */}
-      <Sale 
-        limit={8} 
-        showViewAll={true} 
-        title="🔥 Limited Time Sale!" 
-      />
 
       {/* Customer Testimonials */}
       <CustomerTestimonials

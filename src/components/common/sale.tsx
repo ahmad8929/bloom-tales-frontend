@@ -1,13 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, ChevronLeft, ChevronRight, Flame, ArrowRight, Sparkles, Heart } from 'lucide-react';
-import { productApi } from '@/lib/api';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+import { productApi } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 interface Product {
   _id: string;
@@ -31,12 +38,12 @@ interface SaleProps {
   autoPlayInterval?: number;
 }
 
-export function Sale({ 
-  limit = 8, 
-  title = "Limited Time Sale", 
+export function Sale({
+  limit = 8,
+  title = "Limited Time Sale",
   showViewAll = true,
   autoPlay = true,
-  autoPlayInterval = 4000
+  autoPlayInterval = 4000,
 }: SaleProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,12 +53,9 @@ export function Sale({
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
 
-  // Clone products for infinite loop: [last, ...real, first]
-  const slides = products.length > 0 ? [
-    products[products.length - 1],
-    ...products,
-    products[0]
-  ] : [];
+  // Create multiple copies for seamless infinite scroll
+  const slides =
+    products.length > 0 ? [...products, ...products, ...products] : [];
 
   useEffect(() => {
     setHasMounted(true);
@@ -62,16 +66,24 @@ export function Sale({
   useLayoutEffect(() => {
     function updateVisibleCards() {
       const width = window.innerWidth;
-      if (width < 640) setVisibleCards(1);      // mobile
+      if (width < 640) setVisibleCards(1); // mobile
       else if (width < 768) setVisibleCards(2); // tablet
       else if (width < 1024) setVisibleCards(3); // small desktop
-      else setVisibleCards(4);                   // large desktop
+      else setVisibleCards(4); // large desktop
     }
 
     updateVisibleCards();
-    window.addEventListener('resize', updateVisibleCards);
-    return () => window.removeEventListener('resize', updateVisibleCards);
+    window.addEventListener("resize", updateVisibleCards);
+    return () => window.removeEventListener("resize", updateVisibleCards);
   }, []);
+
+  // Set initial position to middle set when products change
+  useEffect(() => {
+    if (products.length > 0) {
+      setCurrentIndex(products.length); // Start from second set (middle)
+      setIsTransitioning(false);
+    }
+  }, [products.length]);
 
   // Auto-scroll functionality
   useEffect(() => {
@@ -84,58 +96,69 @@ export function Sale({
     return () => clearInterval(timer);
   }, [isPlaying, autoPlayInterval, hasMounted, products.length, visibleCards]);
 
-  // Handle infinite loop transitions
+  // Handle infinite loop reset when reaching end
   useEffect(() => {
     if (!isTransitioning || slides.length === 0) return;
 
     const handle = setTimeout(() => {
-      if (currentIndex === slides.length - 1) {
+      // When we reach the end of second set, jump back to start of second set
+      if (currentIndex >= products.length * 2) {
         setIsTransitioning(false);
-        setCurrentIndex(1); // Jump to first real product
+        setCurrentIndex(products.length); // Jump back to start of middle set
       }
-      if (currentIndex === 0) {
+      // When we go before first set, jump to end of second set
+      if (currentIndex < products.length) {
         setIsTransitioning(false);
-        setCurrentIndex(slides.length - 2); // Jump to last real product
+        setCurrentIndex(products.length * 2 - 1);
       }
     }, 500); // Match transition duration
 
     return () => clearTimeout(handle);
-  }, [currentIndex, slides.length, isTransitioning]);
+  }, [currentIndex, products.length, isTransitioning]);
 
   const fetchSaleProducts = async () => {
     try {
       setLoading(true);
-      
+
       const response = await productApi.getSaleProducts(limit);
-      
+
       let productsList: Product[] = [];
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
-      
+
       // Check for nested data structure
-      if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      if (
+        response.data &&
+        typeof response.data === "object" &&
+        "data" in response.data
+      ) {
         const nestedData = (response.data as any).data;
-        if (nestedData && typeof nestedData === 'object' && 'products' in nestedData) {
+        if (
+          nestedData &&
+          typeof nestedData === "object" &&
+          "products" in nestedData
+        ) {
           productsList = nestedData.products || [];
         }
-      } 
-      else if (response.data && Array.isArray((response.data as any))) {
+      } else if (response.data && Array.isArray(response.data as any)) {
         productsList = response.data as any;
-      }
-      else if (response.data && typeof response.data === 'object' && 'products' in (response.data as any)) {
+      } else if (
+        response.data &&
+        typeof response.data === "object" &&
+        "products" in (response.data as any)
+      ) {
         productsList = (response.data as any).products || [];
       }
-      
+
       setProducts(productsList);
-      
     } catch (error: any) {
-      console.error('Error fetching sale products:', error);
+      console.error("Error fetching sale products:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load sale products',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load sale products",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -153,7 +176,8 @@ export function Sale({
   };
 
   const goToSlide = (index: number) => {
-    setCurrentIndex(index + 1); // Offset for clone
+    // Calculate position in middle set
+    setCurrentIndex(products.length + index);
     setIsTransitioning(true);
     setIsPlaying(false);
     // Resume auto-play after 3 seconds
@@ -161,7 +185,10 @@ export function Sale({
   };
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price);
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(price);
 
   const calculateDiscount = (price: number, comparePrice: number) =>
     Math.round(((comparePrice - price) / comparePrice) * 100);
@@ -178,7 +205,7 @@ export function Sale({
           <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
           <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
             <Flame className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
@@ -188,7 +215,9 @@ export function Sale({
           </div>
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-            <span className="ml-3 text-gray-600 font-medium">Loading sale products...</span>
+            <span className="ml-3 text-gray-600 font-medium">
+              Loading sale products...
+            </span>
           </div>
         </div>
       </section>
@@ -203,7 +232,7 @@ export function Sale({
           <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
           <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
             <Flame className="w-5 h-5 md:w-6 md:h-6" />
@@ -211,8 +240,12 @@ export function Sale({
               {title}
             </h2>
           </div>
-          <p className="text-lg text-gray-600 py-12 font-medium">No sale items available at the moment.</p>
-          <p className="text-sm text-gray-500">Check back soon for amazing deals!</p>
+          <p className="text-lg text-gray-600 py-12 font-medium">
+            No sale items available at the moment.
+          </p>
+          <p className="text-sm text-gray-500">
+            Check back soon for amazing deals!
+          </p>
         </div>
       </section>
     );
@@ -220,14 +253,8 @@ export function Sale({
 
   if (!hasMounted) return null;
 
-  // Calculate active indicator
-  const realIndex = currentIndex - 1;
-  const activeIndex =
-    realIndex === -1
-      ? products.length - 1
-      : realIndex === products.length
-      ? 0
-      : realIndex;
+  // Calculate active indicator (show position within single set of products)
+  const activeIndex = (currentIndex - products.length) % products.length;
 
   return (
     <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
@@ -249,20 +276,9 @@ export function Sale({
             </h2>
           </div>
           <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium mb-6">
-            Don't miss out on these incredible deals! Limited time offers on selected items.
+            Don't miss out on these incredible deals! Limited time offers on
+            selected items.
           </p>
-
-          {/* View All Button */}
-          {showViewAll && (
-            <Button 
-              asChild 
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-6 py-2 md:px-8 md:py-3 rounded-full font-semibold backdrop-blur-lg"
-            >
-              <Link href="/products?isSale=true" className="flex items-center gap-2">
-                View All Sale <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-              </Link>
-            </Button>
-          )}
         </div>
 
         {/* Products Carousel */}
@@ -295,48 +311,56 @@ export function Sale({
 
           {/* Products Container */}
           <div className="overflow-hidden mx-2 md:mx-4 lg:mx-8">
-            <div 
+            <div
               className="flex transition-transform duration-500 ease-in-out gap-4 md:gap-6"
-              style={{ 
-                transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
-                transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
-                width: `${(slides.length / visibleCards) * 100}%`
+              style={{
+                transform: `translateX(-${
+                  (currentIndex * 100) / visibleCards
+                }%)`,
+                transition: isTransitioning
+                  ? "transform 0.5s ease-in-out"
+                  : "none",
               }}
             >
               {slides.map((product, index) => (
-                <div 
+                <div
                   key={`${product._id}-${index}`}
                   className="group flex-shrink-0"
-                  style={{ width: `${100 / slides.length}%` }}
+                  style={{
+                    width: `calc(${100 / visibleCards}% - ${
+                      (4 * (visibleCards - 1)) / visibleCards
+                    }px)`,
+                    marginRight: index < slides.length - 1 ? "1rem" : "0",
+                  }}
                 >
                   <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-purple-200 bg-white/80 backdrop-blur-sm h-full">
                     <div className="relative h-48 md:h-56 lg:h-64">
                       <Image
-                        src={product.images?.[0]?.url || '/placeholder-product.jpg'}
+                        src={
+                          product.images?.[0]?.url || "/placeholder-product.jpg"
+                        }
                         alt={product.images?.[0]?.alt || product.name}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
-                      
+
                       {/* Sale Badge */}
                       <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 text-xs md:text-sm rounded-full font-bold shadow-lg animate-pulse">
                         SALE
                       </div>
-                      
+
                       {/* Discount Badge */}
-                      {product.comparePrice && product.comparePrice > product.price && (
-                        <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 text-xs rounded-full font-bold shadow-lg">
-                          {calculateDiscount(product.price, product.comparePrice)}% OFF
-                        </div>
-                      )}
-                      
-                      {/* Heart Icon */}
-                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button className="bg-white/90 hover:bg-white p-2 rounded-full shadow-lg hover:scale-110 transition-all duration-300">
-                          <Heart className="w-4 h-4 text-purple-500 hover:text-pink-500 transition-colors" />
-                        </button>
-                      </div>
+                      {product.comparePrice &&
+                        product.comparePrice > product.price && (
+                          <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 text-xs rounded-full font-bold shadow-lg">
+                            {calculateDiscount(
+                              product.price,
+                              product.comparePrice
+                            )}
+                            % OFF
+                          </div>
+                        )}
 
                       {/* Overlay Gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -348,22 +372,43 @@ export function Sale({
                       </h3>
 
                       <div className="mb-3 text-xs md:text-sm text-gray-600">
-                        <p>Size: <span className="font-medium">{product.size}</span></p>
-                        <p>Material: <span className="font-medium capitalize">{product.material}</span></p>
+                        <p>
+                          Size:{" "}
+                          <span className="font-medium">{product.size}</span>
+                        </p>
+                        <p>
+                          Material:{" "}
+                          <span className="font-medium capitalize">
+                            {product.material}
+                          </span>
+                        </p>
                       </div>
 
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="font-bold text-lg md:text-xl text-purple-600">{formatPrice(product.price)}</span>
-                        {product.comparePrice && product.comparePrice > product.price && (
-                          <span className="text-sm text-gray-500 line-through">{formatPrice(product.comparePrice)}</span>
-                        )}
+                        <span className="font-bold text-lg md:text-xl text-purple-600">
+                          {formatPrice(product.price)}
+                        </span>
+                        {product.comparePrice &&
+                          product.comparePrice > product.price && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPrice(product.comparePrice)}
+                            </span>
+                          )}
                       </div>
 
                       {/* Savings Badge */}
                       <div className="mb-4 min-h-[1.5rem] flex justify-center">
-                        {product.comparePrice && product.comparePrice > product.price ? (
+                        {product.comparePrice &&
+                        product.comparePrice > product.price ? (
                           <span className="text-xs font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full shadow-sm">
-                            Save {formatPrice(calculateSavings(product.price, product.comparePrice))}!
+                            Save{" "}
+                            {formatPrice(
+                              calculateSavings(
+                                product.price,
+                                product.comparePrice
+                              )
+                            )}
+                            !
                           </span>
                         ) : (
                           <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full shadow-sm">
@@ -376,9 +421,14 @@ export function Sale({
                         asChild
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium hover:scale-105 rounded-full"
                       >
-                        <Link href={`/products/${product._id}`} className="flex items-center justify-center gap-2">
+                        <Link
+                          href={`/products/${product._id}`}
+                          className="flex items-center justify-center gap-2"
+                        >
                           <Sparkles className="w-4 h-4" />
-                          <span className="text-sm md:text-base">View Details</span>
+                          <span className="text-sm md:text-base">
+                            View Details
+                          </span>
                         </Link>
                       </Button>
                     </CardContent>
@@ -389,7 +439,7 @@ export function Sale({
           </div>
 
           {/* Indicators */}
-          {products.length > visibleCards && (
+          {/* {products.length > visibleCards && (
             <div className="flex justify-center mt-8 md:mt-12 gap-2">
               {products.map((_, index) => (
                 <button
@@ -402,6 +452,21 @@ export function Sale({
                   }`}
                 />
               ))}
+            </div>
+  )} */}
+          {showViewAll && (
+            <div className="flex justify-center mt-8">
+              <Button
+                asChild
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-6 py-2 md:px-8 md:py-3 rounded-full font-semibold backdrop-blur-lg"
+              >
+                <Link
+                  href="/products?isSale=true"
+                  className="flex items-center gap-2"
+                >
+                  View All Sale <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                </Link>
+              </Button>
             </div>
           )}
         </div>
