@@ -55,54 +55,67 @@ export function ShopByCategory({
         </div>
         
         {/* Categories Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6 md:gap-8 lg:gap-10 max-w-7xl mx-auto">
-          {categories.slice(0, 6).map((category, index) => (
-            <div 
-              key={category.id}
-              className="group flex flex-col items-center"
-              style={{ 
-                animationDelay: `${index * 150}ms`,
-                animation: 'fadeInUp 0.8s ease-out both'
-              }}
-            >
-              <Link href={`/category/${category.slug}`} className="block">
-                {/* Circular Image Container */}
-                <div className="relative mb-4 md:mb-6">
-                  {/* Glow Background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-500 scale-110"></div>
-                  
-                  {/* Main Circle */}
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-full overflow-hidden bg-white shadow-xl shadow-purple-500/10 group-hover:shadow-2xl group-hover:shadow-purple-500/25 transition-all duration-500 group-hover:scale-110 border-4 border-white group-hover:border-purple-200">
-                    <Image
-                      src={category.image}
-                      alt={category.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                      sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, (max-width: 1024px) 112px, (max-width: 1280px) 128px, 144px"
-                    />
-                    
-                    {/* Overlay Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
-                    {/* Hover Icon */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
-                    </div>
-                  </div>
-                </div>
-
-                {/* Category Name */}
-                <h3 className="text-center font-semibold text-sm sm:text-base md:text-lg lg:text-xl text-gray-800 group-hover:text-purple-600 transition-colors duration-300 mb-2">
-                  {category.name}
-                </h3>
-                
-                {/* Animated Underline */}
-                <div className="relative w-full flex justify-center">
-                  <div className="h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300 w-0 group-hover:w-full max-w-16"></div>
-                </div>
-              </Link>
-            </div>
-          ))}
+        {/* Categories Grid */}
+<div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6 md:gap-8 lg:gap-10 max-w-7xl mx-auto">
+  {/* Mobile & Tablet: show only first 6 */}
+  {categories.slice(0, 6).map((category, index) => (
+    <div
+      key={category.id}
+      className="group flex flex-col items-center lg:hidden" // hide on lg+
+      style={{
+        animationDelay: `${index * 150}ms`,
+        animation: "fadeInUp 0.8s ease-out both",
+      }}
+    >
+      <Link href={`/category/${category.slug}`} className="block">
+        {/* Category Card Code */}
+        <div className="relative mb-4 md:mb-6">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-full overflow-hidden bg-white shadow-xl shadow-purple-500/10 group-hover:shadow-2xl group-hover:shadow-purple-500/25 transition-all duration-500 group-hover:scale-110 border-4 border-white group-hover:border-purple-200">
+            <Image
+              src={category.image}
+              alt={category.name}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            />
+          </div>
         </div>
+        <h3 className="text-center font-semibold text-sm sm:text-base md:text-lg lg:text-xl text-gray-800 group-hover:text-purple-600 transition-colors duration-300 mb-2">
+          {category.name}
+        </h3>
+      </Link>
+    </div>
+  ))}
+
+  {/* Desktop: show all */}
+  {categories.map((category, index) => (
+    <div
+      key={category.id}
+      className="group flex flex-col items-center hidden lg:flex" // hide on <lg
+      style={{
+        animationDelay: `${index * 150}ms`,
+        animation: "fadeInUp 0.8s ease-out both",
+      }}
+    >
+      <Link href={`/category/${category.slug}`} className="block">
+        {/* Same card UI */}
+        <div className="relative mb-4 md:mb-6">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-full overflow-hidden bg-white shadow-xl shadow-purple-500/10 group-hover:shadow-2xl group-hover:shadow-purple-500/25 transition-all duration-500 group-hover:scale-110 border-4 border-white group-hover:border-purple-200">
+            <Image
+              src={category.image}
+              alt={category.name}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            />
+          </div>
+        </div>
+        <h3 className="text-center font-semibold text-sm sm:text-base md:text-lg lg:text-xl text-gray-800 group-hover:text-purple-600 transition-colors duration-300 mb-2">
+          {category.name}
+        </h3>
+      </Link>
+    </div>
+  ))}
+</div>
+
       </div>
 
       {/* Custom Keyframes */}
