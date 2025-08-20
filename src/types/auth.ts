@@ -1,16 +1,21 @@
 export interface User {
-  id: string;
+  _id: string; // Backend uses _id
+  id: string; // This should be mapped from _id for consistency
   email: string;
   firstName: string;
   lastName: string;
   role: 'user' | 'admin';
+  isEmailVerified: boolean;
   createdAt: string;
 }
 
 export interface AuthState {
   user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isLoading: boolean;
   error: string | null;
+  isAuthenticated: boolean;
 }
 
 export interface LoginCredentials {
@@ -43,4 +48,4 @@ export interface ResetPasswordData {
 export interface UpdatePasswordData {
   currentPassword: string;
   newPassword: string;
-} 
+}

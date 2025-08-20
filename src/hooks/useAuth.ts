@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { RootState } from '@/store';
 import { loginStart, loginSuccess, loginFailure, logout, updateTokens } from '@/store/slices/authSlice';
 import { authApi } from '@/lib/api';
-import { setCookie, removeCookie } from '@/lib/utils';
+import { setCookie, removeCookie, getCookie } from '@/lib/utils';
 import type { User } from '@/types/auth';
 
 interface LoginResponse {
@@ -41,6 +41,11 @@ interface AuthResult {
   user?: User;
 }
 
+const mapUserResponse = (user: any): User => ({
+  ...user,
+  id: user._id, // Map _id to id for frontend consistency
+});
+
 export function useAuth() {
   const dispatch = useDispatch();
   const [isHydrated, setIsHydrated] = useState(false);
@@ -50,56 +55,80 @@ export function useAuth() {
     setIsHydrated(true);
   }, []);
 
+  // In your useAuth.js - replace the login function with this:
+
   const login = async (credentials: { email: string; password: string }): Promise<AuthResult> => {
-    dispatch(loginStart());
-    try {
-      console.log('Making login API call...');
-      const res = await authApi.login(credentials);
-      console.log('Login API response:', res);
+  dispatch(loginStart());
+  try {
+    console.log('Making login API call...');
+    const res = await authApi.login(credentials);
+    console.log('Login API response:', res);
+    
+    const response = res?.data as LoginResponse;
+    
+    if (response?.status === 'success' && response.data) {
+      const { user: rawUser, accessToken, refreshToken } = response.data;
       
-      const response = res?.data as LoginResponse;
+      // Map user to ensure id field exists
+      const user = {
+        ...rawUser,
+        id: rawUser._id || rawUser.id, // Ensure id field exists
+      };
       
-      if (response?.status === 'success' && response.data) {
-        const { user, accessToken, refreshToken } = response.data;
+      console.log('Login successful - User:', user);
+      console.log('Login successful - Role:', user.role);
+      console.log('Login successful - Token length:', accessToken.length);
+      
+      // Store tokens in Redux first
+      dispatch(loginSuccess({ user, accessToken, refreshToken }));
+      
+      // Set cookies for middleware (only on client)
+      if (typeof window !== 'undefined') {
+        console.log('Setting cookies...');
         
-        // Store tokens in Redux
-        dispatch(loginSuccess({ user, accessToken, refreshToken }));
+        // Clear any existing auth cookies first
+        removeCookie('auth-token');
+        removeCookie('user-role');
         
-        // Set cookies for middleware (only on client)
-        if (typeof window !== 'undefined') {
-          setCookie('auth-token', accessToken);
-          setCookie('user-role', user.role);
-          // Force reload to ensure all providers are updated
-          window.location.href = '/';
-        }
-        
-        return { success: true, user };
-      } else {
-        // Handle error response from API
-        const errorMessage = response?.message || 'Login failed';
-        const errorCode = response?.code;
-        
-        dispatch(loginFailure(errorMessage));
-        return { 
-          success: false, 
-          error: errorMessage,
-          code: errorCode
-        };
+        // Small delay to ensure cookies are cleared
+        setTimeout(() => {
+          // Set new cookies using the setCookie function
+          setCookie('auth-token', accessToken, 7);
+          setCookie('user-role', user.role, 7);
+          
+          // Verify cookies were set correctly
+          setTimeout(() => {
+            const authCookieCheck = getCookie('auth-token');
+            const roleCookieCheck = getCookie('user-role');
+            
+            console.log('Cookie verification after login:');
+            console.log('auth-token exists:', !!authCookieCheck);
+            console.log('user-role exists:', !!roleCookieCheck);
+            console.log('user-role value:', roleCookieCheck);
+            console.log('All cookies:', document.cookie);
+            
+            if (!authCookieCheck || !roleCookieCheck) {
+              console.error('COOKIE SETTING FAILED!');
+              // Try alternative cookie setting method
+              document.cookie = `auth-token=${accessToken}; path=/; max-age=604800; samesite=lax`;
+              document.cookie = `user-role=${user.role}; path=/; max-age=604800; samesite=lax`;
+              console.log('Attempted alternative cookie setting');
+            } else {
+              console.log('Cookies set successfully, redirecting...');
+            }
+            
+            // Always redirect after cookie setting attempt
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 300);
+          }, 200);
+        }, 100);
       }
-    } catch (err: any) {
-      console.error('Login error caught:', err);
       
-      // Handle API error response
-      let errorMessage = 'An unexpected error occurred';
-      let errorCode: string | undefined;
-      
-      if (err.response?.data) {
-        const errorData = err.response.data as ApiErrorResponse;
-        errorMessage = errorData.message || errorMessage;
-        errorCode = errorData.code;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
+      return { success: true, user };
+    } else {
+      const errorMessage = response?.message || 'Login failed';
+      const errorCode = response?.code;
       
       dispatch(loginFailure(errorMessage));
       return { 
@@ -108,7 +137,28 @@ export function useAuth() {
         code: errorCode
       };
     }
-  };
+  } catch (err: any) {
+    console.error('Login error caught:', err);
+    
+    let errorMessage = 'An unexpected error occurred';
+    let errorCode: string | undefined;
+    
+    if (err.response?.data) {
+      const errorData = err.response.data as ApiErrorResponse;
+      errorMessage = errorData.message || errorMessage;
+      errorCode = errorData.code;
+    } else if (err.message) {
+      errorMessage = err.message;
+    }
+    
+    dispatch(loginFailure(errorMessage));
+    return { 
+      success: false, 
+      error: errorMessage,
+      code: errorCode
+    };
+  }
+};
 
   const signup = async (signupData: { firstName: string; lastName: string; email: string; password: string }): Promise<AuthResult> => {
     try {
