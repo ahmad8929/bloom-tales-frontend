@@ -141,17 +141,25 @@ export const testimonials: Testimonial[] = [
 
 // Categories Data
 export const categories: Category[] = [
+
+  //  { name: 'Cordset', count: 0, slug: 'cordset' },
+  //         { name: 'Anarkali', count: 0, slug: 'anarkali' },
+  //         { name: 'Suite', count: 0, slug: 'suite' },
+  //         { name: 'Saree', count: 0, slug: 'saree' },
+  //         { name: 'Kurti', count: 0, slug: 'kurti' },
+  //         { name: 'Lehenga', count: 0, slug: 'lehenga' },
+  //         { name: 'Western Dress', count: 0, slug: 'western-dress' },
   {
     id: 1,
-    name: "Saree",
-    slug: "saree",
-    image: "/shopByCategory/Saree.jpeg"
+    name: "Cordset",
+    slug: "cordset",
+    image: "/shopByCategory/Cordset.jpeg"
   },
   {
     id: 2,
-    name: "Kurti",
-    slug: "kurti",
-    image: "/shopByCategory/Kurti.jpeg"
+    name: "Anarkali",
+    slug: "anarkali",
+    image: "/shopByCategory/Anarkali.jpeg"
   },
   {
     id: 3,
@@ -161,22 +169,29 @@ export const categories: Category[] = [
   },
   {
     id: 4,
-    name: "Night Dress",
-    slug: "night-dress",
-    image: "/shopByCategory/NightDress.jpeg"
+    name: "Saree",
+    slug: "saree",
+    image: "/shopByCategory/Saree.jpeg"
   },
+  
   {
     id: 5,
-    name: "Skirt",
-    slug: "skirt",
-    image: "/shopByCategory/Skirt.jpeg"
+    name: "Kurti",
+    slug: "kurti",
+    image: "/shopByCategory/Kurti.jpeg"
   },
   {
     id: 6,
-    name: "Top",
-    slug: "top",
-    image: "/shopByCategory/Top.jpeg"
-  }
+    name: "Lehenga",
+    slug: "lehenga",
+    image: "/shopByCategory/Lehenga.jpeg"
+  },
+  {
+    id: 7,
+    name: "Western Dress",
+    slug: "western-dress",
+    image: "/shopByCategory/Western Dress.jpeg"
+  },
 ];
 
 // Features Data

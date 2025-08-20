@@ -69,23 +69,25 @@ export function Header() {
         setCategories(categoriesData.slice(0, 6));
       } else {
         setCategories([
+          { name: 'Cordset', count: 0, slug: 'cordset' },
+          { name: 'Anarkali', count: 0, slug: 'anarkali' },
+          { name: 'Suite', count: 0, slug: 'suite' },
           { name: 'Saree', count: 0, slug: 'saree' },
           { name: 'Kurti', count: 0, slug: 'kurti' },
-          { name: 'Suite', count: 0, slug: 'suite' },
-          { name: 'Night Dress', count: 0, slug: 'night-dress' },
-          { name: 'Skirt', count: 0, slug: 'skirt' },
-          { name: 'Top', count: 0, slug: 'top' },
+          { name: 'Lehenga', count: 0, slug: 'lehenga' },
+          { name: 'Western Dress', count: 0, slug: 'western-dress' },
         ]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
       setCategories([
+        { name: 'Cordset', count: 0, slug: 'cordset' },
+        { name: 'Anarkali', count: 0, slug: 'anarkali' },
+        { name: 'Suite', count: 0, slug: 'suite' },
         { name: 'Saree', count: 0, slug: 'saree' },
         { name: 'Kurti', count: 0, slug: 'kurti' },
-        { name: 'Suite', count: 0, slug: 'suite' },
-        { name: 'Night Dress', count: 0, slug: 'night-dress' },
-        { name: 'Skirt', count: 0, slug: 'skirt' },
-        { name: 'Top', count: 0, slug: 'top' },
+        { name: 'Lehenga', count: 0, slug: 'lehenga' },
+        { name: 'Western Dress', count: 0, slug: 'western-dress' },
       ]);
     } finally {
       setLoadingCategories(false);

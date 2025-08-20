@@ -88,8 +88,7 @@ export default function Home() {
 
       {/* Shop by Category Component */}
       <ShopByCategory 
-        showViewAll={true} 
-        autoScroll={true}
+        showViewAll={true}
         title="Shop by Category"
       />
 

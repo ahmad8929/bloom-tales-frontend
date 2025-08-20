@@ -208,7 +208,6 @@ export function NavigationMenu({
               href="/products" 
               isActive={pathname === '/products'}
               onClick={onItemClick}
-              premium
               isMobile
             >
               All Products
@@ -257,7 +256,7 @@ export function NavigationMenu({
         </div>
       ) : (
         <>
-          <NavigationLink href="/products" isActive={pathname === '/products'} premium>
+          <NavigationLink href="/products" isActive={pathname === '/products'} >
             <span className="hidden xl:inline">All Products</span>
             <span className="xl:hidden">Products</span>
           </NavigationLink>
