@@ -55,8 +55,8 @@ export function ShopByCategory({
         </div>
         
         {/* Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6 md:gap-8 lg:gap-10 max-w-7xl mx-auto">
-          {categories.map((category, index) => (
+        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6 md:gap-8 lg:gap-10 max-w-7xl mx-auto">
+          {categories.slice(0, 6).map((category, index) => (
             <div 
               key={category.id}
               className="group flex flex-col items-center"

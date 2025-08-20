@@ -141,14 +141,6 @@ export const testimonials: Testimonial[] = [
 
 // Categories Data
 export const categories: Category[] = [
-
-  //  { name: 'Cordset', count: 0, slug: 'cordset' },
-  //         { name: 'Anarkali', count: 0, slug: 'anarkali' },
-  //         { name: 'Suite', count: 0, slug: 'suite' },
-  //         { name: 'Saree', count: 0, slug: 'saree' },
-  //         { name: 'Kurti', count: 0, slug: 'kurti' },
-  //         { name: 'Lehenga', count: 0, slug: 'lehenga' },
-  //         { name: 'Western Dress', count: 0, slug: 'western-dress' },
   {
     id: 1,
     name: "Cordset",

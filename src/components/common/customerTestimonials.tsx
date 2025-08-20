@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,8 @@ interface CustomerTestimonialsProps {
   showCTA?: boolean;
   ctaText?: string;
   ctaLink?: string;
-  autoScroll?: boolean;
-  autoScrollInterval?: number;
+  autoPlay?: boolean;
+  autoPlayInterval?: number;
   itemsPerView?: {
     mobile: number;
     tablet: number;
@@ -30,132 +30,173 @@ export function CustomerTestimonials({
   showCTA = true,
   ctaText = "Start Shopping Today",
   ctaLink = "/products",
-  autoScroll = true,
-  autoScrollInterval = 5000,
+  autoPlay = true,
+  autoPlayInterval = 5000,
   itemsPerView = { mobile: 1, tablet: 2, desktop: 3 },
   className = ""
 }: CustomerTestimonialsProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(autoScroll);
-  const autoScrollRef = useRef<NodeJS.Timeout>();
-  const [viewportSize, setViewportSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const [currentIndex, setCurrentIndex] = useState(1); // Start from first real slide
+  const [visibleCards, setVisibleCards] = useState(3);
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
 
-  // Detect viewport size
+  // Create multiple copies for seamless infinite scroll
+  const slides = testimonials.length > 0 ? [...testimonials, ...testimonials, ...testimonials] : [];
+
   useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 768) {
-        setViewportSize('mobile');
-      } else if (width < 1024) {
-        setViewportSize('tablet');
-      } else {
-        setViewportSize('desktop');
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    setHasMounted(true);
   }, []);
 
-  const visibleItems = itemsPerView[viewportSize];
-  const maxIndex = Math.max(0, testimonials.length - visibleItems);
+  // Handle responsive visible cards
+  useLayoutEffect(() => {
+    function updateVisibleCards() {
+      const width = window.innerWidth;
+      if (width < 768) setVisibleCards(itemsPerView.mobile);      // mobile
+      else if (width < 1024) setVisibleCards(itemsPerView.tablet); // tablet
+      else setVisibleCards(itemsPerView.desktop);                  // desktop
+    }
+
+    updateVisibleCards();
+    window.addEventListener('resize', updateVisibleCards);
+    return () => window.removeEventListener('resize', updateVisibleCards);
+  }, [itemsPerView]);
+
+  // Set initial position to middle set when testimonials change
+  useEffect(() => {
+    if (testimonials.length > 0) {
+      setCurrentIndex(testimonials.length); // Start from second set (middle)
+      setIsTransitioning(false);
+    }
+  }, [testimonials.length]);
 
   // Auto-scroll functionality
   useEffect(() => {
-    if (isAutoScrolling && testimonials.length > visibleItems) {
-      autoScrollRef.current = setInterval(() => {
-        setCurrentIndex(prev => {
-          const next = prev + 1;
-          return next > maxIndex ? 0 : next;
-        });
-      }, autoScrollInterval);
+    if (!isPlaying || !hasMounted || testimonials.length <= visibleCards) return;
 
-      return () => {
-        if (autoScrollRef.current) {
-          clearInterval(autoScrollRef.current);
-        }
-      };
-    }
-  }, [isAutoScrolling, maxIndex, autoScrollInterval, visibleItems]);
+    const timer = setInterval(() => {
+      nextSlide();
+    }, autoPlayInterval);
 
-  const handlePrevious = () => {
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setIsAutoScrolling(false);
-    setCurrentIndex(prev => prev > 0 ? prev - 1 : maxIndex);
+    return () => clearInterval(timer);
+  }, [isPlaying, autoPlayInterval, hasMounted, testimonials.length, visibleCards]);
+
+  // Handle infinite loop reset when reaching end
+  useEffect(() => {
+    if (!isTransitioning || slides.length === 0) return;
+
+    const handle = setTimeout(() => {
+      // When we reach the end of second set, jump back to start of second set
+      if (currentIndex >= testimonials.length * 2) {
+        setIsTransitioning(false);
+        setCurrentIndex(testimonials.length); // Jump back to start of middle set
+      }
+      // When we go before first set, jump to end of second set
+      if (currentIndex < testimonials.length) {
+        setIsTransitioning(false);
+        setCurrentIndex(testimonials.length * 2 - 1);
+      }
+    }, 500); // Match transition duration
+
+    return () => clearTimeout(handle);
+  }, [currentIndex, testimonials.length, isTransitioning]);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => prev + 1);
+    setIsTransitioning(true);
   };
 
-  const handleNext = () => {
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setIsAutoScrolling(false);
-    setCurrentIndex(prev => prev < maxIndex ? prev + 1 : 0);
+  const prevSlide = () => {
+    setCurrentIndex((prev) => prev - 1);
+    setIsTransitioning(true);
   };
 
-  const goToIndex = (index: number) => {
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setIsAutoScrolling(false);
-    setCurrentIndex(index);
+  const goToSlide = (index: number) => {
+    // Calculate position in middle set
+    setCurrentIndex(testimonials.length + index);
+    setIsTransitioning(true);
+    setIsPlaying(false);
+    // Resume auto-play after 3 seconds
+    setTimeout(() => setIsPlaying(true), 3000);
   };
+
+  if (!hasMounted) return null;
+
+  // Calculate active indicator (show position within single set of testimonials)
+  const activeIndex = (currentIndex - testimonials.length) % testimonials.length;
 
   return (
-    <section className={`bg-gradient-to-br from-purple-50 to-pink-50 py-12 md:py-16 lg:py-24 relative overflow-hidden ${className}`}>
+    <section className={`py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden ${className}`}>
       {/* Background decorative elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-10 left-10 w-16 md:w-20 h-16 md:h-20 border-2 border-purple-400 rounded-full animate-pulse"></div>
-        <div className="absolute top-1/3 right-10 md:right-20 w-12 md:w-16 h-12 md:h-16 border-2 border-pink-400 rounded-full animate-bounce delay-100"></div>
-        <div className="absolute bottom-20 left-1/4 w-8 md:w-12 h-8 md:h-12 border-2 border-purple-400 rounded-full animate-pulse delay-200"></div>
-        <div className="absolute top-1/2 right-1/3 w-6 md:w-10 h-6 md:h-10 border-2 border-pink-300 rounded-full animate-bounce delay-300"></div>
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full blur-md animate-pulse delay-100"></div>
+        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full blur-sm animate-bounce delay-200"></div>
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full shadow-lg mb-4 md:mb-6">
-            <Users className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="font-semibold text-sm md:text-base">Customer Love</span>
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+            <Users className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              Customer Love
+            </h2>
           </div>
-          <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-purple-800 leading-tight">
+          <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-purple-800 leading-tight">
             {title}
-          </h2>
-          <p className="text-muted-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto leading-relaxed">
+          </h3>
+          <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium">
             {subtitle}
           </p>
         </div>
         
         {/* Testimonials Carousel */}
-        <div className="relative">
+        <div className="relative group">
           {/* Navigation Buttons */}
-          {testimonials.length > visibleItems && (
+          {testimonials.length > visibleCards && (
             <>
               <button
-                onClick={handlePrevious}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-700 p-2 md:p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 -translate-x-4 md:-translate-x-6"
+                onClick={() => {
+                  prevSlide();
+                  setIsPlaying(false);
+                  setTimeout(() => setIsPlaying(true), 3000);
+                }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 -translate-x-2 md:-translate-x-4 opacity-0 group-hover:opacity-100"
               >
-                <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
               </button>
               <button
-                onClick={handleNext}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-700 p-2 md:p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 translate-x-4 md:translate-x-6"
+                onClick={() => {
+                  nextSlide();
+                  setIsPlaying(false);
+                  setTimeout(() => setIsPlaying(true), 3000);
+                }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 translate-x-2 md:translate-x-4 opacity-0 group-hover:opacity-100"
               >
-                <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </>
           )}
 
           {/* Testimonials Container */}
-          <div className="overflow-hidden mx-4 md:mx-8">
+          <div className="overflow-hidden mx-2 md:mx-4 lg:mx-8">
             <div 
               className="flex transition-transform duration-500 ease-in-out gap-4 md:gap-6 lg:gap-8"
               style={{ 
-                transform: `translateX(-${currentIndex * (100 / visibleItems)}%)`,
-                width: `${(testimonials.length / visibleItems) * 100}%`
+                transform: `translateX(-${(currentIndex * 100) / visibleCards}%)`,
+                transition: isTransitioning ? "transform 0.5s ease-in-out" : "none"
               }}
             >
-              {testimonials.map((testimonial, index) => (
+              {slides.map((testimonial, index) => (
                 <div 
-                  key={testimonial.id} 
+                  key={`${testimonial.id}-${index}`}
                   className="flex-shrink-0"
-                  style={{ width: `${100 / testimonials.length}%` }}
+                  style={{ 
+                    width: `calc(${100 / visibleCards}% - ${(4 * (visibleCards - 1)) / visibleCards}px)`,
+                    marginRight: index < slides.length - 1 ? '1rem' : '0'
+                  }}
                 >
                   <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-2 hover:border-purple-200 relative overflow-hidden h-full">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-pink-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -180,12 +221,12 @@ export function CustomerTestimonials({
                       </div>
                       
                       {/* Review Text */}
-                      <p className="text-muted-foreground text-sm md:text-base mb-4 md:mb-6 leading-relaxed group-hover:text-foreground/80 transition-colors duration-300 flex-grow line-clamp-4 md:line-clamp-none">
+                      <p className="text-gray-600 text-sm md:text-base mb-4 md:mb-6 leading-relaxed group-hover:text-gray-700 transition-colors duration-300 flex-grow line-clamp-4 md:line-clamp-5">
                         "{testimonial.review}"
                       </p>
                       
                       {/* Footer with Customer Info */}
-                      <div className="border-t pt-4 mt-auto">
+                      <div className="border-t border-purple-100 pt-4 mt-auto">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {testimonial.avatar ? (
@@ -194,10 +235,10 @@ export function CustomerTestimonials({
                                 alt={testimonial.name}
                                 width={40}
                                 height={40}
-                                className="rounded-full object-cover w-8 h-8 md:w-10 md:h-10"
+                                className="rounded-full object-cover w-8 h-8 md:w-10 md:h-10 border-2 border-purple-200 group-hover:border-purple-300 transition-colors duration-300"
                               />
                             ) : (
-                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm md:text-base">
+                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm md:text-base shadow-lg">
                                 {testimonial.name[0]}
                               </div>
                             )}
@@ -205,11 +246,11 @@ export function CustomerTestimonials({
                               <p className="font-bold text-purple-700 group-hover:text-purple-600 transition-colors duration-300 text-sm md:text-base truncate">
                                 {testimonial.name}
                               </p>
-                              <p className="text-xs md:text-sm text-muted-foreground truncate">{testimonial.location}</p>
+                              <p className="text-xs md:text-sm text-gray-500 truncate">{testimonial.location}</p>
                             </div>
                           </div>
                           <div className="text-right min-w-0 flex-shrink-0 ml-2">
-                            <p className="text-xs text-muted-foreground">Purchased:</p>
+                            <p className="text-xs text-gray-400">Purchased:</p>
                             <p className="text-xs font-medium text-purple-600 line-clamp-2">{testimonial.purchase}</p>
                           </div>
                         </div>
@@ -224,16 +265,16 @@ export function CustomerTestimonials({
           </div>
 
           {/* Progress Indicators */}
-          {testimonials.length > visibleItems && (
-            <div className="flex justify-center mt-6 md:mt-8 gap-2">
-              {Array.from({ length: maxIndex + 1 }).map((_, index) => (
+          {testimonials.length > visibleCards && (
+            <div className="flex justify-center mt-8 md:mt-12 gap-2">
+              {testimonials.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => goToIndex(index)}
+                  onClick={() => goToSlide(index)}
                   className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
-                    index === currentIndex 
-                      ? 'bg-purple-600 scale-125' 
-                      : 'bg-purple-300 hover:bg-purple-400'
+                    index === activeIndex 
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 scale-125 shadow-lg' 
+                      : 'bg-gray-300 hover:bg-gray-400'
                   }`}
                 />
               ))}
@@ -244,29 +285,25 @@ export function CustomerTestimonials({
         {/* CTA Section */}
         {showCTA && (
           <div className="text-center mt-12 md:mt-16">
-            <div className="inline-flex items-center gap-2 text-muted-foreground mb-4 md:mb-6">
+            <div className="inline-flex items-center gap-2 text-gray-600 mb-4 md:mb-6">
               <Heart className="w-4 h-4 md:w-5 md:h-5 text-pink-500" />
-              <span className="text-sm md:text-base">Join thousands of happy customers</span>
+              <span className="text-sm md:text-base font-medium">Join thousands of happy customers</span>
             </div>
+            <br />
             <Button 
               asChild 
-              size="lg"
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base px-6 md:px-8 py-2 md:py-3"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-8 py-3 md:px-12 md:py-4 rounded-full font-semibold backdrop-blur-lg"
             >
-              <Link href={ctaLink}>{ctaText}</Link>
+              <Link href={ctaLink} className="flex items-center gap-2">
+                <span>{ctaText}</span>
+                <Heart className="w-4 h-4 md:w-5 md:h-5" />
+              </Link>
             </Button>
           </div>
         )}
       </div>
 
       <style jsx>{`
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        
         .line-clamp-4 {
           display: -webkit-box;
           -webkit-line-clamp: 4;
@@ -274,13 +311,18 @@ export function CustomerTestimonials({
           overflow: hidden;
         }
         
-        @media (min-width: 768px) {
-          .md\\:line-clamp-none {
-            display: block;
-            -webkit-line-clamp: unset;
-            -webkit-box-orient: unset;
-            overflow: visible;
-          }
+        .line-clamp-5 {
+          display: -webkit-box;
+          -webkit-line-clamp: 5;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </section>

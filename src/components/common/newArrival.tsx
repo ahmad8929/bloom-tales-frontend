@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Star, Loader2, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Sparkles, ArrowRight, Star } from 'lucide-react';
 import { productApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
@@ -25,51 +25,95 @@ interface Product {
 
 interface NewArrivalProps {
   limit?: number;
+  title?: string;
   showViewAll?: boolean;
+  autoPlay?: boolean;
+  autoPlayInterval?: number;
 }
 
-export function NewArrival({ limit = 8, showViewAll = true }: NewArrivalProps) {
+export function NewArrival({ 
+  limit = 8, 
+  title = "New Arrivals", 
+  showViewAll = true,
+  autoPlay = true,
+  autoPlayInterval = 4000
+}: NewArrivalProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const autoScrollRef = useRef<NodeJS.Timeout>();
+  const [currentIndex, setCurrentIndex] = useState(1); // Start from first real slide
+  const [visibleCards, setVisibleCards] = useState(4);
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
 
-  const visibleCards = 4; // Number of cards visible at once
-  const maxIndex = Math.max(0, products.length - visibleCards);
+  // Create multiple copies for seamless infinite scroll
+  const slides = products.length > 0 ? [...products, ...products, ...products] : [];
 
   useEffect(() => {
+    setHasMounted(true);
     fetchNewArrivals();
   }, [limit]);
 
-  // Auto-scroll functionality with progress tracking
-  useEffect(() => {
-    if (products.length > visibleCards && isAutoScrolling) {
-      autoScrollRef.current = setInterval(() => {
-        setCurrentIndex(prev => {
-          const next = prev + 1;
-          return next > maxIndex ? 0 : next;
-        });
-      }, 3000);
-
-      return () => {
-        if (autoScrollRef.current) {
-          clearInterval(autoScrollRef.current);
-        }
-      };
+  // Handle responsive visible cards
+  useLayoutEffect(() => {
+    function updateVisibleCards() {
+      const width = window.innerWidth;
+      if (width < 640) setVisibleCards(1);      // mobile
+      else if (width < 768) setVisibleCards(2); // tablet
+      else if (width < 1024) setVisibleCards(3); // small desktop
+      else setVisibleCards(4);                   // large desktop
     }
-  }, [products.length, maxIndex, isAutoScrolling]);
+
+    updateVisibleCards();
+    window.addEventListener('resize', updateVisibleCards);
+    return () => window.removeEventListener('resize', updateVisibleCards);
+  }, []);
+
+  // Set initial position to middle set when products change
+  useEffect(() => {
+    if (products.length > 0) {
+      setCurrentIndex(products.length); // Start from second set (middle)
+      setIsTransitioning(false);
+    }
+  }, [products.length]);
+
+  // Auto-scroll functionality
+  useEffect(() => {
+    if (!isPlaying || !hasMounted || products.length <= visibleCards) return;
+
+    const timer = setInterval(() => {
+      nextSlide();
+    }, autoPlayInterval);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, autoPlayInterval, hasMounted, products.length, visibleCards]);
+
+  // Handle infinite loop reset when reaching end
+  useEffect(() => {
+    if (!isTransitioning || slides.length === 0) return;
+
+    const handle = setTimeout(() => {
+      // When we reach the end of second set, jump back to start of second set
+      if (currentIndex >= products.length * 2) {
+        setIsTransitioning(false);
+        setCurrentIndex(products.length); // Jump back to start of middle set
+      }
+      // When we go before first set, jump to end of second set
+      if (currentIndex < products.length) {
+        setIsTransitioning(false);
+        setCurrentIndex(products.length * 2 - 1);
+      }
+    }, 500); // Match transition duration
+
+    return () => clearTimeout(handle);
+  }, [currentIndex, products.length, isTransitioning]);
 
   const fetchNewArrivals = async () => {
     try {
       setLoading(true);
       
-      console.log('Fetching new arrivals...');
       const response = await productApi.getNewArrivals(limit);
-      console.log('New arrivals API response:', response);
       
-      // Handle different response structures (same pattern as Sale component)
       let productsList: Product[] = [];
       
       if (response.error) {
@@ -83,16 +127,13 @@ export function NewArrival({ limit = 8, showViewAll = true }: NewArrivalProps) {
           productsList = nestedData.products || [];
         }
       } 
-      // Check for direct products array in response.data
       else if (response.data && Array.isArray((response.data as any))) {
         productsList = response.data as any;
       }
-      // Check if products are directly in response.data
       else if (response.data && typeof response.data === 'object' && 'products' in (response.data as any)) {
         productsList = (response.data as any).products || [];
       }
       
-      console.log('Processed new arrivals:', productsList);
       setProducts(productsList);
       
     } catch (error: any) {
@@ -107,153 +148,157 @@ export function NewArrival({ limit = 8, showViewAll = true }: NewArrivalProps) {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(price);
+  const nextSlide = () => {
+    setCurrentIndex((prev) => prev + 1);
+    setIsTransitioning(true);
   };
 
-  const calculateDiscount = (price: number, comparePrice: number) => {
-    return Math.round(((comparePrice - price) / comparePrice) * 100);
+  const prevSlide = () => {
+    setCurrentIndex((prev) => prev - 1);
+    setIsTransitioning(true);
   };
 
-  const handlePrevious = () => {
-    setIsAutoScrolling(false);
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setCurrentIndex(prev => prev > 0 ? prev - 1 : maxIndex);
+  const goToSlide = (index: number) => {
+    // Calculate position in middle set
+    setCurrentIndex(products.length + index);
+    setIsTransitioning(true);
+    setIsPlaying(false);
+    // Resume auto-play after 3 seconds
+    setTimeout(() => setIsPlaying(true), 3000);
   };
 
-  const handleNext = () => {
-    setIsAutoScrolling(false);
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setCurrentIndex(prev => prev < maxIndex ? prev + 1 : 0);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price);
 
-  const handleIndicatorClick = (index: number) => {
-    setIsAutoScrolling(false);
-    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-    setCurrentIndex(index);
-  };
+  const calculateDiscount = (price: number, comparePrice: number) =>
+    Math.round(((comparePrice - price) / comparePrice) * 100);
 
+  // Loading state
   if (loading) {
     return (
-      <section className="bg-gradient-to-br from-blue-50/50 to-purple-50/50 py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg shadow-lg mb-4">
-              <Sparkles className="w-5 h-5" />
-              <h2 className="font-headline text-2xl md:text-3xl font-bold">New Arrivals</h2>
-            </div>
+      <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
+            <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              {title}
+            </h2>
           </div>
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            <span className="ml-2 text-muted-foreground">Loading new arrivals...</span>
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <span className="ml-3 text-gray-600 font-medium">Loading new arrivals...</span>
           </div>
         </div>
       </section>
     );
   }
 
+  // Empty state
   if (products.length === 0) {
     return (
-      <section className="bg-gradient-to-br from-blue-50/50 to-purple-50/50 py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg shadow-lg mb-4">
-              <Sparkles className="w-5 h-5" />
-              <h2 className="font-headline text-2xl md:text-3xl font-bold">New Arrivals</h2>
-            </div>
+      <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
+            <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              {title}
+            </h2>
           </div>
-          <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg">No new arrivals available at the moment.</p>
-            <p className="text-sm text-muted-foreground mt-2">Check back soon for our latest collections!</p>
-          </div>
+          <p className="text-lg text-gray-600 py-12 font-medium">No new arrivals available at the moment.</p>
+          <p className="text-sm text-gray-500">Check back soon for our latest collections!</p>
         </div>
       </section>
     );
   }
 
-  const progressPercentage = products.length > visibleCards 
-    ? ((currentIndex + 1) / (maxIndex + 1)) * 100 
-    : 100;
+  if (!hasMounted) return null;
+
+  // Calculate active indicator (show position within single set of products)
+  const activeIndex = (currentIndex - products.length) % products.length;
 
   return (
-    <section className="bg-gradient-to-br from-blue-50/50 to-purple-50/50 py-16 md:py-24 relative overflow-hidden">
+    <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-300 rounded-full animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-24 h-24 bg-purple-300 rounded-full animate-bounce"></div>
-        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-indigo-300 rounded-full animate-pulse delay-100"></div>
+        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full blur-md animate-pulse delay-100"></div>
+        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full blur-sm animate-bounce delay-200"></div>
       </div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg shadow-lg mb-4">
-            <Sparkles className="w-5 h-5 animate-pulse" />
-            <h2 className="font-headline text-2xl md:text-3xl font-bold">New Arrivals</h2>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Header Section */}
+        <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+            <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+              {title}
+            </h2>
           </div>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium mb-6">
             Discover our latest collection of stunning pieces, fresh from our designers
           </p>
-          
-          {/* Progress Bar */}
-          {products.length > visibleCards && (
-            <div className="mt-6 max-w-md mx-auto">
-              <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Showing {currentIndex + 1}-{Math.min(currentIndex + visibleCards, products.length)} of {products.length}</span>
-                <span>{Math.round(progressPercentage)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Products Carousel */}
-        <div className="relative">
+        <div className="relative group">
           {/* Navigation Buttons */}
           {products.length > visibleCards && (
             <>
               <button
-                onClick={handlePrevious}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-700 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+                onClick={() => {
+                  prevSlide();
+                  setIsPlaying(false);
+                  setTimeout(() => setIsPlaying(true), 3000);
+                }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 -translate-x-2 md:-translate-x-4 opacity-0 group-hover:opacity-100"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
               </button>
               <button
-                onClick={handleNext}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-700 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+                onClick={() => {
+                  nextSlide();
+                  setIsPlaying(false);
+                  setTimeout(() => setIsPlaying(true), 3000);
+                }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 translate-x-2 md:translate-x-4 opacity-0 group-hover:opacity-100"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </>
           )}
 
           {/* Products Container */}
-          <div 
-            ref={scrollRef}
-            className="overflow-hidden rounded-lg"
-          >
+          <div className="overflow-hidden mx-2 md:mx-4 lg:mx-8">
             <div 
-              className="flex transition-transform duration-500 ease-in-out gap-6"
+              className="flex transition-transform duration-500 ease-in-out gap-4 md:gap-6"
               style={{ 
-                transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
-                width: `${(products.length / visibleCards) * 100}%`
+                transform: `translateX(-${(currentIndex * 100) / visibleCards}%)`,
+                transition: isTransitioning ? "transform 0.5s ease-in-out" : "none"
               }}
             >
-              {products.map((product, index) => (
+              {slides.map((product, index) => (
                 <div 
-                  key={product._id || product.id} 
+                  key={`${product._id}-${index}`}
                   className="group flex-shrink-0"
-                  style={{ width: `${100 / products.length}%` }}
+                  style={{ 
+                    width: `calc(${100 / visibleCards}% - ${(4 * (visibleCards - 1)) / visibleCards}px)`,
+                    marginRight: index < slides.length - 1 ? '1rem' : '0'
+                  }}
                 >
-                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-blue-200">
-                    <div className="aspect-[3/4] relative">
+                  <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-purple-200 bg-white/80 backdrop-blur-sm h-full">
+                    <div className="relative h-48 md:h-56 lg:h-64">
                       <Image
                         src={product.images?.[0]?.url || '/placeholder-product.jpg'}
                         alt={product.images?.[0]?.alt || product.name}
@@ -261,42 +306,55 @@ export function NewArrival({ limit = 8, showViewAll = true }: NewArrivalProps) {
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
-                      <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 text-sm rounded-full font-bold shadow-lg animate-pulse">
+                      
+                      {/* New Badge */}
+                      <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 text-xs md:text-sm rounded-full font-bold shadow-lg animate-pulse">
                         NEW
                       </div>
-                      {product.isSale && product.comparePrice && (
-                        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs rounded-full font-bold">
+                      
+                      {/* Discount Badge */}
+                      {product.comparePrice && product.comparePrice > product.price && (
+                        <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-1 text-xs rounded-full font-bold shadow-lg">
                           {calculateDiscount(product.price, product.comparePrice)}% OFF
                         </div>
                       )}
+
+                      {/* Overlay Gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                    <CardContent className="p-4 bg-gradient-to-br from-white to-blue-50/30">
-                      <h3 className="font-semibold mb-2 line-clamp-2 min-h-[3rem] text-gray-800">
+
+                    <CardContent className="p-4 md:p-6 bg-gradient-to-br from-white to-purple-50/30">
+                      <h3 className="font-semibold mb-3 line-clamp-2 text-gray-800 min-h-[3rem] leading-tight text-sm md:text-base">
                         {product.name}
                       </h3>
-                      
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-600">Size: {product.size}</p>
-                        <p className="text-sm text-gray-600">Material: {product.material}</p>
+
+                      <div className="mb-3 text-xs md:text-sm text-gray-600">
+                        <p>Size: <span className="font-medium">{product.size}</span></p>
+                        <p>Material: <span className="font-medium capitalize">{product.material}</span></p>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="font-bold text-lg text-blue-600">
-                          {formatPrice(product.price)}
-                        </span>
+                        <span className="font-bold text-lg md:text-xl text-purple-600">{formatPrice(product.price)}</span>
                         {product.comparePrice && product.comparePrice > product.price && (
-                          <span className="text-sm text-gray-500 line-through">
-                            {formatPrice(product.comparePrice)}
-                          </span>
+                          <span className="text-sm text-gray-500 line-through">{formatPrice(product.comparePrice)}</span>
                         )}
                       </div>
-                      
-                      <Button 
-                        asChild 
-                        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+
+                      {/* Fresh Arrival Badge */}
+                      <div className="mb-4 min-h-[1.5rem] flex justify-center">
+                        <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-current" />
+                          Fresh Arrival
+                        </span>
+                      </div>
+
+                      <Button
+                        asChild
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium hover:scale-105 rounded-full"
                       >
-                        <Link href={`/products/${product._id}`}>
-                          View Details
+                        <Link href={`/products/${product._id}`} className="flex items-center justify-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          <span className="text-sm md:text-base">View Details</span>
                         </Link>
                       </Button>
                     </CardContent>
@@ -305,51 +363,33 @@ export function NewArrival({ limit = 8, showViewAll = true }: NewArrivalProps) {
               ))}
             </div>
           </div>
-
-          {/* Progress Indicators */}
-          {products.length > visibleCards && (
-            <div className="flex justify-center mt-6 gap-2">
-              {Array.from({ length: maxIndex + 1 }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleIndicatorClick(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentIndex 
-                      ? 'bg-blue-500 scale-125' 
-                      : 'bg-blue-200 hover:bg-blue-300'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Auto-scroll control */}
-          {products.length > visibleCards && (
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-                className={`text-sm px-4 py-2 rounded-full transition-all duration-300 ${
-                  isAutoScrolling 
-                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {isAutoScrolling ? '⏸️ Pause Auto-scroll' : '▶️ Resume Auto-scroll'}
-              </button>
-            </div>
-          )}
         </div>
-        
+
+        {/* View All Button - Centered */}
         {showViewAll && (
-          <div className="text-center mt-12">
-            <Button asChild size="lg" className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl px-8 py-3">
-              <Link href="/products?isNewArrival=true">
-                View All New Arrivals
+          <div className="text-center mt-12 md:mt-16">
+            <Button 
+              asChild 
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-8 py-3 md:px-12 md:py-4 rounded-full font-semibold backdrop-blur-lg"
+            >
+              <Link href="/products?isNewArrival=true" className="flex items-center gap-3">
+                <span>View All New Arrivals</span>
+                <ArrowRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
             </Button>
           </div>
         )}
       </div>
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </section>
   );
 }
