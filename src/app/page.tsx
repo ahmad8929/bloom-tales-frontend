@@ -108,8 +108,6 @@ export default function Home() {
         showCTA={true}
         ctaText="Start Shopping Today"
         ctaLink="/products"
-        autoScroll={true}
-        autoScrollInterval={5000}
         itemsPerView={{
           mobile: 1,
           tablet: 2,
