@@ -16,29 +16,34 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-const signupSchema = z.object({
-  firstName: z.string().min(2, 'First name is required'),
-  lastName: z.string().min(2, 'Last name is required'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const signupSchema = z
+  .object({
+    firstName: z.string().min(2, 'First name is required'),
+    lastName: z.string().min(2, 'Last name is required'),
+    email: z.string().email('Please enter a valid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
   const { signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -47,51 +52,30 @@ export function SignupForm() {
       lastName: '',
       email: '',
       password: '',
-      confirmPassword: ''
-    }
+      confirmPassword: '',
+    },
   });
 
   const onSubmit = async (data: SignupFormData) => {
     const { confirmPassword, ...signupData } = data;
     setIsLoading(true);
-    
+
     try {
       const result = await signup(signupData);
-      
-      // Only show success message if signup actually succeeded
-      // Check if result indicates success (adjust based on your API response structure)
       if (result && !result.error) {
         toast({
           title: 'Account created successfully!',
           description: 'Please check your email to verify your account.',
         });
-        // Optionally reset form on success
         form.reset();
       } else {
-        // Handle case where signup returns an error object
         throw new Error(result?.error || 'Signup failed');
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      
-      // Show appropriate error message based on error type
-      let errorMessage = 'An unexpected error occurred';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Signup endpoint not found. Please check your API configuration.';
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid signup data. Please check your input.';
-      } else if (error.response?.status === 409) {
-        errorMessage = 'An account with this email already exists.';
-      } else if (error.response?.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
-      }
-      
       toast({
         title: 'Signup failed',
-        description: errorMessage,
+        description: error.message || 'An unexpected error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -100,16 +84,14 @@ export function SignupForm() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Create an account
-        </h1>
+    <div className="space-y-6 bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-xl shadow-lg max-w-md mx-auto">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
         <p className="text-sm text-muted-foreground">
           Enter your information below to create your account
         </p>
       </div>
-      
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -120,13 +102,12 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isLoading} />
+                    <Input {...field} placeholder="First Name" disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="lastName"
@@ -134,7 +115,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isLoading} />
+                    <Input {...field} placeholder="Last Name" disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,7 +141,7 @@ export function SignupForm() {
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="password"
@@ -168,13 +149,31 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} disabled={isLoading} />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      {...field}
+                      disabled={isLoading}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="confirmPassword"
@@ -182,31 +181,53 @@ export function SignupForm() {
               <FormItem>
                 <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} disabled={isLoading} />
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirm your password"
+                      {...field}
+                      disabled={isLoading}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           <Button
             type="submit"
-            className="w-full"
+            className="w-full h-10 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold"
             disabled={isLoading}
           >
-            {isLoading && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              'Create Account'
             )}
-            Create Account
           </Button>
         </form>
       </Form>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-muted-foreground mt-4">
         Already have an account?{' '}
         <Link
           href="/login"
-          className="font-medium text-primary hover:underline"
+          className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent hover:from-purple-700 hover:to-pink-700"
         >
           Sign in
         </Link>

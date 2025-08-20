@@ -38,177 +38,119 @@ export function LoginForm() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Modal states
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
-  // Log initial state
   useEffect(() => {
-    console.log('Initial auth state:', { isAuthenticated, user });
-  }, []);
-
-  // Add effect to handle redirection when authenticated
-  useEffect(() => {
-    console.log('Auth state changed:', { isAuthenticated, user });
-    
-    // If already authenticated on mount, redirect immediately
-    if (isAuthenticated && user) {
-      console.log('Already authenticated, redirecting...');
-      router.push('/');
-      return;
-    }
+    if (isAuthenticated && user) router.push('/');
   }, [isAuthenticated, user, router]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      console.log('Submitting login form...', { email: data.email });
       setError(null);
       setNeedsEmailVerification(false);
-      
+
       const result = await login(data);
-      
-      console.log('Login result received:', result);
-      
       if (result.success) {
         toast({
           title: 'Welcome back!',
           description: 'You have been logged in successfully.',
         });
-        // Redirection is handled in the login function or useEffect
       } else {
-        // Handle different types of errors
-        console.log('Login failed with code:', result.code, 'message:', result.error);
-        
         if (result.code === 'EMAIL_NOT_VERIFIED') {
           setNeedsEmailVerification(true);
           setUserEmail(data.email);
-          setError(result.error || 'Please verify your email address before logging in.');
-          
+          setError(result.error || 'Please verify your email.');
           toast({
             title: 'Email Verification Required',
-            description: result.error || 'Please verify your email address before logging in.',
+            description: result.error,
             variant: 'destructive',
           });
         } else {
           setError(result.error || 'Login failed');
-          
           toast({
             title: 'Login Failed',
-            description: result.error || 'Please check your credentials and try again.',
+            description: result.error,
             variant: 'destructive',
           });
         }
       }
     } catch (err: any) {
-      console.error('Login catch error:', err);
-      
-      // Check if it's an email verification error
       if (err.code === 'EMAIL_NOT_VERIFIED' || err.message?.includes('verify your email')) {
         setNeedsEmailVerification(true);
         setUserEmail(data.email);
-        setError(err.message || 'Please verify your email address before logging in.');
-        
-        toast({
-          title: 'Email Verification Required',
-          description: err.message || 'Please verify your email address before logging in.',
-          variant: 'destructive',
-        });
+        setError(err.message || 'Please verify your email.');
       } else {
-        setError(err.message || 'An unexpected error occurred');
-        
-        toast({
-          title: 'Login Error',
-          description: err.message || 'An unexpected error occurred. Please try again.',
-          variant: 'destructive',
-        });
+        setError(err.message || 'An unexpected error occurred.');
       }
     }
   };
 
-  const handleOpenVerificationModal = () => {
-    setShowVerificationModal(true);
-  };
-
-  const handleOpenResetPasswordModal = () => {
-    const currentEmail = form.getValues('email');
-    setShowResetPasswordModal(true);
-  };
-
+  const handleOpenVerificationModal = () => setShowVerificationModal(true);
+  const handleOpenResetPasswordModal = () => setShowResetPasswordModal(true);
   const handleVerificationModalClose = () => {
     setShowVerificationModal(false);
     setNeedsEmailVerification(false);
     setError(null);
   };
+  const handleResetPasswordModalClose = () => setShowResetPasswordModal(false);
 
-  const handleResetPasswordModalClose = () => {
-    setShowResetPasswordModal(false);
-  };
-
-  // If already authenticated, show loading state
   if (isAuthenticated && user) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Redirecting...</span>
-        </div>
+        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        Redirecting...
       </div>
     );
   }
-
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-xl shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto">
+
+  
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome back
+          <h1 className="text-2xl sm:text-3xl font-bold text-purple-700">
+            Welcome Back
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-purple-400 mt-1">
             Sign in to your account to continue
           </p>
         </div>
 
         {/* Email Verification Alert */}
         {needsEmailVerification && (
-          <Alert className="border-amber-200 bg-amber-50 text-amber-800">
-            <Mail className="h-4 w-4" />
-            <AlertDescription>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="font-medium">Email verification required</p>
-                  <p className="text-sm mt-1">
-                    Please verify your email address before logging in.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenVerificationModal}
-                  className="ml-4 shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100"
-                >
-                  Resend Email
-                </Button>
-              </div>
-            </AlertDescription>
+          <Alert className="border-purple-300 bg-purple-100 text-purple-800 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              <AlertDescription>
+                Please verify your email before logging in.
+              </AlertDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenVerificationModal}
+              className="border-purple-400 text-purple-700 hover:bg-purple-200 ml-2"
+            >
+              Resend Email
+            </Button>
           </Alert>
         )}
 
         {/* General Error Alert */}
         {error && !needsEmailVerification && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+          <Alert variant="destructive" className="rounded-lg flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
+        {/* Login Form */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -216,7 +158,7 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address</FormLabel>
+                  <FormLabel className="text-purple-700">Email Address</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -236,7 +178,7 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel className="text-purple-700">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
@@ -254,14 +196,8 @@ export function LoginForm() {
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <span className="sr-only">
-                          {showPassword ? 'Hide password' : 'Show password'}
-                        </span>
+                        {showPassword ? <EyeOff className="h-4 w-4 text-purple-500" /> : <Eye className="h-4 w-4 text-purple-500" />}
+                        <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
                       </Button>
                     </div>
                   </FormControl>
@@ -271,23 +207,12 @@ export function LoginForm() {
             />
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {/* <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <label htmlFor="remember-me" className="text-sm text-muted-foreground">
-                  Remember me
-                </label> */}
-              </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleOpenResetPasswordModal}
-                className="text-sm font-medium text-primary hover:underline h-auto p-0"
+                className="text-sm font-medium text-purple-600 hover:underline h-auto p-0"
               >
                 Forgot password?
               </Button>
@@ -295,72 +220,46 @@ export function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full h-10"
+              className="w-full h-10 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md rounded-lg"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Sign In'}
             </Button>
           </form>
         </Form>
 
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
+        {/* Signup Link */}
+        <div className="text-center mt-2">
+          <p className="text-sm text-purple-500">
             Don't have an account?{' '}
-            <Link
-              href="/signup"
-              className="font-medium text-primary hover:underline"
-            >
+            <Link href="/signup" className="font-medium text-purple-700 hover:underline">
               Create an account
             </Link>
           </p>
         </div>
 
         {/* Help Section */}
-        <div className="text-center pt-4 border-t">
-          <p className="text-sm text-muted-foreground mb-2">
-            Need help with your account?
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleOpenVerificationModal}
-              className="text-primary hover:underline h-auto p-0"
-            >
-              Resend verification email
-            </Button>
-            {/* <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleOpenResetPasswordModal}
-              className="text-primary hover:underline h-auto p-0"
-            >
-              Reset password
-            </Button> */}
-          </div>
-        </div>
+<div className="text-center pt-6 border-t border-purple-200">
+  <p className="text-sm text-purple-400 mb-2">
+    Need help with your account?
+  </p>
+  <div className="flex justify-center space-x-4">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleOpenVerificationModal}
+      className="border-purple-400 text-purple-700 hover:bg-purple-200 h-auto p-2 rounded-lg"
+    >
+      Resend verification email
+    </Button>
+  </div>
+</div>
+
 
         {/* Additional Links */}
-        <div className="flex justify-center space-x-4 pt-2">
-          <Link
-            href="/privacy"
-            className="text-xs text-muted-foreground hover:text-primary hover:underline"
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            href="/terms"
-            className="text-xs text-muted-foreground hover:text-primary hover:underline"
-          >
-            Terms of Service
-          </Link>
+        <div className="flex justify-center space-x-4 pt-4 text-xs text-purple-400">
+          <Link href="/privacy" className="hover:text-purple-600 hover:underline">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-purple-600 hover:underline">Terms of Service</Link>
         </div>
       </div>
 
