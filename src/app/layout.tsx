@@ -5,6 +5,7 @@ import { Providers } from '@/components/Providers';
 import { AuthInitializer } from '@/components/AuthInitializer';
 import { Toaster } from '@/components/ui/toaster';
 import { ConditionalLayout } from '@/components/ConditionalLayout';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -66,6 +67,7 @@ export default function RootLayout({
             {children}
           </ConditionalLayout>
           <Toaster />
+          <OfflineIndicator />
         </Providers>
       </body>
     </html>

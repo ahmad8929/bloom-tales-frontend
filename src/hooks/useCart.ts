@@ -109,9 +109,8 @@ const addToCart = async (productId: string, quantity: number = 1) => {
         const response = await cartApi.updateCartItem(productId, quantity);
         
         if (response.data?.data?.cart?.items) {
-  dispatch(setCartItems(response.data.data.cart.items));
-}
-
+          dispatch(setCartItems(response.data.data.cart.items));
+        }
       } else {
         dispatch(updateCartItemLocal({ productId, quantity }));
       }
@@ -122,6 +121,8 @@ const addToCart = async (productId: string, quantity: number = 1) => {
         description: 'Failed to update cart item.',
         variant: 'destructive',
       });
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
@@ -133,11 +134,9 @@ const addToCart = async (productId: string, quantity: number = 1) => {
       if (isAuthenticated) {
         const response = await cartApi.removeFromCart(productId);
         
-        
         if (response.data?.data?.cart?.items) {
-  dispatch(setCartItems(response.data.data.cart.items));
-}
-
+          dispatch(setCartItems(response.data.data.cart.items));
+        }
       } else {
         dispatch(removeFromCartLocal(productId));
       }
@@ -153,6 +152,8 @@ const addToCart = async (productId: string, quantity: number = 1) => {
         description: 'Failed to remove item from cart.',
         variant: 'destructive',
       });
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
@@ -179,6 +180,8 @@ const addToCart = async (productId: string, quantity: number = 1) => {
         description: 'Failed to clear cart.',
         variant: 'destructive',
       });
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 

@@ -6,6 +6,24 @@ body {
   font-family: 'Alegreya', serif;
 }
 
+/* Ensure smooth scrolling and proper overflow handling */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Fix for mobile viewport height */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 98%;

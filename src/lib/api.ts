@@ -1,55 +1,121 @@
 import { getCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = "https://bloom-backend-rtch.onrender.com";
+const API_URL = "http://localhost:5000";
 
 interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
 
+// Enhanced fetch with timeout and retry logic
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 30000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - please check your connection and try again');
+    }
+    throw error;
+  }
+}
+
 export async function fetchApi<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retries: number = 2
 ): Promise<ApiResponse<T>> {
-  try {
-    // Get token from cookie for client-side requests
-    const token = typeof window !== 'undefined' ? getCookie('auth-token') : null;
-    
-    const headers: Record<string, string> = {
-      ...options.headers as Record<string, string>,
-    };
+  let lastError: Error | null = null;
 
-    // Don't set Content-Type for FormData - let browser set it with boundary
-    if (!(options.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json';
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      // Get token from cookie for client-side requests
+      const token = typeof window !== 'undefined' ? getCookie('auth-token') : null;
+      
+      const headers: Record<string, string> = {
+        ...options.headers as Record<string, string>,
+      };
+
+      // Don't set Content-Type for FormData - let browser set it with boundary
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      // Add authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetchWithTimeout(`${API_URL}/api${endpoint}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+        mode: 'cors',
+      }, 30000);
+
+      // Handle non-JSON responses gracefully
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', jsonError);
+          throw new Error('Invalid server response format');
+        }
+      } else {
+        // If not JSON, return a generic error
+        throw new Error(`Unexpected response format from server`);
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return { data };
+    } catch (error: any) {
+      lastError = error;
+      console.error(`API Error (attempt ${attempt + 1}/${retries + 1}):`, error);
+
+      // Don't retry on client errors (4xx) or auth errors
+      if (error.message?.includes('401') || error.message?.includes('403') || 
+          error.message?.includes('400') || error.message?.includes('404')) {
+        break;
+      }
+
+      // Wait before retrying (exponential backoff)
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
     }
-
-    // Add authorization header if token exists
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_URL}/api${endpoint}`, {
-      ...options,
-      headers,
-      credentials: 'include',
-      mode: 'cors',
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
-    }
-
-    return { data };
-  } catch (error) {
-    console.error('API Error:', error);
-    return {
-      error: error instanceof Error ? error.message : 'An unknown error occurred',
-    };
   }
+
+  // Return user-friendly error messages
+  const errorMessage = lastError?.message || 'An unknown error occurred';
+  let userFriendlyMessage = errorMessage;
+
+  if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
+    userFriendlyMessage = 'Network error - please check your connection and try again';
+  } else if (errorMessage.includes('Failed to fetch')) {
+    userFriendlyMessage = 'Unable to reach server - please try again later';
+  }
+
+  return {
+    error: userFriendlyMessage,
+  };
 }
 
 export const api = {

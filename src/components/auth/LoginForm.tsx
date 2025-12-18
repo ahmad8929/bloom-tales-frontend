@@ -61,6 +61,8 @@ export function LoginForm() {
           title: 'Welcome back!',
           description: 'You have been logged in successfully.',
         });
+        // Use Next.js router for navigation
+        router.push('/');
       } else {
         if (result.code === 'EMAIL_NOT_VERIFIED') {
           setNeedsEmailVerification(true);
@@ -81,13 +83,21 @@ export function LoginForm() {
         }
       }
     } catch (err: any) {
-      if (err.code === 'EMAIL_NOT_VERIFIED' || err.message?.includes('verify your email')) {
+      const errorMessage = err.message || 'An unexpected error occurred. Please try again.';
+      
+      if (err.code === 'EMAIL_NOT_VERIFIED' || errorMessage.includes('verify your email')) {
         setNeedsEmailVerification(true);
         setUserEmail(data.email);
-        setError(err.message || 'Please verify your email.');
+        setError(errorMessage);
       } else {
-        setError(err.message || 'An unexpected error occurred.');
+        setError(errorMessage);
       }
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     }
   };
 

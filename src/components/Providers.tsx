@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '@/store';
 import { useEffect, useState } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const SkeletonLoading = () => (
   <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
@@ -46,20 +47,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
   if (!isClient) {
     return (
       <Provider store={store}>
-        <SkeletonLoading />
+        <ErrorBoundary>
+          <SkeletonLoading />
+        </ErrorBoundary>
       </Provider>
     );
   }
 
   return (
-    <Provider store={store}>
-      {persistor ? (
-        <PersistGate loading={<SkeletonLoading />} persistor={persistor}>
-          {children}
-        </PersistGate>
-      ) : (
-        children
-      )}
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        {persistor ? (
+          <PersistGate loading={<SkeletonLoading />} persistor={persistor}>
+            {children}
+          </PersistGate>
+        ) : (
+          children
+        )}
+      </Provider>
+    </ErrorBoundary>
   );
 }

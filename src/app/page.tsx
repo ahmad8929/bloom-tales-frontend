@@ -20,14 +20,7 @@ export default function Home() {
     setHasMounted(true);
   }, []);
 
-  useEffect(() => {
-  if (typeof window !== "undefined" && window.ethereum) {
-    console.log("MetaMask detected");
-    window.ethereum.request?.({ method: "eth_requestAccounts" });
-  } else {
-    console.warn("MetaMask not found. Skipping...");
-  }
-}, []);
+  // Removed MetaMask detection - not needed for e-commerce app
 
 
   return (
