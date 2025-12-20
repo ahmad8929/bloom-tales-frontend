@@ -219,7 +219,7 @@ export const bannerOffers: BannerOffer[] = [
   {
     id: 1,
     emoji: "🎉",
-    text: "Get 30% OFF on your first order! Use code: WELCOME30"
+    text: "Get your order delivered fast"
   },
   {
     id: 2,
@@ -239,11 +239,11 @@ export const bannerOffers: BannerOffer[] = [
   {
     id: 5,
     emoji: "🔥",
-    text: "Flash Sale: Up to 50% off on selected items!"
+    text: "Flash Sale: Check below!"
   },
   {
     id: 6,
     emoji: "🌟",
-    text: "Join our newsletter for exclusive deals and updates"
+    text: "Join our instagram page for exclusive deals and updates"
   }
 ];

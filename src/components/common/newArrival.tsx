@@ -45,6 +45,9 @@ export function NewArrival({
   const [hasMounted, setHasMounted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   // Create multiple copies for seamless infinite scroll
   const slides = products.length > 0 ? [...products, ...products, ...products] : [];
@@ -82,7 +85,8 @@ export function NewArrival({
     if (!isPlaying || !hasMounted || products.length <= visibleCards) return;
 
     const timer = setInterval(() => {
-      nextSlide();
+      setCurrentIndex((prev) => prev + 1);
+      setIsTransitioning(true);
     }, autoPlayInterval);
 
     return () => clearInterval(timer);
@@ -165,6 +169,38 @@ export function NewArrival({
     setIsPlaying(false);
     // Resume auto-play after 3 seconds
     setTimeout(() => setIsPlaying(true), 3000);
+  };
+
+  // Touch handlers for mobile swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50; // Minimum distance for swipe
+    
+    if (distance > minSwipeDistance) {
+      // Swipe left - next slide
+      nextSlide();
+      setIsPlaying(false);
+      setTimeout(() => setIsPlaying(true), 3000);
+    } else if (distance < -minSwipeDistance) {
+      // Swipe right - previous slide
+      prevSlide();
+      setIsPlaying(false);
+      setTimeout(() => setIsPlaying(true), 3000);
+    }
+    
+    // Reset
+    setTouchStart(0);
+    setTouchEnd(0);
   };
 
   const formatPrice = (price: number) =>
@@ -262,9 +298,10 @@ export function NewArrival({
                   setIsPlaying(false);
                   setTimeout(() => setIsPlaying(true), 3000);
                 }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 -translate-x-2 md:-translate-x-4 opacity-0 group-hover:opacity-100"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white active:bg-white text-purple-600 p-2 md:p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-95 hover:scale-110 transition-all duration-300 -translate-x-1 md:-translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
+                aria-label="Previous slide"
               >
-                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
               </button>
               <button
                 onClick={() => {
@@ -272,17 +309,24 @@ export function NewArrival({
                   setIsPlaying(false);
                   setTimeout(() => setIsPlaying(true), 3000);
                 }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-purple-600 p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110 transition-all duration-300 translate-x-2 md:translate-x-4 opacity-0 group-hover:opacity-100"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white active:bg-white text-purple-600 p-2 md:p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-95 hover:scale-110 transition-all duration-300 translate-x-1 md:translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
+                aria-label="Next slide"
               >
-                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
               </button>
             </>
           )}
 
           {/* Products Container */}
-          <div className="overflow-hidden mx-2 md:mx-4 lg:mx-8">
+          <div 
+            ref={carouselRef}
+            className="overflow-hidden mx-2 md:mx-4 lg:mx-8 touch-pan-x"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <div 
-              className="flex transition-transform duration-500 ease-in-out gap-4 md:gap-6"
+              className="flex transition-transform duration-500 ease-in-out gap-3 md:gap-4 lg:gap-6"
               style={{ 
                 transform: `translateX(-${(currentIndex * 100) / visibleCards}%)`,
                 transition: isTransitioning ? "transform 0.5s ease-in-out" : "none"
@@ -293,8 +337,8 @@ export function NewArrival({
                   key={`${product._id}-${index}`}
                   className="group flex-shrink-0"
                   style={{ 
-                    width: `calc(${100 / visibleCards}% - ${(4 * (visibleCards - 1)) / visibleCards}px)`,
-                    marginRight: index < slides.length - 1 ? '1rem' : '0'
+                    width: `calc(${100 / visibleCards}% - ${(visibleCards > 1 ? (12 * (visibleCards - 1)) / visibleCards : 0)}px)`,
+                    minWidth: visibleCards === 1 ? '100%' : 'auto'
                   }}
                 >
                   <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-purple-200 bg-white/80 backdrop-blur-sm h-full">
@@ -388,6 +432,13 @@ export function NewArrival({
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+        }
+        
+        @media (max-width: 640px) {
+          .touch-pan-x {
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+          }
         }
       `}</style>
     </section>
