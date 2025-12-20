@@ -34,21 +34,31 @@ const fetchCart = async () => {
     const response = await cartApi.getCart();
     
     if (response.data?.data?.cart?.items) {
-      // Transform the API data to match your CartItem type
-      const transformedItems = response.data.data.cart.items.map((item: any) => ({
-        ...item,
-        id: item._id, // Convert _id to id if needed
-        product: {
-          ...item.product,
-          id: item.product._id, // Convert product._id to id
-          description: item.product.description || '', // Provide defaults for missing fields
-          careInstructions: item.product.careInstructions || [],
-          isNewArrival: item.product.isNewArrival || false,
-          // Add other missing fields with appropriate defaults
-        }
-      }));
-      
-      dispatch(setCartItems(transformedItems));
+      const itemsData = response.data.data.cart.items;
+      // Ensure items is always an array
+      if (Array.isArray(itemsData) && itemsData.length > 0) {
+        // Transform the API data to match your CartItem type
+        const transformedItems = itemsData.map((item: any) => ({
+          ...item,
+          id: item._id, // Convert _id to id if needed
+          product: {
+            ...item.product,
+            id: item.product._id, // Convert product._id to id
+            description: item.product.description || '', // Provide defaults for missing fields
+            careInstructions: item.product.careInstructions || [],
+            isNewArrival: item.product.isNewArrival || false,
+            // Add other missing fields with appropriate defaults
+          }
+        }));
+        
+        dispatch(setCartItems(transformedItems));
+      } else {
+        // Empty cart - set empty array
+        dispatch(setCartItems([]));
+      }
+    } else {
+      // No cart items - set empty array
+      dispatch(setCartItems([]));
     }
   } catch (error: any) {
     dispatch(setError(error.message || 'Failed to fetch cart'));
@@ -89,12 +99,28 @@ const addToCart = async (productId: string, quantity: number = 1) => {
       });
     }
   } catch (error: any) {
-    dispatch(setError(error.message || 'Failed to add to cart'));
-    toast({
-      title: 'Error',
-      description: 'Failed to add item to cart. Please try again.',
-      variant: 'destructive',
-    });
+    const errorMessage = error.message || 'Failed to add to cart';
+    dispatch(setError(errorMessage));
+    
+    // Handle authentication errors
+    if (errorMessage.includes('Authentication required') || errorMessage.includes('token')) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to add items to your cart.',
+        variant: 'destructive',
+      });
+      // Optionally redirect to login with returnUrl
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
+      }
+    } else {
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    }
   } finally {
     dispatch(setLoading(false));
   }

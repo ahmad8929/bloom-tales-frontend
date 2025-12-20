@@ -81,7 +81,9 @@ export default function CategoryProductsPage() {
         }
         
         if (allProductsResponse.data?.data?.products) {
-          allProducts = allProductsResponse.data.data.products;
+          const productsData = allProductsResponse.data.data.products;
+          // Ensure products is always an array
+          allProducts = Array.isArray(productsData) ? productsData : [];
           console.log('Total products fetched for filtering:', allProducts.length);
           
           // Log all unique categories for debugging
@@ -103,10 +105,14 @@ export default function CategoryProductsPage() {
             finalCategoryName = categoryProducts[0].category;
           }
         } else {
-          throw new Error('No products data in API response');
+          // No products available, set empty arrays
+          allProducts = [];
+          categoryProducts = [];
         }
       } else if (response.data?.data?.products) {
-        categoryProducts = response.data.data.products;
+        const productsData = response.data.data.products;
+        // Ensure products is always an array
+        categoryProducts = Array.isArray(productsData) ? productsData : [];
         console.log('Products from category API:', categoryProducts.length);
         
         if (categoryProducts.length > 0 && categoryProducts[0].category) {
@@ -116,15 +122,19 @@ export default function CategoryProductsPage() {
         // Also get all products for filter options
         const allProductsResponse = await productApi.getAllProducts({ limit: '1000' });
         if (allProductsResponse.data?.data?.products) {
-          allProducts = allProductsResponse.data.data.products;
+          const allProductsData = allProductsResponse.data.data.products;
+          allProducts = Array.isArray(allProductsData) ? allProductsData : [];
+        } else {
+          allProducts = [];
         }
       } else {
-        throw new Error('Invalid API response structure');
+        // No products in response, set empty arrays
+        categoryProducts = [];
+        allProducts = [];
       }
       
-      if (categoryProducts.length === 0) {
-        setError(`No products found for category: ${finalCategoryName}`);
-      }
+      // Don't set error for empty arrays - just display "No data available" message
+      // The component will handle empty arrays gracefully
       
       setCategoryName(finalCategoryName);
       setProducts(allProducts.length > 0 ? allProducts : categoryProducts);

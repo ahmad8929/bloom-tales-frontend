@@ -61,6 +61,12 @@ export function CartView() {
 
     // Handle the API response structure: { status: string; data: { cart: {...} } }
     const cartData = response.data?.data?.cart || null;
+    
+    // Ensure items is always an array, even if empty
+    if (cartData && !Array.isArray(cartData.items)) {
+      cartData.items = [];
+    }
+    
     setCart(cartData);
   } catch (error: any) {
     console.error('Error fetching cart:', error);
@@ -209,7 +215,7 @@ export function CartView() {
     );
   }
 
-  if (!cart || cart.items.length === 0) {
+  if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
     return (
       <div className="text-center py-16">
         <div className="max-w-md mx-auto">

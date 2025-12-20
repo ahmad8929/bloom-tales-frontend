@@ -8,6 +8,33 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+// Global token cache to handle race conditions between Redux and cookies
+let tokenCache: string | null = null;
+
+// Function to get token from multiple sources (cookies first, then cache)
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  // Try cookie first (most reliable)
+  const cookieToken = getCookie('auth-token');
+  if (cookieToken) {
+    tokenCache = cookieToken; // Update cache
+    return cookieToken;
+  }
+  
+  // Fallback to cache if cookie not available yet
+  if (tokenCache) {
+    return tokenCache;
+  }
+  
+  return null;
+}
+
+// Function to set token cache (called from auth hooks)
+export function setAuthTokenCache(token: string | null) {
+  tokenCache = token;
+}
+
 // Enhanced fetch with timeout and retry logic
 async function fetchWithTimeout(
   url: string,
@@ -42,8 +69,8 @@ export async function fetchApi<T>(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      // Get token from cookie for client-side requests
-      const token = typeof window !== 'undefined' ? getCookie('auth-token') : null;
+      // Get token from multiple sources (cookies first, then cache)
+      const token = getAuthToken();
       
       const headers: Record<string, string> = {
         ...options.headers as Record<string, string>,
@@ -57,6 +84,11 @@ export async function fetchApi<T>(
       // Add authorization header if token exists
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        // Log when token is missing for debugging
+        if (typeof window !== 'undefined' && endpoint.includes('/cart')) {
+          console.warn('Cart API call without token:', endpoint);
+        }
       }
 
       const response = await fetchWithTimeout(`${API_URL}/api${endpoint}`, {
@@ -82,6 +114,15 @@ export async function fetchApi<T>(
       }
       
       if (!response.ok) {
+        // Handle 401 Unauthorized - token might be expired or invalid
+        if (response.status === 401) {
+          // Clear token cache and cookies on 401
+          if (typeof window !== 'undefined') {
+            setAuthTokenCache(null);
+            // Don't clear cookies here - let the auth system handle it
+          }
+          throw new Error(data.message || 'Authentication required. Please log in again.');
+        }
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
       }
 

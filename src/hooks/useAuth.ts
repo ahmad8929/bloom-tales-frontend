@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { RootState } from '@/store';
 import { loginStart, loginSuccess, loginFailure, logout, updateTokens } from '@/store/slices/authSlice';
-import { authApi } from '@/lib/api';
+import { authApi, setAuthTokenCache } from '@/lib/api';
 import { setCookie, removeCookie, getCookie } from '@/lib/utils';
 import type { User } from '@/types/auth';
 
@@ -78,15 +78,28 @@ export function useAuth() {
         // Store tokens in Redux
         dispatch(loginSuccess({ user, accessToken, refreshToken }));
         
-        // Set cookies for middleware (only on client)
+        // Set cookies and token cache for middleware and API calls (only on client)
         if (typeof window !== 'undefined') {
-          console.log('Setting auth cookies...');
+          console.log('Setting auth cookies and token cache...');
           
-          // Set cookies
+          // Set token cache immediately (before cookies)
+          setAuthTokenCache(accessToken);
+          
+          // Set cookies immediately
           setCookie('auth-token', accessToken, 7);
           setCookie('user-role', user.role, 7);
           
-          console.log('Cookies set successfully');
+          // Verify cookies were set
+          setTimeout(() => {
+            const cookieToken = getCookie('auth-token');
+            console.log('Cookie verification:', !!cookieToken);
+            if (!cookieToken) {
+              console.error('Warning: Cookie was not set properly, retrying...');
+              setCookie('auth-token', accessToken, 7);
+            }
+          }, 100);
+          
+          console.log('Cookies and token cache set successfully');
         }
         
         return { success: true, user };
@@ -210,9 +223,10 @@ export function useAuth() {
       // Update tokens in Redux
       dispatch(updateTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken }));
       
-      // Update cookie (only on client)
+      // Update cookie and token cache (only on client)
       if (typeof window !== 'undefined') {
-        setCookie('auth-token', newAccessToken);
+        setAuthTokenCache(newAccessToken);
+        setCookie('auth-token', newAccessToken, 7);
       }
       
       return { success: true };
@@ -225,6 +239,9 @@ export function useAuth() {
   const logoutUser = () => {
     // Only manipulate cookies and window on client side
     if (typeof window !== 'undefined') {
+      // Clear token cache
+      setAuthTokenCache(null);
+      
       // Clear cookies
       removeCookie('auth-token');
       removeCookie('user-role');

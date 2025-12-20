@@ -41,8 +41,17 @@ export function LoginForm() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
+  // Get returnUrl from query params for redirection after login
   useEffect(() => {
-    if (isAuthenticated && user) router.push('/');
+    if (isAuthenticated && user) {
+      // Get returnUrl from query params
+      const params = new URLSearchParams(window.location.search);
+      const returnUrl = params.get('returnUrl');
+      
+      // Redirect to returnUrl if provided, otherwise to home
+      const redirectPath = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/';
+      router.push(redirectPath);
+    }
   }, [isAuthenticated, user, router]);
 
   const form = useForm<LoginFormData>({
@@ -61,8 +70,17 @@ export function LoginForm() {
           title: 'Welcome back!',
           description: 'You have been logged in successfully.',
         });
-        // Use Next.js router for navigation
-        router.push('/');
+        
+        // Get returnUrl from query params for redirection
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get('returnUrl');
+        
+        // Small delay to ensure token is set in cookies
+        setTimeout(() => {
+          // Redirect to returnUrl if provided and valid, otherwise to home
+          const redirectPath = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/';
+          router.push(redirectPath);
+        }, 100);
       } else {
         if (result.code === 'EMAIL_NOT_VERIFIED') {
           setNeedsEmailVerification(true);

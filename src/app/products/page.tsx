@@ -44,7 +44,9 @@ export default function ProductsPage() {
       
       if (response.data?.data?.products) {
         // Standard API response structure: { data: { data: { products: [...] } } }
-        productsList = response.data.data.products;
+        const productsData = response.data.data.products;
+        // Ensure products is always an array
+        productsList = Array.isArray(productsData) ? productsData : [];
       } else if (response.data && Array.isArray(response.data)) {
         // Direct array response: { data: [...] }
         productsList = response.data;

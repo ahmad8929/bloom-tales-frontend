@@ -105,7 +105,7 @@ if (isMobile) {
             <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
             <span className="text-sm">Loading categories...</span>
           </div>
-        ) : (
+        ) : Array.isArray(categories) && categories.length > 0 ? (
           <div className="space-y-1">
             {categories.map((category) => (
               <div key={category.slug} className="bg-gray-50/80 rounded-lg">
@@ -126,6 +126,10 @@ if (isMobile) {
                 </NavigationLink>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 px-4 py-3 text-sm">
+            No categories available
           </div>
         ))}
       </div>
@@ -228,23 +232,25 @@ if (isMobile) {
             <span className="hidden xl:inline">All Products</span>
             <span className="xl:hidden">Products</span>
           </NavigationLink>
-          {categories.map((category) => (
-            <Tooltip key={category.slug}>
-              <TooltipTrigger asChild>
-                <NavigationLink 
-                  href={`/category/${category.slug}`} 
-                  isActive={isActiveCategory(category.slug)}
-                >
-                  <span className="text-xs xl:text-sm font-medium">{category.name}</span>
-                </NavigationLink>
-              </TooltipTrigger>
-              <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
-                <p className="font-medium">
-                  {category.count > 0 ? `${category.count} ${category.name} products` : `Explore ${category.name} collection`}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
+          {Array.isArray(categories) && categories.length > 0 ? (
+            categories.map((category) => (
+              <Tooltip key={category.slug}>
+                <TooltipTrigger asChild>
+                  <NavigationLink 
+                    href={`/category/${category.slug}`} 
+                    isActive={isActiveCategory(category.slug)}
+                  >
+                    <span className="text-xs xl:text-sm font-medium">{category.name}</span>
+                  </NavigationLink>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
+                  <p className="font-medium">
+                    {category.count > 0 ? `${category.count} ${category.name} products` : `Explore ${category.name} collection`}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            ))
+          ) : null}
         </>
       )}
     </nav>

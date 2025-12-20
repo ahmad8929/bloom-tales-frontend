@@ -64,31 +64,22 @@ export function Header() {
       setLoadingCategories(true);
       const response = await productApi.getCategories();
       
-      if (response.data?.data?.categories) {
+      if (response.data?.data?.categories && Array.isArray(response.data.data.categories)) {
         const categoriesData = response.data.data.categories;
-        setCategories(categoriesData.slice(0, 6));
+        // If categories array is empty, show "No data available" message
+        if (categoriesData.length === 0) {
+          setCategories([]);
+        } else {
+          setCategories(categoriesData.slice(0, 6));
+        }
       } else {
-        setCategories([
-          { name: 'Cordset', count: 0, slug: 'cordset' },
-          { name: 'Anarkali', count: 0, slug: 'anarkali' },
-          { name: 'Suite', count: 0, slug: 'suite' },
-          { name: 'Saree', count: 0, slug: 'saree' },
-          { name: 'Kurti', count: 0, slug: 'kurti' },
-          { name: 'Lehenga', count: 0, slug: 'lehenga' },
-          { name: 'Western Dress', count: 0, slug: 'western-dress' },
-        ]);
+        // No categories available
+        setCategories([]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setCategories([
-        { name: 'Cordset', count: 0, slug: 'cordset' },
-        { name: 'Anarkali', count: 0, slug: 'anarkali' },
-        { name: 'Suite', count: 0, slug: 'suite' },
-        { name: 'Saree', count: 0, slug: 'saree' },
-        { name: 'Kurti', count: 0, slug: 'kurti' },
-        { name: 'Lehenga', count: 0, slug: 'lehenga' },
-        { name: 'Western Dress', count: 0, slug: 'western-dress' },
-      ]);
+      // On error, set empty array instead of default categories
+      setCategories([]);
     } finally {
       setLoadingCategories(false);
     }
