@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,27 +32,42 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, isAuthenticated, user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [returnUrl, setReturnUrl] = useState<string | null>(null);
 
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
-  // Get returnUrl from query params for redirection after login
+  // Get returnUrl from query params on mount
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Get returnUrl from query params
-      const params = new URLSearchParams(window.location.search);
-      const returnUrl = params.get('returnUrl');
-      
-      // Redirect to returnUrl if provided, otherwise to home
-      const redirectPath = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/';
-      router.push(redirectPath);
+    const url = searchParams.get('returnUrl');
+    if (url && url.startsWith('/')) {
+      setReturnUrl(url);
     }
-  }, [isAuthenticated, user, router]);
+  }, [searchParams]);
+
+  // Handle redirect after authentication
+  useEffect(() => {
+    if (isAuthenticated && user && returnUrl) {
+      // Use window.location for reliable redirect in production
+      // Small delay to ensure cookies are set
+      const timer = setTimeout(() => {
+        window.location.href = returnUrl;
+      }, 200);
+      return () => clearTimeout(timer);
+    } else if (isAuthenticated && user && !returnUrl) {
+      // Redirect to home if no returnUrl
+      const timer = setTimeout(() => {
+        window.location.href = '/';
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, user, returnUrl]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -71,16 +86,15 @@ export function LoginForm() {
           description: 'You have been logged in successfully.',
         });
         
-        // Get returnUrl from query params for redirection
-        const params = new URLSearchParams(window.location.search);
-        const returnUrl = params.get('returnUrl');
+        // Get returnUrl from state or query params
+        const redirectUrl = returnUrl || searchParams.get('returnUrl');
         
-        // Small delay to ensure token is set in cookies
+        // Use window.location for reliable redirect in production
+        // This ensures cookies are properly set before redirect
         setTimeout(() => {
-          // Redirect to returnUrl if provided and valid, otherwise to home
-          const redirectPath = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/';
-          router.push(redirectPath);
-        }, 100);
+          const redirectPath = redirectUrl && redirectUrl.startsWith('/') ? redirectUrl : '/';
+          window.location.href = redirectPath;
+        }, 300);
       } else {
         if (result.code === 'EMAIL_NOT_VERIFIED') {
           setNeedsEmailVerification(true);
