@@ -1,7 +1,7 @@
 import { getCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = "https://bloom-backend-rtch.onrender.com/";
+const API_URL = "https://bloom-backend-rtch.onrender.com";
 
 interface ApiResponse<T> {
   data?: T;
