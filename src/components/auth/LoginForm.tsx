@@ -39,6 +39,7 @@ export function LoginForm() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [returnUrl, setReturnUrl] = useState<string | null>(null);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
@@ -51,23 +52,42 @@ export function LoginForm() {
     }
   }, [searchParams]);
 
+  // Check if user is actually authenticated (verify with cookies, not just Redux)
+  const isActuallyAuthenticated = () => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check both Redux state AND cookies
+    const cookieToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('auth-token='))
+      ?.split('=')[1];
+    
+    // Only consider authenticated if BOTH Redux and cookies agree
+    return isAuthenticated && user && !!cookieToken;
+  };
+
   // Handle redirect after authentication
   useEffect(() => {
-    if (isAuthenticated && user && returnUrl) {
+    // Prevent infinite redirects
+    if (hasRedirected) return;
+    
+    if (isActuallyAuthenticated() && returnUrl) {
+      setHasRedirected(true);
       // Use window.location for reliable redirect in production
       // Small delay to ensure cookies are set
       const timer = setTimeout(() => {
         window.location.href = returnUrl;
       }, 200);
       return () => clearTimeout(timer);
-    } else if (isAuthenticated && user && !returnUrl) {
+    } else if (isActuallyAuthenticated() && !returnUrl) {
+      setHasRedirected(true);
       // Redirect to home if no returnUrl
       const timer = setTimeout(() => {
         window.location.href = '/';
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user, returnUrl]);
+  }, [isAuthenticated, user, returnUrl, hasRedirected]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -142,7 +162,8 @@ export function LoginForm() {
   };
   const handleResetPasswordModalClose = () => setShowResetPasswordModal(false);
 
-  if (isAuthenticated && user) {
+  // Only show redirecting if actually authenticated (has cookies)
+  if (isActuallyAuthenticated()) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-5 w-5 animate-spin mr-2" />

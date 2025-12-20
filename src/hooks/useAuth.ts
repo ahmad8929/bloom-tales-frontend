@@ -53,7 +53,17 @@ export function useAuth() {
 
   useEffect(() => {
     setIsHydrated(true);
-  }, []);
+    
+    // On client side, verify that cookies match Redux state
+    // If Redux says authenticated but cookies don't exist, clear Redux state
+    if (typeof window !== 'undefined' && isAuthenticated && accessToken) {
+      const cookieToken = getCookie('auth-token');
+      if (!cookieToken) {
+        console.warn('Auth state mismatch: Redux authenticated but no cookie. Clearing state.');
+        dispatch(logout());
+      }
+    }
+  }, [isAuthenticated, accessToken, dispatch]);
 
   const login = async (credentials: { email: string; password: string }): Promise<AuthResult> => {
     dispatch(loginStart());

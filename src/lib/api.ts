@@ -123,7 +123,12 @@ export async function fetchApi<T>(
           }
           throw new Error(data.message || 'Authentication required. Please log in again.');
         }
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        // Handle 403 Forbidden - Access denied
+        if (response.status === 403) {
+          const errorMsg = data.message || data.error || 'Access denied';
+          throw new Error(errorMsg);
+        }
+        throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
       }
 
       return { data };
@@ -292,7 +297,7 @@ export const authApi = {
       return { error: error.message || 'Network error' };
     }
   },
-
+  
   // NEW OTP-based password reset functions
   sendResetOTP: async (data: { email: string }) => {
     try {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Check, Loader2, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -40,6 +41,7 @@ export function AddToCartButton({
   onSuccess,
   disabled = false
 }: AddToCartButtonProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
 
@@ -95,22 +97,46 @@ export function AddToCartButton({
     } catch (error: any) {
       console.error('Error adding to cart:', error);
       
-      let errorMessage = 'Failed to add item to cart';
+      const errorMessage = error.message || error.error || 'Failed to add item to cart';
       
-      // Handle specific error cases
-      if (error.message.includes('authentication') || error.message.includes('login')) {
-        errorMessage = 'Please log in to add items to cart';
-      } else if (error.message.includes('stock') || error.message.includes('availability')) {
-        errorMessage = 'This item is currently out of stock';
-      } else if (error.message) {
-        errorMessage = error.message;
+      // Handle authentication/authorization errors
+      const isAuthError = 
+        errorMessage.toLowerCase().includes('access denied') ||
+        errorMessage.toLowerCase().includes('authentication required') ||
+        errorMessage.toLowerCase().includes('unauthorized') ||
+        errorMessage.toLowerCase().includes('login required') ||
+        errorMessage.toLowerCase().includes('token') ||
+        errorMessage.includes('401') ||
+        errorMessage.includes('403');
+      
+      if (isAuthError) {
+        // Show login required toast
+        toast({
+          title: 'Login Required',
+          description: 'Please log in to add items to your cart.',
+          variant: 'destructive',
+        });
+        
+        // Redirect to login page with returnUrl
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname + window.location.search;
+          setTimeout(() => {
+            router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
+          }, 500); // Small delay to show toast first
+        }
+      } else if (errorMessage.includes('stock') || errorMessage.includes('availability')) {
+        toast({
+          title: 'Out of Stock',
+          description: 'This item is currently out of stock.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
       }
-
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
     } finally {
       setIsLoading(false);
     }
