@@ -62,7 +62,7 @@ export default function Home() {
       <FeaturedProducts 
         limit={12} 
         showViewAll={true} 
-        title="✨ Featured Products" 
+        title="" 
       />
 
       {/* Features Section */}

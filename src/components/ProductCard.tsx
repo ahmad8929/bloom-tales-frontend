@@ -127,11 +127,10 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
   };
 
   return (
-    <Card 
-      className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-md group border"
-    >
+<Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-md group border border-border/60">
+
       <CardHeader className="p-0 relative">
-        <div className="aspect-[4/5] relative overflow-hidden">
+        <div className="aspect-[3/4] sm:aspect-[4/5] relative overflow-hidden">
           <Link href={`/products/${productId}`}>
             <Image
               src={mainImage}
@@ -168,9 +167,9 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
           )}
         </div>
       </CardHeader>
-      
-      <CardContent className="flex-grow p-3">
-        <CardTitle className="text-sm leading-tight mb-1.5">
+      <CardContent className="flex-grow p-2 md:p-3">
+<CardTitle className="text-[13px] leading-snug mb-1 md:text-sm">
+
           <Link 
             href={`/products/${productId}`} 
             className="hover:text-primary transition-colors line-clamp-2 font-medium"
@@ -180,7 +179,8 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
         </CardTitle>
         
         {/* Pricing */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-1.5 mb-1.5">
+
           <span className="font-bold text-base text-primary">
             {formatPrice(product.price)}
           </span>
@@ -191,8 +191,8 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
           )}
         </div>
       </CardContent>
-      
-      <CardFooter className="p-3 pt-0">
+      <CardFooter className="p-2 pt-1 md:p-3 md:pt-0">
+
         {isInCart ? (
           <div className="w-full space-y-2">
             <CartQuantityControls

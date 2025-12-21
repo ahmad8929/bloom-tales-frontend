@@ -124,9 +124,9 @@ export function FeaturedProducts({
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
             <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
+            {/* <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
-            </h2>
+            </h2> */}
           </div>
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -149,9 +149,9 @@ export function FeaturedProducts({
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
             <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
+            {/* <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
-            </h2>
+            </h2> */}
           </div>
           <p className="text-lg text-foreground py-12 font-medium">No products available at the moment.</p>
           <p className="text-sm text-muted-foreground">Check back soon for our latest collections!</p>
@@ -185,7 +185,7 @@ export function FeaturedProducts({
         </div> */}
 
         {/* Products Grid */}
-       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-6 px-3 sm:px-1 md:px-0">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-4 px-2 sm:px-1 md:px-0">
 
    {products.map((product) => (
             <ProductCard 

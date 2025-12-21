@@ -122,56 +122,75 @@ export function Header() {
           </div> */}
 
           {/* Right side actions */}
-          {/* Right side actions */}
-<div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
   
-  {/* Products Button - Desktop Only */}
-  <div className="hidden lg:block">
-    <Button
-  asChild
-  className="
-    bg-primary/90 text-primary-foreground
-    hover:bg-hover
-    hover:shadow-xl hover:shadow-primary/30
-    hover:-translate-y-0.5
-    transition-all duration-300
-    px-5 py-2 rounded-full
-    text-sm font-semibold
-  "
->
-  <Link href="/products">
-    Our Products
-  </Link>
-</Button>
+            {/* Products Button - Desktop Only */}
+            <div className="hidden lg:block">
+              <Button
+                asChild
+                className="
+                  bg-primary/90 text-primary-foreground
+                  hover:bg-hover
+                  hover:shadow-xl hover:shadow-primary/30
+                  hover:-translate-y-0.5
+                  transition-all duration-300
+                  px-5 py-2 rounded-full
+                  text-sm font-semibold
+                "
+              >
+                <Link href="/products">
+                  Our Products
+                </Link>
+              </Button>
+            </div>
 
-  </div>
+            {/* Products Button - Mobile Only */}
+            <div className="lg:hidden">
+              <Button
+                asChild
+                className="
+                  bg-primary/90 text-primary-foreground
+                  hover:bg-hover
+                  hover:shadow-xl hover:shadow-primary/30
+                  hover:-translate-y-0.5
+                  transition-all duration-300
+                  px-4 py-2 rounded-full
+                  text-xs sm:text-sm font-semibold
+                "
+              >
+                <Link href="/products">
+                  Products
+                </Link>
+              </Button>
+            </div>
 
-  {/* Cart Button - Desktop Only */}
-  <div className="hidden lg:block">
-    <CartButton itemCount={itemCount} />
-  </div>
+            {/* Cart Button - Desktop Only */}
+            <div className="hidden lg:block">
+              <CartButton itemCount={itemCount} />
+            </div>
 
-  {/* User Menu - Desktop Only */}
-  <div className="hidden lg:block">
-    <UserMenu 
-      user={user}
-      isAuthenticated={isAuthenticated}
-      logoutUser={logoutUser}
-    />
-  </div>
+            {/* User Menu - Desktop Only */}
+            <div className="hidden lg:block">
+              <UserMenu 
+                user={user}
+                isAuthenticated={isAuthenticated}
+                logoutUser={logoutUser}
+              />
+            </div>
 
-  {/* Mobile Menu Button */}
-  <MobileMenuButton 
-    isOpen={mobileMenuOpen}
-    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-  />
-</div>
+            {/* Mobile Menu Button */}
+            <MobileMenuButton 
+              isOpen={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            />
+          </div>
 
 
         </div>
 
         {/* Enhanced Mobile Navigation Menu */}
-        {mobileMenuOpen && (
+        {/* Commented out navigation in mobile screen */}
+        {/* {mobileMenuOpen && (
           <div className="lg:hidden border-t border-primary/20 bg-[#5A3E2B]/95 backdrop-blur-lg">
             <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-h-[80vh] overflow-y-auto">
               <NavigationMenu 
@@ -186,7 +205,7 @@ export function Header() {
               />
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Animated gradient border bottom */}
         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-60"></div>
