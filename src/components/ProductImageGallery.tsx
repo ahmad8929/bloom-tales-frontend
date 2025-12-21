@@ -17,7 +17,7 @@ export function ProductImageGallery({ imageUrls, productName }: ProductImageGall
     <div className="space-y-4">
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-            <div className="relative aspect-[4/5] max-w-sm mx-auto">
+            <div className="relative aspect-[4/5] w-full md:max-w-sm md:mx-auto">
               <Image
                 src={selectedImage}
                 alt={`Main image for ${productName}`}

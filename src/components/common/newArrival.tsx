@@ -61,10 +61,10 @@ export function NewArrival({
   useLayoutEffect(() => {
     function updateVisibleCards() {
       const width = window.innerWidth;
-      if (width < 640) setVisibleCards(1);      // mobile
-      else if (width < 768) setVisibleCards(2); // tablet
-      else if (width < 1024) setVisibleCards(3); // small desktop
-      else setVisibleCards(4);                   // large desktop
+     if (width < 640) setVisibleCards(1.15); 
+else if (width < 768) setVisibleCards(2);
+else if (width < 1024) setVisibleCards(3);
+else setVisibleCards(4);              
     }
 
     updateVisibleCards();
@@ -75,7 +75,8 @@ export function NewArrival({
   // Set initial position to middle set when products change
   useEffect(() => {
     if (products.length > 0) {
-      setCurrentIndex(products.length); // Start from second set (middle)
+      setCurrentIndex(products.length + Math.floor(visibleCards / 2));
+
       setIsTransitioning(false);
     }
   }, [products.length]);
@@ -288,6 +289,9 @@ export function NewArrival({
         </div>
 
         {/* Products Carousel */}
+        <div
+  className="overflow-hidden touch-pan-x select-none"
+>
         <div className="relative group">
           {/* Navigation Buttons */}
           {products.length > visibleCards && (
@@ -328,7 +332,7 @@ export function NewArrival({
             <div 
               className="flex transition-transform duration-500 ease-in-out gap-3 md:gap-4 lg:gap-6"
               style={{ 
-                transform: `translateX(-${(currentIndex * 100) / visibleCards}%)`,
+                transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
                 transition: isTransitioning ? "transform 0.5s ease-in-out" : "none"
               }}
             >
@@ -336,10 +340,11 @@ export function NewArrival({
                 <div 
                   key={`${product._id}-${index}`}
                   className="group flex-shrink-0"
-                  style={{ 
-                    width: `calc(${100 / visibleCards}% - ${(visibleCards > 1 ? (12 * (visibleCards - 1)) / visibleCards : 0)}px)`,
-                    minWidth: visibleCards === 1 ? '100%' : 'auto'
-                  }}
+                  style={{
+  width: `${100 / visibleCards}%`,
+  paddingRight: '12px'
+}}
+
                 >
                   <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-purple-200 bg-white/80 backdrop-blur-sm h-full">
                     <div className="relative h-48 md:h-56 lg:h-64">
@@ -407,6 +412,7 @@ export function NewArrival({
               ))}
             </div>
           </div>
+        </div>
         </div>
 
         {/* View All Button - Centered */}
