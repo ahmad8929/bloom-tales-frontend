@@ -128,20 +128,22 @@ export function Header() {
   {/* Products Button - Desktop Only */}
   <div className="hidden lg:block">
     <Button
-      asChild
-      className="
-        bg-primary/90 text-primary-foreground
-        hover:bg-hover
-        transition-all duration-300
-        px-4 py-2 rounded-full
-        shadow-md hover:shadow-lg
-        text-sm font-medium
-      "
-    >
-      <Link href="/products">
-        Our Products
-      </Link>
-    </Button>
+  asChild
+  className="
+    bg-primary/90 text-primary-foreground
+    hover:bg-hover
+    hover:shadow-xl hover:shadow-primary/30
+    hover:-translate-y-0.5
+    transition-all duration-300
+    px-5 py-2 rounded-full
+    text-sm font-semibold
+  "
+>
+  <Link href="/products">
+    Our Products
+  </Link>
+</Button>
+
   </div>
 
   {/* Cart Button - Desktop Only */}

@@ -174,15 +174,15 @@ export function CustomerTestimonials({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16">
-          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+          {/* <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
             <Users className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
             <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               Customer Love
             </h2>
-          </div>
-          {/* <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-heading leading-tight">
+          </div> */}
+          <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-heading leading-tight">
             {title}
-          </h3> */}
+          </h3>
           <p className="text-text-normal text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium">
             {subtitle}
           </p>
@@ -227,21 +227,21 @@ export function CustomerTestimonials({
             onTouchEnd={handleTouchEnd}
           >
             <div 
-              className="flex transition-transform duration-500 ease-in-out gap-3 md:gap-4 lg:gap-6"
+              className="flex transition-transform duration-500 ease-in-out"
               style={{ 
-                transform: `translateX(-${(currentIndex * 100) / visibleCards}%)`,
+                transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
                 transition: isTransitioning ? "transform 0.5s ease-in-out" : "none"
               }}
             >
               {slides.map((testimonial, index) => (
-                <div 
-                  key={`${testimonial.id}-${index}`}
-                  className="flex-shrink-0"
-                  style={{ 
-                    width: `calc(${100 / visibleCards}% - ${visibleCards > 1 ? (12 * (visibleCards - 1)) / visibleCards : 0}px)`,
-                    minWidth: visibleCards === 1 ? '100%' : 'auto'
-                  }}
-                >
+               <div
+  key={`${testimonial.id}-${index}`}
+  className="flex-shrink-0 px-2 md:px-3 lg:px-4"
+  style={{
+    width: `${100 / visibleCards}%`,
+  }}
+>
+
                   <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 backdrop-blur-sm border-2 hover:border-primary/30 relative overflow-hidden h-full">
                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
