@@ -1,4 +1,4 @@
-import { getCookie } from './utils';
+import { getCookie, removeCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
 const API_URL = "https://bloom-backend-rtch.onrender.com";
@@ -113,13 +113,61 @@ export async function fetchApi<T>(
         throw new Error(`Unexpected response format from server`);
       }
       
+      // Check for error status in response body (even if response.ok is true)
+      if (data && data.status === 'error') {
+        const errorMessage = data.message || data.error || 'An error occurred';
+        
+        // Handle token expiration specifically
+        if (errorMessage.toLowerCase().includes('token has expired') || 
+            errorMessage.toLowerCase().includes('token expired') ||
+            errorMessage.toLowerCase().includes('expired')) {
+          
+          // Clear auth state and redirect to login
+          if (typeof window !== 'undefined') {
+            setAuthTokenCache(null);
+            
+            // Clear cookies
+            removeCookie('auth-token');
+            removeCookie('user-role');
+            
+            // Dispatch custom event for auth system to handle logout
+            window.dispatchEvent(new CustomEvent('authTokenExpired', {
+              detail: { message: errorMessage }
+            }));
+            
+            // Redirect to login after a short delay
+            setTimeout(() => {
+              window.location.href = '/login?expired=true';
+            }, 100);
+          }
+          
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        
+        // Handle other error statuses
+        throw new Error(errorMessage);
+      }
+      
       if (!response.ok) {
         // Handle 401 Unauthorized - token might be expired or invalid
         if (response.status === 401) {
           // Clear token cache and cookies on 401
           if (typeof window !== 'undefined') {
             setAuthTokenCache(null);
-            // Don't clear cookies here - let the auth system handle it
+            
+            // Clear cookies
+            removeCookie('auth-token');
+            removeCookie('user-role');
+            
+            // Dispatch custom event for auth system to handle logout
+            window.dispatchEvent(new CustomEvent('authTokenExpired', {
+              detail: { message: data.message || 'Authentication required' }
+            }));
+            
+            // Redirect to login
+            setTimeout(() => {
+              window.location.href = '/login?expired=true';
+            }, 100);
           }
           throw new Error(data.message || 'Authentication required. Please log in again.');
         }
@@ -135,6 +183,12 @@ export async function fetchApi<T>(
     } catch (error: any) {
       lastError = error;
       console.error(`API Error (attempt ${attempt + 1}/${retries + 1}):`, error);
+
+      // Handle token expiration errors - don't retry
+      if (error.message?.toLowerCase().includes('expired') || 
+          error.message?.toLowerCase().includes('session has expired')) {
+        break;
+      }
 
       // Don't retry on client errors (4xx) or auth errors
       if (error.message?.includes('401') || error.message?.includes('403') || 

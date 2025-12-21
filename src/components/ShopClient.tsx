@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { X, Filter, Search } from 'lucide-react';
+import { cartApi } from '@/lib/api';
 import {
   Sheet,
   SheetContent,
@@ -120,6 +123,7 @@ const FilterSidebar = ({
 );
 
 export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps) {
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number>(15000);
@@ -127,9 +131,44 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewArrival, setIsNewArrival] = useState(false);
   const [isSale, setIsSale] = useState(false);
+  const [cartItems, setCartItems] = useState<any[]>([]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Fetch cart once for all products
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCartItems([]);
+      return;
+    }
+
+    const fetchCart = async () => {
+      try {
+        const response = await cartApi.getCart();
+        if (response.data?.data?.cart?.items) {
+          setCartItems(response.data.data.cart.items);
+        } else {
+          setCartItems([]);
+        }
+      } catch (error) {
+        console.log('Cart fetch failed:', error);
+        setCartItems([]);
+      }
+    };
+
+    fetchCart();
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      if (isAuthenticated) {
+        fetchCart();
+      }
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, [isAuthenticated]);
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -320,9 +359,13 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
 
         {/* Products Grid */}
         {filteredAndSortedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredAndSortedProducts.map(product => (
-              <ProductCard key={product._id || product.id} product={product} />
+              <ProductCard 
+                key={product._id || product.id} 
+                product={product} 
+                cartItems={cartItems}
+              />
             ))}
           </div>
         ) : (

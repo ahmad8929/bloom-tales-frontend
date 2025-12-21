@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { productApi } from "@/lib/api";
-import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Plus, Minus, Heart } from "lucide-react";
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { productApi, cartApi } from "@/lib/api";
+import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Heart } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { CartQuantityControls } from "@/components/CartQuantityControls";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { NewArrival } from "@/components/common/newArrival";
 import { Sale } from "@/components/common/sale";
@@ -12,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface Product {
@@ -36,12 +38,15 @@ interface Product {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isInCart, setIsInCart] = useState(false);
+  const [cartItemId, setCartItemId] = useState<string | undefined>();
+  const [cartQuantity, setCartQuantity] = useState(1);
 
   const productId = params.productId as string;
 
@@ -102,14 +107,89 @@ export default function ProductDetailPage() {
   }
 };
 
-  const handleQuantityChange = (change: number) => {
-    setQuantity(prev => Math.max(1, prev + change));
+  // Check if product is in cart
+  useEffect(() => {
+    if (!isAuthenticated || !product) {
+      setIsInCart(false);
+      return;
+    }
+
+    const checkCart = async () => {
+      try {
+        const response = await cartApi.getCart();
+        if (response.data?.data?.cart?.items) {
+          const cartItem = response.data.data.cart.items.find(
+            (item: any) => (item.productId === productId || item.product._id === productId) &&
+                           (item.size === selectedSize || item.size === product.size)
+          );
+          if (cartItem) {
+            setIsInCart(true);
+            setCartItemId(cartItem._id);
+            setCartQuantity(cartItem.quantity);
+          } else {
+            setIsInCart(false);
+            setCartItemId(undefined);
+            setCartQuantity(1);
+          }
+        }
+      } catch (error) {
+        console.log('Cart check failed:', error);
+        setIsInCart(false);
+      }
+    };
+
+    checkCart();
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      if (isAuthenticated) {
+        checkCart();
+      }
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, [productId, isAuthenticated, product, selectedSize]);
+
+  const handleAddToCartSuccess = () => {
+    // Trigger cart update to refresh state
+    window.dispatchEvent(new CustomEvent('cartUpdated', {
+      detail: { action: 'add', productId }
+    }));
   };
 
-  const handleBuyNow = () => {
-    // You can implement buy now functionality here
-    // For now, we'll just redirect to cart after adding
-    console.log('Buy now clicked');
+  const handleBuyNow = async () => {
+    try {
+      // Check if product exists
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      // Add to cart first if not already in cart
+      if (!isInCart) {
+        const productIdToAdd = product._id || product.id;
+        if (!productIdToAdd) {
+          throw new Error('Product ID is required');
+        }
+
+        const response = await cartApi.addToCart(
+          productIdToAdd,
+          cartQuantity || 1,
+          selectedSize || product.size
+        );
+
+        if (response.error) {
+          throw new Error(response.error);
+        }
+      }
+
+      // Redirect to checkout
+      router.push('/checkout');
+    } catch (error: any) {
+      console.error('Error in Buy Now:', error);
+      // If error, still try to redirect (maybe item is already in cart)
+      router.push('/checkout');
+    }
   };
 
   if (loading) {
@@ -196,9 +276,9 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
         <span className="text-foreground">{product.name}</span>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
+      <div className="grid md:grid-cols-2 gap-8 items-start mb-16">
         {/* Product Images */}
-        <div className="md:sticky md:top-4">
+        <div className="md:sticky md:top-4 max-w-md mx-auto md:mx-0">
           <ProductImageGallery imageUrls={imageUrls} productName={product.name} />
         </div>
 
@@ -268,37 +348,6 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
               </div>
             </div>
 
-            {/* Quantity Selector */}
-            <div className="space-y-2">
-              <Label className="font-semibold text-base">Quantity</Label>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-20 text-center"
-                  min="1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleQuantityChange(1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground ml-2">
-                  Total: ₹{(product.price * quantity).toLocaleString('en-IN')}
-                </span>
-              </div>
-            </div>
 
             {/* Care Instructions */}
             {careInstructions.length > 0 && (
@@ -318,37 +367,58 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
           {/* Action Buttons */}
           <div className="space-y-4">
-            <div className="flex gap-4">
-              <AddToCartButton 
-                product={product} 
-                quantity={quantity}
-                size={selectedSize}
-                className="flex-1"
-                onSuccess={() => {
-                  // Reset quantity after adding to cart
-                  setQuantity(1);
-                }}
-              >
-                <ShoppingCart className="mr-2 h-5 w-5" /> 
-                Add {quantity > 1 ? `${quantity} ` : ''}to Cart
-              </AddToCartButton>
-              
-              <Button 
-                className="flex-1 bg-primary hover:bg-primary/90"
-                onClick={handleBuyNow}
-              >
-                Buy Now
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsWishlisted(!isWishlisted)}
-                className="shrink-0"
-              >
-                <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
-              </Button>
-            </div>
+            {isInCart ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center">
+                  <CartQuantityControls
+                    productId={productId}
+                    initialQuantity={cartQuantity}
+                    cartItemId={cartItemId}
+                    onQuantityChange={(qty) => {
+                      setCartQuantity(qty);
+                      window.dispatchEvent(new CustomEvent('cartUpdated', {
+                        detail: { action: 'update', productId, quantity: qty }
+                      }));
+                    }}
+                  />
+                </div>
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90"
+                  onClick={handleBuyNow}
+                >
+                  Buy Now
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-4">
+                <AddToCartButton 
+                  product={product} 
+                  quantity={1}
+                  size={selectedSize || product.size}
+                  className="flex-1"
+                  onSuccess={handleAddToCartSuccess}
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" /> 
+                  Add to Cart
+                </AddToCartButton>
+                
+                <Button 
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                  onClick={handleBuyNow}
+                >
+                  Buy Now
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  className="shrink-0"
+                >
+                  <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Features */}

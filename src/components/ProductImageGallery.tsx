@@ -17,13 +17,13 @@ export function ProductImageGallery({ imageUrls, productName }: ProductImageGall
     <div className="space-y-4">
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-            <div className="relative aspect-[3/4]">
+            <div className="relative aspect-[4/5] max-w-sm mx-auto">
               <Image
                 src={selectedImage}
                 alt={`Main image for ${productName}`}
                 fill
                 className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
+                sizes="(max-width: 768px) 100vw, 400px"
                 data-ai-hint="product image"
               />
             </div>

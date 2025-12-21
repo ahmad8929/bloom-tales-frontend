@@ -40,5 +40,19 @@ export function AuthInitializer() {
     }
   }, [accessToken, refreshToken, refreshAccessToken, dispatch]);
 
+  // Listen for token expiration events from API
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleTokenExpired = () => {
+      console.log('Token expired event received, logging out...');
+      dispatch(logout());
+      setAuthTokenCache(null);
+    };
+
+    window.addEventListener('authTokenExpired', handleTokenExpired);
+    return () => window.removeEventListener('authTokenExpired', handleTokenExpired);
+  }, [dispatch]);
+
   return null; // This component doesn't render anything
 }
