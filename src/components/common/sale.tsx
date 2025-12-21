@@ -235,23 +235,23 @@ export function Sale({
   // Loading state
   if (loading) {
     return (
-      <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
+      <section className="py-12 md:py-16 lg:py-24 bg-background relative overflow-hidden">
         {/* Background decorations */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-primary/30 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-hover/30 rounded-full blur-lg animate-bounce"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
+          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
             <Flame className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
             </h2>
           </div>
           <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-            <span className="ml-3 text-gray-600 font-medium">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="ml-3 text-foreground font-medium">
               Loading sale products...
             </span>
           </div>
@@ -263,23 +263,23 @@ export function Sale({
   // Empty state
   if (products.length === 0) {
     return (
-      <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
+      <section className="py-12 md:py-16 lg:py-24 bg-background relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
+          <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-primary/30 rounded-full blur-xl animate-pulse"></div>
+          <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-hover/30 rounded-full blur-lg animate-bounce"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6">
+          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
             <Flame className="w-5 h-5 md:w-6 md:h-6" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
             </h2>
           </div>
-          <p className="text-lg text-gray-600 py-12 font-medium">
+          <p className="text-lg text-foreground py-12 font-medium">
             No sale items available at the moment.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Check back soon for amazing deals!
           </p>
         </div>
@@ -293,25 +293,25 @@ export function Sale({
   const activeIndex = (currentIndex - products.length) % products.length;
 
   return (
-    <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden">
+    <section className="py-12 md:py-16 lg:py-24 bg-background relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
-        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full blur-md animate-pulse delay-100"></div>
-        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full blur-sm animate-bounce delay-200"></div>
+        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-primary/30 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-hover/30 rounded-full blur-lg animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-primary/20 rounded-full blur-md animate-pulse delay-100"></div>
+        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-hover/20 rounded-full blur-sm animate-bounce delay-200"></div>
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
             <Flame className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
             </h2>
           </div>
-          <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium mb-6">
+          <p className="text-foreground text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium mb-6">
             Don't miss out on these incredible deals! Limited time offers on
             selected items.
           </p>
@@ -328,7 +328,7 @@ export function Sale({
                   setIsPlaying(false);
                   setTimeout(() => setIsPlaying(true), 3000);
                 }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white active:bg-white text-purple-600 p-2 md:p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-95 hover:scale-110 transition-all duration-300 -translate-x-1 md:-translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 hover:bg-card active:bg-card text-primary p-2 md:p-3 rounded-full shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95 hover:scale-110 transition-all duration-300 -translate-x-1 md:-translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
                 aria-label="Previous slide"
               >
                 <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
@@ -339,7 +339,7 @@ export function Sale({
                   setIsPlaying(false);
                   setTimeout(() => setIsPlaying(true), 3000);
                 }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white active:bg-white text-purple-600 p-2 md:p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-95 hover:scale-110 transition-all duration-300 translate-x-1 md:translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 hover:bg-card active:bg-card text-primary p-2 md:p-3 rounded-full shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95 hover:scale-110 transition-all duration-300 translate-x-1 md:translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
                 aria-label="Next slide"
               >
                 <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
@@ -375,7 +375,7 @@ export function Sale({
                     minWidth: visibleCards === 1 ? '100%' : 'auto'
                   }}
                 >
-                  <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-purple-200 bg-white/80 backdrop-blur-sm h-full">
+                  <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-primary/30 bg-card/80 backdrop-blur-sm h-full">
                     <div className="relative h-48 md:h-56 lg:h-64">
                       <Image
                         src={
@@ -388,7 +388,7 @@ export function Sale({
                       />
 
                       {/* Sale Badge */}
-                      <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 text-xs md:text-sm rounded-full font-bold shadow-lg animate-pulse">
+                      <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-3 py-1 text-xs md:text-sm rounded-full font-bold shadow-lg animate-pulse">
                         SALE
                       </div>
 
@@ -405,15 +405,15 @@ export function Sale({
                         )}
 
                       {/* Overlay Gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
 
-                    <CardContent className="p-4 md:p-6 bg-gradient-to-br from-white to-purple-50/30">
-                      <h3 className="font-semibold mb-3 line-clamp-2 text-gray-800 min-h-[3rem] leading-tight text-sm md:text-base">
+                    <CardContent className="p-4 md:p-6 bg-card">
+                      <h3 className="font-semibold mb-3 line-clamp-2 text-foreground min-h-[3rem] leading-tight text-sm md:text-base">
                         {product.name}
                       </h3>
 
-                      <div className="mb-3 text-xs md:text-sm text-gray-600">
+                      <div className="mb-3 text-xs md:text-sm text-muted-foreground">
                         <p>
                           Size:{" "}
                           <span className="font-medium">{product.size}</span>
@@ -427,12 +427,12 @@ export function Sale({
                       </div>
 
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="font-bold text-lg md:text-xl text-purple-600">
+                        <span className="font-bold text-lg md:text-xl text-primary">
                           {formatPrice(product.price)}
                         </span>
                         {product.comparePrice &&
                           product.comparePrice > product.price && (
-                            <span className="text-sm text-gray-500 line-through">
+                            <span className="text-sm text-muted-foreground line-through">
                               {formatPrice(product.comparePrice)}
                             </span>
                           )}
@@ -453,7 +453,7 @@ export function Sale({
                             !
                           </span>
                         ) : (
-                          <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full shadow-sm">
+                          <span className="text-xs font-medium text-primary bg-primary/20 px-3 py-1 rounded-full shadow-sm">
                             Special Price
                           </span>
                         )}
@@ -461,7 +461,7 @@ export function Sale({
 
                       <Button
                         asChild
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium hover:scale-105 rounded-full"
+                        className="w-full bg-primary hover:bg-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 font-medium hover:scale-105 rounded-full"
                       >
                         <Link
                           href={`/products/${product._id}`}
@@ -489,7 +489,7 @@ export function Sale({
                   onClick={() => goToSlide(index)}
                   className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
                     index === activeIndex 
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 scale-125 shadow-lg' 
+                      ? 'bg-primary scale-125 shadow-lg' 
                       : 'bg-gray-300 hover:bg-gray-400'
                   }`}
                 />
@@ -500,7 +500,7 @@ export function Sale({
             <div className="flex justify-center mt-8">
               <Button
                 asChild
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-6 py-2 md:px-8 md:py-3 rounded-full font-semibold backdrop-blur-lg"
+                className="bg-primary hover:bg-hover text-primary-foreground border-0 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-6 py-2 md:px-8 md:py-3 rounded-full font-semibold backdrop-blur-lg"
               >
                 <Link
                   href="/products?isSale=true"

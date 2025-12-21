@@ -314,7 +314,7 @@ export function ResetPasswordModal({
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-shadow duration-300 w-full sm:w-auto"
+                  className="w-full sm:w-auto"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -335,10 +335,10 @@ export function ResetPasswordModal({
         {currentStep === 'otp' && (
           <Form {...otpForm}>
             <form onSubmit={otpForm.handleSubmit(handleVerifyOTP)} className="space-y-4">
-              <Alert className="border-blue-200 bg-blue-50 rounded-lg">
+              <Alert className="border-primary/30 bg-primary/10 rounded-lg">
 
-                <Mail className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
+                <Mail className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-text-normal">
                   <div className="space-y-1">
                     <p className="font-medium">Check your email:</p>
                     <p className="text-sm">{userEmail}</p>
@@ -404,9 +404,9 @@ export function ResetPasswordModal({
         {currentStep === 'password' && (
           <Form {...passwordForm}>
             <form onSubmit={passwordForm.handleSubmit(handleResetPassword)} className="space-y-4">
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
+              <Alert className="border-primary/30 bg-primary/10">
+                <CheckCircle className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-text-normal">
                   OTP verified! Please choose a strong password with at least 8 characters.
                 </AlertDescription>
               </Alert>

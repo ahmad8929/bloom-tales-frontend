@@ -173,23 +173,23 @@ export function LoginForm() {
   }
   return (
     <>
-      <div className="space-y-6 bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-xl shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto">
+      <div className="space-y-6 bg-card p-8 rounded-xl shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto border border-border">
 
   
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-purple-700">
+          <h1 className="text-2xl sm:text-3xl font-bold text-heading">
             Welcome Back
           </h1>
-          <p className="text-sm text-purple-400 mt-1">
+          <p className="text-sm text-text-muted mt-1">
             Sign in to your account to continue
           </p>
         </div>
 
         {/* Email Verification Alert */}
         {needsEmailVerification && (
-          <Alert className="border-purple-300 bg-purple-100 text-purple-800 rounded-lg flex items-center justify-between">
+          <Alert className="border-primary/30 bg-primary/10 text-text-normal rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
+              <Mail className="h-5 w-5 text-primary" />
               <AlertDescription>
                 Please verify your email before logging in.
               </AlertDescription>
@@ -198,7 +198,7 @@ export function LoginForm() {
               variant="outline"
               size="sm"
               onClick={handleOpenVerificationModal}
-              className="border-purple-400 text-purple-700 hover:bg-purple-200 ml-2"
+              className="border-primary text-primary hover:bg-secondary-hover ml-2"
             >
               Resend Email
             </Button>
@@ -221,7 +221,7 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-purple-700">Email Address</FormLabel>
+                  <FormLabel className="text-primary">Email Address</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -241,7 +241,7 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-purple-700">Password</FormLabel>
+                  <FormLabel className="text-primary">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
@@ -259,7 +259,7 @@ export function LoginForm() {
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4 text-purple-500" /> : <Eye className="h-4 w-4 text-purple-500" />}
+                        {showPassword ? <EyeOff className="h-4 w-4 text-primary" /> : <Eye className="h-4 w-4 text-primary" />}
                         <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
                       </Button>
                     </div>
@@ -275,7 +275,7 @@ export function LoginForm() {
                 variant="ghost"
                 size="sm"
                 onClick={handleOpenResetPasswordModal}
-                className="text-sm font-medium text-purple-600 hover:underline h-auto p-0"
+                className="text-sm font-medium text-primary hover:underline h-auto p-0"
               >
                 Forgot password?
               </Button>
@@ -283,7 +283,7 @@ export function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full h-10 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md rounded-lg"
+              className="w-full h-10 bg-primary hover:bg-hover text-primary-foreground font-semibold shadow-md rounded-lg transition-all duration-300"
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Sign In'}
@@ -293,17 +293,17 @@ export function LoginForm() {
 
         {/* Signup Link */}
         <div className="text-center mt-2">
-          <p className="text-sm text-purple-500">
+          <p className="text-sm text-text-normal">
             Don't have an account?{' '}
-            <Link href="/signup" className="font-medium text-purple-700 hover:underline">
+            <Link href="/signup" className="font-medium text-primary hover:underline transition-colors">
               Create an account
             </Link>
           </p>
         </div>
 
         {/* Help Section */}
-<div className="text-center pt-6 border-t border-purple-200">
-  <p className="text-sm text-purple-400 mb-2">
+<div className="text-center pt-6 border-t border-border">
+  <p className="text-sm text-text-muted mb-2">
     Need help with your account?
   </p>
   <div className="flex justify-center space-x-4">
@@ -311,7 +311,7 @@ export function LoginForm() {
       variant="outline"
       size="sm"
       onClick={handleOpenVerificationModal}
-      className="border-purple-400 text-purple-700 hover:bg-purple-200 h-auto p-2 rounded-lg"
+      className="border-primary text-primary hover:bg-secondary-hover h-auto p-2 rounded-lg"
     >
       Resend verification email
     </Button>
@@ -320,9 +320,9 @@ export function LoginForm() {
 
 
         {/* Additional Links */}
-        <div className="flex justify-center space-x-4 pt-4 text-xs text-purple-400">
-          <Link href="/privacy" className="hover:text-purple-600 hover:underline">Privacy Policy</Link>
-          <Link href="/terms" className="hover:text-purple-600 hover:underline">Terms of Service</Link>
+        <div className="flex justify-center space-x-4 pt-4 text-xs text-text-muted">
+          <Link href="/privacy" className="hover:text-primary hover:underline transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-primary hover:underline transition-colors">Terms of Service</Link>
         </div>
       </div>
 

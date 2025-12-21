@@ -162,28 +162,28 @@ export function CustomerTestimonials({
   const activeIndex = (currentIndex - testimonials.length) % testimonials.length;
 
   return (
-    <section className={`py-12 md:py-16 lg:py-24 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-white relative overflow-hidden ${className}`}>
+    <section className={`py-12 md:py-16 lg:py-24 bg-background relative overflow-hidden ${className}`}>
       {/* Background decorative elements */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-lg animate-bounce"></div>
-        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full blur-md animate-pulse delay-100"></div>
-        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full blur-sm animate-bounce delay-200"></div>
+        <div className="absolute top-10 md:top-20 left-4 md:left-10 w-20 md:w-32 h-20 md:h-32 bg-primary/30 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-10 md:bottom-20 right-4 md:right-10 w-16 md:w-24 h-16 md:h-24 bg-accent/30 rounded-full blur-lg animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 md:w-20 h-12 md:h-20 bg-primary/20 rounded-full blur-md animate-pulse delay-100"></div>
+        <div className="absolute top-1/3 right-1/3 w-8 md:w-16 h-8 md:h-16 bg-accent/20 rounded-full blur-sm animate-bounce delay-200"></div>
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
             <Users className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               Customer Love
             </h2>
           </div>
-          <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-purple-800 leading-tight">
+          {/* <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-heading leading-tight">
             {title}
-          </h3>
-          <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium">
+          </h3> */}
+          <p className="text-text-normal text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium">
             {subtitle}
           </p>
         </div>
@@ -199,7 +199,7 @@ export function CustomerTestimonials({
                   setIsPlaying(false);
                   setTimeout(() => setIsPlaying(true), 3000);
                 }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white active:bg-white text-purple-600 p-2 md:p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-95 hover:scale-110 transition-all duration-300 -translate-x-1 md:-translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 hover:bg-card active:bg-card text-primary p-2 md:p-3 rounded-full shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95 hover:scale-110 transition-all duration-300 -translate-x-1 md:-translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
                 aria-label="Previous slide"
               >
                 <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
@@ -210,7 +210,7 @@ export function CustomerTestimonials({
                   setIsPlaying(false);
                   setTimeout(() => setIsPlaying(true), 3000);
                 }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white active:bg-white text-purple-600 p-2 md:p-3 rounded-full shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-95 hover:scale-110 transition-all duration-300 translate-x-1 md:translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 hover:bg-card active:bg-card text-primary p-2 md:p-3 rounded-full shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95 hover:scale-110 transition-all duration-300 translate-x-1 md:translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
                 aria-label="Next slide"
               >
                 <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
@@ -242,13 +242,13 @@ export function CustomerTestimonials({
                     minWidth: visibleCards === 1 ? '100%' : 'auto'
                   }}
                 >
-                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-2 hover:border-purple-200 relative overflow-hidden h-full">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-pink-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 backdrop-blur-sm border-2 hover:border-primary/30 relative overflow-hidden h-full">
+                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <CardContent className="p-4 md:p-6 relative z-10 flex flex-col h-full">
                       {/* Header with Quote and Rating */}
                       <div className="flex justify-between items-start mb-4">
-                        <Quote className="h-6 w-6 md:h-8 md:w-8 text-purple-300 group-hover:text-purple-500 transition-colors duration-300 flex-shrink-0" />
+                        <Quote className="h-6 w-6 md:h-8 md:w-8 text-primary/40 group-hover:text-primary transition-colors duration-300 flex-shrink-0" />
                         <div className="flex">
                           {[...Array(5)].map((_, s) => (
                             <Star 
@@ -265,12 +265,12 @@ export function CustomerTestimonials({
                       </div>
                       
                       {/* Review Text */}
-                      <p className="text-gray-600 text-sm md:text-base mb-4 md:mb-6 leading-relaxed group-hover:text-gray-700 transition-colors duration-300 flex-grow line-clamp-4 md:line-clamp-5">
+                      <p className="text-text-normal text-sm md:text-base mb-4 md:mb-6 leading-relaxed group-hover:text-subheading transition-colors duration-300 flex-grow line-clamp-4 md:line-clamp-5">
                         "{testimonial.review}"
                       </p>
                       
                       {/* Footer with Customer Info */}
-                      <div className="border-t border-purple-100 pt-4 mt-auto">
+                      <div className="border-t border-border pt-4 mt-auto">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {testimonial.avatar ? (
@@ -279,28 +279,28 @@ export function CustomerTestimonials({
                                 alt={testimonial.name}
                                 width={40}
                                 height={40}
-                                className="rounded-full object-cover w-8 h-8 md:w-10 md:h-10 border-2 border-purple-200 group-hover:border-purple-300 transition-colors duration-300"
+                                className="rounded-full object-cover w-8 h-8 md:w-10 md:h-10 border-2 border-border group-hover:border-primary transition-colors duration-300"
                               />
                             ) : (
-                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm md:text-base shadow-lg">
+                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm md:text-base shadow-lg">
                                 {testimonial.name[0]}
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="font-bold text-purple-700 group-hover:text-purple-600 transition-colors duration-300 text-sm md:text-base truncate">
+                              <p className="font-bold text-heading group-hover:text-primary transition-colors duration-300 text-sm md:text-base truncate">
                                 {testimonial.name}
                               </p>
-                              <p className="text-xs md:text-sm text-gray-500 truncate">{testimonial.location}</p>
+                              <p className="text-xs md:text-sm text-text-muted truncate">{testimonial.location}</p>
                             </div>
                           </div>
                           <div className="text-right min-w-0 flex-shrink-0 ml-2">
-                            <p className="text-xs text-gray-400">Purchased:</p>
-                            <p className="text-xs font-medium text-purple-600 line-clamp-2">{testimonial.purchase}</p>
+                            <p className="text-xs text-text-muted">Purchased:</p>
+                            <p className="text-xs font-medium text-primary line-clamp-2">{testimonial.purchase}</p>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500/0 via-purple-500 to-purple-500/0 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"></div>
+                      <div className="absolute bottom-0 left-0 w-full h-1 bg-primary/50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"></div>
                     </CardContent>
                   </Card>
                 </div>
@@ -317,8 +317,8 @@ export function CustomerTestimonials({
                   onClick={() => goToSlide(index)}
                   className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
                     index === activeIndex 
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 scale-125 shadow-lg' 
-                      : 'bg-gray-300 hover:bg-gray-400'
+                      ? 'bg-primary scale-125 shadow-lg' 
+                      : 'bg-border hover:bg-primary/50'
                   }`}
                 />
               ))}
@@ -329,14 +329,14 @@ export function CustomerTestimonials({
         {/* CTA Section */}
         {showCTA && (
           <div className="text-center mt-12 md:mt-16">
-            <div className="inline-flex items-center gap-2 text-gray-600 mb-4 md:mb-6">
-              <Heart className="w-4 h-4 md:w-5 md:h-5 text-pink-500" />
+            <div className="inline-flex items-center gap-2 text-text-normal mb-4 md:mb-6">
+              <Heart className="w-4 h-4 md:w-5 md:h-5 text-accent" />
               <span className="text-sm md:text-base font-medium">Join thousands of happy customers</span>
             </div>
             <br />
             <Button 
               asChild 
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-8 py-3 md:px-12 md:py-4 rounded-full font-semibold backdrop-blur-lg"
+              className="bg-primary hover:bg-hover text-primary-foreground border-0 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-105 text-sm md:text-base px-8 py-3 md:px-12 md:py-4 rounded-full font-semibold backdrop-blur-lg"
             >
               <Link href={ctaLink} className="flex items-center gap-2">
                 <span>{ctaText}</span>

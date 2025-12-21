@@ -41,14 +41,14 @@ export function ShopByCategory({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16 lg:mb-20">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-purple-500/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
+          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6 md:mb-8 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300 backdrop-blur-lg">
             <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
-            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
             </h2>
           </div>
           {subtitle && (
-            <p className="text-gray-600 text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium">
+            <p className="text-text-normal text-sm md:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed font-medium">
               {subtitle}
             </p>
           )}

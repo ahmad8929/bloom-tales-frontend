@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { productApi } from "@/lib/api";
 import { CartItem } from '@/types/cart';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 // Import components
 import { Logo } from '@/components/Logo';
@@ -93,59 +95,82 @@ export function Header() {
     <TooltipProvider>
       <header className={`sticky top-0 z-50 transition-all duration-500 ${
         scrolled 
-          ? 'bg-white/95 backdrop-blur-lg shadow-2xl shadow-purple-500/10 border-b border-purple-100' 
-          : 'bg-white/90 backdrop-blur-md border-b border-gray-100'
+          ? 'bg-[#5A3E2B]/95 backdrop-blur-lg shadow-2xl shadow-primary/10 border-b border-primary/20' 
+          : 'bg-[#5A3E2B]/95 backdrop-blur-md border-b border-primary/20'
       }`}>
         
         <div className="container mx-auto px-2 sm:px-3 lg:px-6 h-14 sm:h-16 flex items-center justify-between relative gap-2">
           {/* Background decorative elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-2 left-16 sm:left-20 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-200 rounded-full animate-pulse opacity-40"></div>
-            <div className="absolute top-3 sm:top-4 right-24 sm:right-32 w-1 h-1 bg-pink-200 rounded-full animate-bounce opacity-60"></div>
-            <div className="absolute bottom-2 sm:bottom-3 left-1/4 sm:left-1/3 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-purple-300 rounded-full animate-pulse delay-100 opacity-30"></div>
+            <div className="absolute top-2 left-16 sm:left-20 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary/30 rounded-full animate-pulse opacity-40"></div>
+            <div className="absolute top-3 sm:top-4 right-24 sm:right-32 w-1 h-1 bg-hover/40 rounded-full animate-bounce opacity-60"></div>
+            <div className="absolute bottom-2 sm:bottom-3 left-1/4 sm:left-1/3 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-primary/40 rounded-full animate-pulse delay-100 opacity-30"></div>
           </div>
 
           {/* Enhanced Logo */}
           <div className="transform transition-all duration-300 hover:scale-110 group relative z-10 flex-shrink-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <Logo className="relative z-10" />
           </div>
 
           {/* Desktop Navigation */}
-          <div className="flex-1 flex justify-center mx-2 sm:mx-4 lg:mx-8">
+          {/* <div className="flex-1 flex justify-center mx-2 sm:mx-4 lg:mx-8">
             <NavigationMenu 
               categories={categories}
               loadingCategories={loadingCategories}
             />
-          </div>
+          </div> */}
 
           {/* Right side actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Cart Button - Desktop Only */}
-            <div className="hidden lg:block">
-              <CartButton itemCount={itemCount} />
-            </div>
+          {/* Right side actions */}
+<div className="flex items-center gap-2 sm:gap-3">
+  
+  {/* Products Button - Desktop Only */}
+  <div className="hidden lg:block">
+    <Button
+      asChild
+      className="
+        bg-primary/90 text-primary-foreground
+        hover:bg-hover
+        transition-all duration-300
+        px-4 py-2 rounded-full
+        shadow-md hover:shadow-lg
+        text-sm font-medium
+      "
+    >
+      <Link href="/products">
+        Our Products
+      </Link>
+    </Button>
+  </div>
 
-            {/* User Menu - Desktop Only */}
-            <div className="hidden lg:block">
-              <UserMenu 
-                user={user}
-                isAuthenticated={isAuthenticated}
-                logoutUser={logoutUser}
-              />
-            </div>
+  {/* Cart Button - Desktop Only */}
+  <div className="hidden lg:block">
+    <CartButton itemCount={itemCount} />
+  </div>
 
-            {/* Mobile Menu Button */}
-            <MobileMenuButton 
-              isOpen={mobileMenuOpen}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            />
-          </div>
+  {/* User Menu - Desktop Only */}
+  <div className="hidden lg:block">
+    <UserMenu 
+      user={user}
+      isAuthenticated={isAuthenticated}
+      logoutUser={logoutUser}
+    />
+  </div>
+
+  {/* Mobile Menu Button */}
+  <MobileMenuButton 
+    isOpen={mobileMenuOpen}
+    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+  />
+</div>
+
+
         </div>
 
         {/* Enhanced Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-purple-100 bg-white/95 backdrop-blur-lg">
+          <div className="lg:hidden border-t border-primary/20 bg-[#5A3E2B]/95 backdrop-blur-lg">
             <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-h-[80vh] overflow-y-auto">
               <NavigationMenu 
                 categories={categories}
@@ -162,11 +187,11 @@ export function Header() {
         )}
 
         {/* Animated gradient border bottom */}
-        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-60"></div>
         
         {/* Floating decorative elements */}
-        <div className="absolute top-1 sm:top-2 left-2 sm:left-4 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-purple-300 rounded-full animate-ping opacity-40"></div>
-        <div className="absolute bottom-1 sm:bottom-2 right-6 sm:right-8 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-pink-300 rounded-full animate-pulse opacity-50"></div>
+        <div className="absolute top-1 sm:top-2 left-2 sm:left-4 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-primary/50 rounded-full animate-ping opacity-40"></div>
+        <div className="absolute bottom-1 sm:bottom-2 right-6 sm:right-8 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-hover/50 rounded-full animate-pulse opacity-50"></div>
       </header>
     </TooltipProvider>
   );

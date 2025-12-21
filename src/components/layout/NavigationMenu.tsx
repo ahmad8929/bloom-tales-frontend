@@ -51,17 +51,17 @@ const NavigationLink = ({
         isMobile ? 'w-full justify-start px-4 py-3' : 'px-3 lg:px-4 py-2'
       } rounded-lg font-medium ${
         isActive 
-          ? 'text-white bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25' 
-          : 'text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500/80 hover:to-pink-500/80'
+          ? 'text-primary-foreground bg-primary shadow-lg shadow-primary/25' 
+          : 'text-[#FAEEE8] hover:text-primary hover:bg-primary/20'
       }`}
     >
       {premium && <Crown className="w-3 h-3 mr-1 text-yellow-400" />}
       {children}
       {!isActive && (
-        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-purple-500/10 to-pink-500/10"></div>
+        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary/10"></div>
       )}
       {isActive && !isMobile && (
-        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-sm opacity-60"></div>
+        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full blur-sm opacity-60"></div>
       )}
     </Button>
   </Link>
@@ -89,7 +89,7 @@ if (isMobile) {
     <div className="flex flex-col justify-between h-full space-y-4">
       {/* Navigation Section */}
       <div className="space-y-2 overflow-y-auto">
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-100">
+        <div className="bg-[#5A3E2B]/30 rounded-lg p-4 border border-primary/20">
           <NavigationLink 
             href="/products" 
             isActive={pathname === '/products'}
@@ -101,14 +101,14 @@ if (isMobile) {
         </div>
 
         {(loadingCategories ? (
-          <div className="flex items-center gap-2 text-gray-500 px-4 py-3">
-            <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+          <div className="flex items-center gap-2 text-[#FAEEE8] px-4 py-3">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
             <span className="text-sm">Loading categories...</span>
           </div>
         ) : Array.isArray(categories) && categories.length > 0 ? (
           <div className="space-y-1">
             {categories.map((category) => (
-              <div key={category.slug} className="bg-gray-50/80 rounded-lg">
+              <div key={category.slug} className="bg-[#5A3E2B]/30 rounded-lg">
                 <NavigationLink
                   href={`/category/${category.slug}`}
                   isActive={pathname === `/category/${category.slug}`}
@@ -118,7 +118,7 @@ if (isMobile) {
                   <div className="flex items-center justify-between w-full">
                     <span className="text-sm font-medium">{category.name}</span>
                     {category.count > 0 && (
-                      <span className="ml-2 text-xs text-purple-500 bg-purple-100 px-2 py-0.5 rounded-full">
+                      <span className="ml-2 text-xs text-primary bg-primary/20 px-2 py-0.5 rounded-full">
                         {category.count}
                       </span>
                     )}
@@ -128,28 +128,28 @@ if (isMobile) {
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-500 px-4 py-3 text-sm">
+          <div className="text-center text-[#FAEEE8] px-4 py-3 text-sm">
             No categories available
           </div>
         ))}
       </div>
 
       {/* User Section at Bottom */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-100">
+      <div className="bg-[#5A3E2B]/30 rounded-lg p-4 border border-primary/20">
         {isAuthenticated && user ? (
           <div className="space-y-3">
             {/* User Info */}
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold">
+                <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                   {user.firstName?.[0] ?? 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <div className="font-semibold text-gray-800 truncate">
+                <div className="font-semibold text-[#FAEEE8] truncate">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-xs text-gray-600 truncate">{user.email}</div>
+                <div className="text-xs text-[#FAEEE8]/70 truncate">{user.email}</div>
                 {user.role === 'admin' && (
                   <div className="flex items-center gap-1 mt-1">
                     <Crown className="w-3 h-3 text-yellow-500" />
@@ -166,7 +166,7 @@ if (isMobile) {
                 onClick={onItemClick}
                 isMobile
               >
-                <ShoppingCart className="h-4 w-4 mr-3 text-purple-600" />
+                <ShoppingCart className="h-4 w-4 mr-3 text-primary" />
                 My Orders
               </NavigationLink>
 
@@ -175,7 +175,7 @@ if (isMobile) {
                 onClick={onItemClick}
                 isMobile
               >
-                <Settings className="h-4 w-4 mr-3 text-purple-600" />
+                <Settings className="h-4 w-4 mr-3 text-primary" />
                 Profile Settings
               </NavigationLink>
 
@@ -209,7 +209,7 @@ if (isMobile) {
             onClick={onItemClick}
             isMobile
           >
-            <User className="h-4 w-4 mr-3 text-purple-600" />
+            <User className="h-4 w-4 mr-3 text-primary" />
             Login / Sign Up
           </NavigationLink>
         )}
@@ -220,10 +220,10 @@ if (isMobile) {
 
 
   return (
-    <nav className="hidden lg:flex items-center gap-1 bg-gray-50/80 backdrop-blur-sm rounded-full px-2 py-1 border border-gray-200/50">
+    <nav className="hidden lg:flex items-center gap-1 bg-[#5A3E2B]/30 backdrop-blur-sm rounded-full px-2 py-1 border border-primary/20">
       {loadingCategories ? (
-        <div className="flex items-center gap-2 text-gray-500 px-4 py-2">
-          <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+        <div className="flex items-center gap-2 text-muted-foreground px-4 py-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <span className="text-sm">Loading...</span>
         </div>
       ) : (
@@ -243,7 +243,7 @@ if (isMobile) {
                     <span className="text-xs xl:text-sm font-medium">{category.name}</span>
                   </NavigationLink>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
+                <TooltipContent className="bg-primary text-primary-foreground border-none">
                   <p className="font-medium">
                     {category.count > 0 ? `${category.count} ${category.name} products` : `Explore ${category.name} collection`}
                   </p>

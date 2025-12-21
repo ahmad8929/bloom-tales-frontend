@@ -29,7 +29,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100 relative overflow-hidden">
+    <footer className="bg-[#5A3E2B] text-card relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-10 left-10 w-32 h-32 border border-white/20 rounded-full animate-pulse"></div>
@@ -44,18 +44,18 @@ export function Footer() {
           {/* Brand Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                <Heart className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <Heart className="w-4 h-4 text-primary-foreground" />
               </div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold text-heading">
                 Bloomtales Boutique
               </h2>
             </div>
-            {/* <p className="text-gray-300 leading-relaxed">
+            {/* <p className="text-card leading-relaxed">
               At Bloomtales Boutique, we believe in blending timeless elegance with modern trends.
               Discover curated collections crafted with love and attention to detail.
             </p> */}
-            <div className="space-y-2 text-sm text-gray-400">
+            <div className="space-y-2 text-sm text-text-muted">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 <span>Mumbai, Maharashtra, India</span>
@@ -73,18 +73,18 @@ export function Footer() {
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white mb-4 relative">
+            <h3 className="text-lg font-semibold text-card mb-4 relative">
               Quick Links
-              <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400"></div>
+              <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
             </h3>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href} 
-                    className="text-gray-300 hover:text-white hover:translate-x-1 transition-all duration-300 inline-block group"
+                    className="text-card hover:text-primary hover:translate-x-1 transition-all duration-300 inline-block group"
                   >
-                    <span className="border-b border-transparent group-hover:border-purple-400 transition-all duration-300">
+                    <span className="border-b border-transparent group-hover:border-primary transition-all duration-300">
                       {link.name}
                     </span>
                   </Link>
@@ -95,18 +95,18 @@ export function Footer() {
 
           {/* Customer Service */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white mb-4 relative">
+            <h3 className="text-lg font-semibold text-card mb-4 relative">
               Customer Service
-              <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400"></div>
+              <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
             </h3>
             <ul className="space-y-3">
               {customerService.map((link, index) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href} 
-                    className="text-gray-300 hover:text-white hover:translate-x-1 transition-all duration-300 inline-block group"
+                    className="text-card hover:text-primary hover:translate-x-1 transition-all duration-300 inline-block group"
                   >
-                    <span className="border-b border-transparent group-hover:border-purple-400 transition-all duration-300">
+                    <span className="border-b border-transparent group-hover:border-primary transition-all duration-300">
                       {link.name}
                     </span>
                   </Link>
@@ -118,11 +118,11 @@ export function Footer() {
           {/* Developer Info & Newsletter */}
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-4 relative">
+              <h3 className="text-lg font-semibold text-card mb-4 relative">
                 Developer
-                <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
               </h3>
-              <p className="text-gray-300 text-sm leading-relaxed mb-3">
+              <p className="text-card text-sm leading-relaxed mb-3">
                 Develope and maintain by ❤️ 
                 <br/>
                 {" "}
@@ -130,9 +130,9 @@ export function Footer() {
                   href="https://www.linkedin.com/in/ahmad8929/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors duration-300 group"
+                  className="inline-flex items-center gap-1 text-primary hover:text-hover transition-colors duration-300 group"
                 >
-                  <span className="border-b border-transparent group-hover:border-purple-400 transition-all duration-300">
+                  <span className="border-b border-transparent group-hover:border-primary transition-all duration-300">
                     Mohd Ahmad
                   </span>
                  
@@ -140,7 +140,7 @@ export function Footer() {
                   <Linkedin className="w-3 h-3" />
                 </a>
               </p>
-              <p className="text-gray-400 text-xs">
+              <p className="text-text-muted text-xs">
                 Passionate about crafting clean, responsive, and high-performance web applications.
               </p>
             </div>
@@ -150,11 +150,11 @@ export function Footer() {
         {/* Divider with animation */}
         <div className="relative mb-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-700"></div>
+            <div className="w-full border-t border-border"></div>
           </div>
           <div className="relative flex justify-center">
-            <div className="bg-gray-800 px-4">
-              <div className="w-12 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
+            <div className="bg-text-normal px-4">
+              <div className="w-12 h-0.5 bg-primary animate-pulse"></div>
             </div>
           </div>
         </div>
@@ -172,12 +172,12 @@ export function Footer() {
                 className="group relative"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="w-10 h-10 bg-gray-800 hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-500 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
-                  <social.icon className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors duration-300" />
+                <div className="w-10 h-10 bg-card/20 hover:bg-primary rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
+                  <social.icon className="w-5 h-5 text-card group-hover:text-primary-foreground transition-colors duration-300" />
                 </div>
                 
                 {/* Tooltip */}
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-text-normal text-card text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                   {social.label}
                 </div>
               </a>
@@ -186,20 +186,20 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="text-center">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-text-muted">
               &copy; {currentYear} Bloomtales Boutique. All Rights Reserved.
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Made with <Heart className="w-3 h-3 inline text-red-400 animate-pulse" /> in India
+            <p className="text-xs text-text-muted mt-1">
+              Made with <Heart className="w-3 h-3 inline text-accent animate-pulse" /> in India
             </p>
           </div>
 
           {/* Trust Badges */}
           <div className="flex gap-3 opacity-70">
-            <div className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-700">
+            <div className="text-xs text-text-muted bg-card/20 px-2 py-1 rounded border border-border">
               🔒 SSL Secured
             </div>
-            <div className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-700">
+            <div className="text-xs text-text-muted bg-card/20 px-2 py-1 rounded border border-border">
               ✅ Verified Store
             </div>
           </div>
@@ -207,12 +207,12 @@ export function Footer() {
 
         {/* Floating Animation */}
         <div className="absolute bottom-4 right-4 opacity-20">
-          <div className="w-6 h-6 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
+          <div className="w-6 h-6 bg-primary rounded-full animate-bounce"></div>
         </div>
       </div>
 
       {/* Bottom Gradient */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"></div>
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
     </footer>
   );
 }

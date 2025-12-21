@@ -84,10 +84,10 @@ export function SignupForm() {
   };
 
   return (
-    <div className="space-y-6 bg-gradient-to-r from-purple-50 to-pink-50 p-8 rounded-xl shadow-lg max-w-md mx-auto">
+    <div className="space-y-6 bg-card p-8 rounded-xl shadow-lg max-w-md mx-auto border border-border">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-heading">Create an account</h1>
+        <p className="text-sm text-text-muted">
           Enter your information below to create your account
         </p>
       </div>
@@ -208,7 +208,7 @@ export function SignupForm() {
 
           <Button
             type="submit"
-            className="w-full h-10 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold"
+            className="w-full h-10 bg-primary hover:bg-hover text-primary-foreground font-semibold transition-all duration-300"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -227,7 +227,7 @@ export function SignupForm() {
         Already have an account?{' '}
         <Link
           href="/login"
-          className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent hover:from-purple-700 hover:to-pink-700"
+          className="font-bold text-primary hover:text-hover transition-colors"
         >
           Sign in
         </Link>

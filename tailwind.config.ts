@@ -45,6 +45,17 @@ export default {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
+        hover: {
+          DEFAULT: 'hsl(var(--hover))',
+          foreground: 'hsl(var(--hover-foreground))',
+        },
+        'secondary-hover': 'hsl(var(--secondary-hover))',
+        'input-bg': 'hsl(var(--input-bg))',
+        'input-focus': 'hsl(var(--input-focus))',
+        heading: 'hsl(var(--heading))',
+        subheading: 'hsl(var(--subheading))',
+        'text-normal': 'hsl(var(--text-normal))',
+        'text-muted': 'hsl(var(--text-muted))',
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',

@@ -36,14 +36,14 @@ export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
         <TooltipTrigger asChild>
           <Link href="/login">
             <Button 
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105 border-none font-medium px-4 sm:px-6 text-sm"
+              className="bg-primary hover:bg-hover text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 hover:scale-105 border-none font-medium px-4 sm:px-6 text-sm"
             >
               <User className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Login</span>
             </Button>
           </Link>
         </TooltipTrigger>
-        <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
+        <TooltipContent className="bg-primary text-primary-foreground border-none">
           <p className="font-medium">Join Bloomtales Family</p>
         </TooltipContent>
       </Tooltip>
@@ -58,10 +58,10 @@ export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
             <Button 
               variant="ghost" 
               size="icon"
-              className="group bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200/50 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-purple-200/50 w-10 h-10 sm:w-11 sm:h-11"
+              className="group bg-accent hover:bg-hover border border-border transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 w-10 h-10 sm:w-11 sm:h-11"
             >
               <Avatar className="transition-all duration-300 group-hover:scale-110 w-6 h-6 sm:w-8 sm:h-8">
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-xs sm:text-sm">
+                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs sm:text-sm">
                   {user.firstName?.[0] ?? 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -71,27 +71,27 @@ export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
+        <TooltipContent className="bg-primary text-primary-foreground border-none">
           <p className="font-medium">Welcome, {user.firstName}!</p>
         </TooltipContent>
       </Tooltip>
       
       <DropdownMenuContent 
         align="end" 
-        className="w-56 sm:w-64 bg-white/95 backdrop-blur-lg border border-purple-100 shadow-2xl shadow-purple-500/20"
+        className="w-56 sm:w-64 bg-card/95 backdrop-blur-lg border border-border shadow-2xl shadow-primary/20"
       >
-        <DropdownMenuLabel className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+        <DropdownMenuLabel className="bg-accent border-b border-border">
           <div className="flex items-center gap-3">
             <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
                 {user.firstName?.[0] ?? 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-gray-800 truncate">
+              <div className="font-semibold text-foreground truncate">
                 {user.firstName} {user.lastName}
               </div>
-              <div className="text-xs text-gray-600 truncate">{user.email}</div>
+              <div className="text-xs text-muted-foreground truncate">{user.email}</div>
               {user.role === 'admin' && (
                 <div className="flex items-center gap-1 mt-1">
                   <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" />
@@ -103,16 +103,16 @@ export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        <DropdownMenuItem asChild className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200">
+        <DropdownMenuItem asChild className="cursor-pointer hover:bg-hover hover:text-hover-foreground transition-all duration-200">
           <Link href="/orders" className="flex items-center gap-3 px-3 py-2">
-            <ShoppingCart className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <ShoppingCart className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="font-medium">My Orders</span>
           </Link>
         </DropdownMenuItem>
         
-        <DropdownMenuItem asChild className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200">
+        <DropdownMenuItem asChild className="cursor-pointer hover:bg-hover hover:text-hover-foreground transition-all duration-200">
           <Link href="/profile" className="flex items-center gap-3 px-3 py-2">
-            <Settings className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <Settings className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="font-medium">Profile Settings</span>
           </Link>
         </DropdownMenuItem>

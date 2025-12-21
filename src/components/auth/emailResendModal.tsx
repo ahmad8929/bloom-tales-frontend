@@ -93,13 +93,13 @@ export function ResendVerificationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl shadow-lg">
+      <DialogContent className="sm:max-w-md bg-card p-6 rounded-xl shadow-lg border border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2 text-xl font-semibold">
+          <DialogTitle className="flex items-center space-x-2 text-xl font-semibold text-heading">
             <Mail className="h-5 w-5 text-primary" />
             <span>Resend Verification Email</span>
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription className="text-sm text-text-muted">
             Enter your email address to receive a new verification link.
           </DialogDescription>
         </DialogHeader>
@@ -138,7 +138,7 @@ export function ResendVerificationModal({
                 </Button>
                 <Button
                   type="submit"
-                  className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-shadow duration-300"
+                  className="w-full sm:w-auto"
                   disabled={isResending}
                 >
                   {isResending ? (
@@ -159,12 +159,12 @@ export function ResendVerificationModal({
             <h3 className="text-lg font-medium text-green-800 mb-2">
               Verification Email Sent!
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-text-muted mb-4">
               Please check your inbox and click the verification link to activate your account.
             </p>
             <DialogFooter>
 
-              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-shadow duration-300"
+              <Button className="w-full"
                   onClick={handleCloseModal}
 >
                     Close

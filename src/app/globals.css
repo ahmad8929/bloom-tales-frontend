@@ -26,48 +26,91 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 346.8 77.2% 49.8%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    /* Main Background - Soft Blush Nude */
+    --background: 20 58% 87%; /* #F2D6C9 */
+    --foreground: 25 35% 26%; /* #5A3E2B - Warm Brown for text */
+    
+    /* Card / Soft Champagne */
+    --card: 20 67% 95%; /* #FAEEE8 */
+    --card-foreground: 25 35% 26%; /* #5A3E2B */
+    
+    /* Popover */
+    --popover: 20 67% 95%; /* #FAEEE8 */
+    --popover-foreground: 25 35% 26%; /* #5A3E2B */
+    
+    /* Primary Gold - Logo, Headings, Primary Buttons */
+    --primary: 33 44% 51%; /* #B88A4E */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    
+    /* Secondary - Transparent with border */
+    --secondary: 0 0% 100% / 0; /* Transparent */
+    --secondary-foreground: 33 44% 51%; /* #B88A4E */
+    
+    /* Muted - For muted text */
+    --muted: 25 20% 55%; /* #9A7F6A */
+    --muted-foreground: 25 20% 55%; /* #9A7F6A */
+    
+    /* Accent - Muted Rose for badges, CTAs */
+    --accent: 9 28% 70%; /* #C9A19A */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    
+    /* Hover - Dark Gold / Bronze */
+    --hover: 33 46% 42%; /* #9C6F3A */
+    --hover-foreground: 0 0% 100%; /* #FFFFFF */
+    
+    /* Secondary Hover Background */
+    --secondary-hover: 20 67% 95%; /* #FAEEE8 */
+    
+    /* Destructive */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 346.8 77.2% 49.8%;
+    
+    /* Borders */
+    --border: 25 48% 78%; /* #E2C4AE */
+    --input: 25 48% 78%; /* #E2C4AE */
+    --input-bg: 20 100% 98%; /* #FFF7F3 */
+    --input-focus: 33 44% 51%; /* #B88A4E */
+    
+    /* Text Colors */
+    --heading: 33 44% 51%; /* #B88A4E - Main Heading */
+    --subheading: 33 35% 38%; /* #7A5534 - Sub Heading */
+    --text-normal: 25 35% 26%; /* #5A3E2B - Normal Text */
+    --text-muted: 25 20% 55%; /* #9A7F6A - Muted Text */
+    
+    /* Ring (focus ring) */
+    --ring: 33 44% 51%; /* #B88A4E */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 346.8 77.2% 49.8%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 25 35% 10%;
+    --foreground: 20 67% 95%;
+    --card: 25 35% 15%;
+    --card-foreground: 20 67% 95%;
+    --popover: 25 35% 15%;
+    --popover-foreground: 20 67% 95%;
+    --primary: 33 44% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 25 35% 20%;
+    --secondary-foreground: 33 44% 51%;
+    --muted: 25 20% 55%;
+    --muted-foreground: 25 20% 55%;
+    --accent: 9 28% 70%;
+    --accent-foreground: 0 0% 100%;
+    --hover: 33 46% 42%;
+    --hover-foreground: 0 0% 100%;
+    --secondary-hover: 25 35% 20%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 346.8 77.2% 49.8%;
+    --border: 25 48% 78%;
+    --input: 25 48% 78%;
+    --input-bg: 25 35% 15%;
+    --input-focus: 33 44% 51%;
+    --heading: 33 44% 51%;
+    --subheading: 33 35% 38%;
+    --text-normal: 20 67% 95%;
+    --text-muted: 25 20% 55%;
+    --ring: 33 44% 51%;
   }
 }
 
@@ -76,6 +119,80 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-text-normal;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-heading;
+  }
+  
+  h2, h3, h4, h5, h6 {
+    @apply text-subheading;
+  }
+  
+  p {
+    @apply text-text-normal;
+  }
+}
+
+@layer utilities {
+  .text-heading {
+    color: hsl(var(--heading));
+  }
+  
+  .text-subheading {
+    color: hsl(var(--subheading));
+  }
+  
+  .text-normal {
+    color: hsl(var(--text-normal));
+  }
+  
+  .text-muted-custom {
+    color: hsl(var(--text-muted));
+  }
+}
+
+/* Custom Scrollbar Styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary)) hsl(var(--background));
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary));
+  border-radius: 10px;
+  border: 2px solid hsl(var(--background));
+  transition: background 0.3s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--hover));
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Enhanced smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Smooth animations for buttons and interactive elements */
+button, a, [role="button"] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
