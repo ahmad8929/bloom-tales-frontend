@@ -1,22 +1,32 @@
+export interface ProductVariant {
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  stock: number;
+  sku?: string;
+}
+
 export interface Product {
-  id: string;
+  _id?: string; // MongoDB ID
+  id?: string; // Alternative ID field
   name: string;
   description: string;
   price: number;
   comparePrice?: number;
-  // category: string; // REMOVE THIS LINE
   slug: string;
   material: string;
-  careInstructions: string[];
-  // status: 'active' | 'inactive' | 'draft'; // REMOVE THIS LINE
-  // featured: boolean; // REMOVE THIS LINE
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // ADD THIS - single size instead of sizes array
-  isNewArrival: boolean; // ADD THIS
-  isSale: boolean; // ADD THIS
-  colors: ProductColor[];
+  careInstructions: string | string[];
+  size?: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // Legacy field, optional now
+  isNewArrival: boolean;
+  isSale: boolean;
+  color?: { name: string; hexCode: string }; // Product-level color (fixed set)
+  colors?: ProductColor[]; // Legacy, for backward compatibility
+  variants?: ProductVariant[]; // Size + stock variants
   images: ProductImage[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  status?: string; // Product status
+  // Virtual fields (computed from variants)
+  totalStock?: number;
+  availableSizes?: string[];
 }
 
 export interface ProductFormData {
@@ -29,10 +39,12 @@ export interface ProductFormData {
   careInstructions: string[];
   // status: 'active' | 'inactive' | 'draft'; // REMOVE THIS LINE
   // featured: boolean; // REMOVE THIS LINE
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // ADD THIS - single size instead of sizes array
-  isNewArrival: boolean; // ADD THIS
-  isSale: boolean; // ADD THIS
-  colors: ProductColor[];
+  size?: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // Legacy field, optional now
+  isNewArrival: boolean;
+  isSale: boolean;
+  color?: { name: string; hexCode: string }; // Product-level color (fixed set)
+  colors?: ProductColor[]; // Legacy, for backward compatibility
+  variants?: ProductVariant[]; // Size + stock variants
   images: ProductImage[];
 }
 
@@ -70,6 +82,8 @@ export interface ProductImage {
 export interface CartItem {
   product: Product;
   quantity: number;
+  size?: string;
+  color?: ProductColor;
 }
 
 export interface CartResponse {

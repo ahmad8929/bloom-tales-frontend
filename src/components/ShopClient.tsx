@@ -13,6 +13,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { X, Filter, Search } from 'lucide-react';
 import { cartApi } from '@/lib/api';
+import { PRODUCT_COLORS, PRODUCT_SIZES } from '@/lib/constants';
 import {
   Sheet,
   SheetContent,
@@ -32,6 +33,8 @@ const FilterSidebar = ({
     allSizes,
     selectedSizes,
     handleSizeChange,
+    selectedColors,
+    handleColorChange,
     selectedMaterials,
     handleMaterialChange,
     priceRange,
@@ -71,18 +74,50 @@ const FilterSidebar = ({
         </div>
 
         <div>
-            <h3 className="font-headline text-lg mb-4">Size</h3>
-            <div className="grid grid-cols-3 gap-2">
-                {allSizes.map((size: string) => (
-                    <div key={size} className="flex items-center gap-2">
+            <h3 className="font-headline text-lg mb-4">Color</h3>
+            <div className="grid grid-cols-2 gap-2">
+                {PRODUCT_COLORS.map((color) => (
+                    <div key={color.name} className="flex items-center gap-2">
                         <Checkbox 
-                            id={`size-${size}`} 
-                            checked={selectedSizes.includes(size)} 
-                            onCheckedChange={() => handleSizeChange(size)} 
+                            id={`color-${color.name}`} 
+                            checked={selectedColors?.includes(color.name) ?? false}
+                            onCheckedChange={() => handleColorChange(color.name)} 
                         />
-                        <Label htmlFor={`size-${size}`} className="text-sm">{size}</Label>
+                        <Label htmlFor={`color-${color.name}`} className="text-sm flex items-center gap-2 cursor-pointer">
+                            <div
+                                className="w-4 h-4 rounded-full border border-gray-300"
+                                style={{ backgroundColor: color.hexCode }}
+                            />
+                            <span>{color.name}</span>
+                        </Label>
                     </div>
                 ))}
+            </div>
+        </div>
+
+        <div>
+            <h3 className="font-headline text-lg mb-4">Size</h3>
+            <div className="grid grid-cols-3 gap-2">
+                {PRODUCT_SIZES.map((size) => {
+                    // Check if this size is available in any product
+                    const isAvailable = allSizes.includes(size);
+                    return (
+                        <div key={size} className="flex items-center gap-2">
+                            <Checkbox 
+                                id={`size-${size}`} 
+                                checked={selectedSizes.includes(size)} 
+                                onCheckedChange={() => handleSizeChange(size)}
+                                disabled={!isAvailable}
+                            />
+                            <Label 
+                                htmlFor={`size-${size}`} 
+                                className={`text-sm ${!isAvailable ? 'text-muted-foreground opacity-50' : ''}`}
+                            >
+                                {size}
+                            </Label>
+                        </div>
+                    );
+                })}
             </div>
         </div>
 
@@ -125,6 +160,7 @@ const FilterSidebar = ({
 export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps) {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number>(15000);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -173,12 +209,14 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
   // Initialize filters from URL params
   useEffect(() => {
     const sizeParam = searchParams.get('size');
+    const colorParam = searchParams.get('color');
     const materialParam = searchParams.get('material');
     const searchParam = searchParams.get('search');
     const newArrivalParam = searchParams.get('isNewArrival');
     const saleParam = searchParams.get('isSale');
 
     if (sizeParam) setSelectedSizes([sizeParam]);
+    if (colorParam) setSelectedColors([colorParam]);
     if (materialParam) setSelectedMaterials([materialParam]);
     if (searchParam) setSearchQuery(searchParam);
     if (newArrivalParam === 'true') setIsNewArrival(true);
@@ -187,6 +225,10 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
+  };
+
+  const handleColorChange = (color: string) => {
+    setSelectedColors(prev => prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]);
   };
   
   const handleMaterialChange = (material: string) => {
@@ -220,9 +262,25 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
       );
     }
 
-    // Size filter
+    // Color filter
+    if (selectedColors.length > 0) {
+      filtered = filtered.filter(product => 
+        product.color && selectedColors.includes(product.color.name)
+      );
+    }
+
+    // Size filter - check variants if they exist, otherwise check legacy size
     if (selectedSizes.length > 0) {
-      filtered = filtered.filter(product => selectedSizes.includes(product.size));
+      filtered = filtered.filter(product => {
+        // Check if product has variants with the selected size and stock > 0
+        if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+          return product.variants.some((v: any) => 
+            selectedSizes.includes(v.size) && v.stock > 0
+          );
+        }
+        // Fallback to legacy size field
+        return product.size && selectedSizes.includes(product.size);
+      });
     }
 
     // Material filter
@@ -273,6 +331,8 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
               allSizes={allSizes}
               selectedSizes={selectedSizes}
               handleSizeChange={handleSizeChange}
+               selectedColors={selectedColors}
+  handleColorChange={handleColorChange}
               selectedMaterials={selectedMaterials}
               handleMaterialChange={handleMaterialChange}
               priceRange={priceRange}
@@ -316,6 +376,8 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
                                     allSizes={allSizes}
                                     selectedSizes={selectedSizes}
                                     handleSizeChange={handleSizeChange}
+                                    selectedColors={selectedColors}          
+  handleColorChange={handleColorChange}
                                     selectedMaterials={selectedMaterials}
                                     handleMaterialChange={handleMaterialChange}
                                     priceRange={priceRange}

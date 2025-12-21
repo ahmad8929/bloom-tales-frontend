@@ -16,24 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-
-interface Product {
-  _id: string;
-  id?: string;
-  name: string;
-  price: number;
-  comparePrice?: number;
-  images: Array<{ url: string; alt?: string }>;
-  size: string;
-  material: string;
-  isNewArrival: boolean;
-  isSale: boolean;
-  slug: string;
-  createdAt?: string;
-  description?: string;
-  careInstructions?: string | string[];
-  status?: string;
-}
+import { toast } from "@/hooks/use-toast";
+import { PRODUCT_COLORS, PRODUCT_SIZES } from "@/lib/constants";
+import type { Product } from "@/types/product";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -98,7 +83,23 @@ export default function ProductDetailPage() {
     }
     
     setProduct(productData);
-    setSelectedSize(productData.size); // Set default size
+    
+    // Set default size from variants or legacy fields
+    try {
+      if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
+        const firstAvailableVariant = productData.variants.find((v: any) => v && (v.stock === undefined || v.stock > 0)) || productData.variants[0];
+        if (firstAvailableVariant && firstAvailableVariant.size) {
+          setSelectedSize(firstAvailableVariant.size);
+        }
+      } else if (productData.size) {
+        setSelectedSize(productData.size);
+      } else {
+        setSelectedSize('');
+      }
+    } catch (error) {
+      console.error('Error setting initial variant state:', error);
+      setSelectedSize(productData.size || '');
+    }
   } catch (error: any) {
     console.error('Error fetching product:', error);
     setError(error.message || 'Failed to load product');
@@ -107,7 +108,7 @@ export default function ProductDetailPage() {
   }
 };
 
-  // Check if product is in cart
+  // Check if product is in cart - MUST be before early returns
   useEffect(() => {
     if (!isAuthenticated || !product) {
       setIsInCart(false);
@@ -119,8 +120,16 @@ export default function ProductDetailPage() {
         const response = await cartApi.getCart();
         if (response.data?.data?.cart?.items) {
           const cartItem = response.data.data.cart.items.find(
-            (item: any) => (item.productId === productId || item.product._id === productId) &&
-                           (item.size === selectedSize || item.size === product.size)
+            (item: any) => {
+              try {
+                const sameProduct = item.productId === productId || item.product?._id === productId;
+                const sameSize = item.size === selectedSize || (!selectedSize && item.size === product?.size);
+                return sameProduct && sameSize;
+              } catch (error) {
+                console.error('Error checking cart item:', error);
+                return false;
+              }
+            }
           );
           if (cartItem) {
             setIsInCart(true);
@@ -165,6 +174,16 @@ export default function ProductDetailPage() {
         throw new Error('Product not found');
       }
 
+      // Validate variant selection if product has variants
+      if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+        if (!selectedSize) {
+          throw new Error('Please select a size');
+        }
+        if (currentStock !== null && currentStock === 0) {
+          throw new Error('Selected size is out of stock');
+        }
+      }
+
       // Add to cart first if not already in cart
       if (!isInCart) {
         const productIdToAdd = product._id || product.id;
@@ -175,7 +194,8 @@ export default function ProductDetailPage() {
         const response = await cartApi.addToCart(
           productIdToAdd,
           cartQuantity || 1,
-          selectedSize || product.size
+          selectedSize || product?.size || undefined,
+          product?.color || undefined
         );
 
         if (response.error) {
@@ -187,8 +207,11 @@ export default function ProductDetailPage() {
       router.push('/checkout');
     } catch (error: any) {
       console.error('Error in Buy Now:', error);
-      // If error, still try to redirect (maybe item is already in cart)
-      router.push('/checkout');
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to proceed to checkout',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -260,6 +283,35 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
   const imageUrls = product.images?.map((img: any) => 
     typeof img === 'string' ? img : img.url
   ) || ['/placeholder-product.jpg'];
+
+  // Compute available sizes and colors from variants
+  const getAvailableSizes = () => {
+    if (!product) return [];
+    if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+      const sizes = new Set<string>();
+      product.variants.forEach((v: any) => {
+        if (v && v.size && (v.stock === undefined || v.stock > 0)) {
+          sizes.add(v.size);
+        }
+      });
+      return Array.from(sizes).sort();
+    }
+    // Fallback to legacy size
+    return product.size ? [product.size] : [];
+  };
+
+  const getVariantStock = (size: string) => {
+    if (!product || !size) return null;
+    if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+      const variant = product.variants.find((v: any) => v && v.size === size);
+      return variant ? (variant.stock ?? 0) : 0;
+    }
+    return null;
+  };
+
+  const availableSizes = getAvailableSizes();
+  const currentStock = selectedSize ? getVariantStock(selectedSize) : null;
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -335,13 +387,74 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
           {/* Product Details */}
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Product Color Display */}
+            {product.color && (
+              <div className="space-y-2">
+                <Label className="font-semibold text-base">Color</Label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-full border-2 border-gray-300"
+                    style={{ backgroundColor: product.color.hexCode }}
+                  />
+                  <span className="font-medium">{product.color.name}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Size Selection */}
+            {availableSizes.length > 0 && (
               <div className="space-y-2">
                 <Label className="font-semibold text-base">Size</Label>
-                <Badge variant="outline" className="text-base px-4 py-2">
-                  {selectedSize}
-                </Badge>
+                <div className="flex flex-wrap gap-2">
+                  {PRODUCT_SIZES.map((size) => {
+                    const variant = product.variants?.find((v: any) => v && v.size === size);
+                    const stock = variant ? (variant.stock ?? 0) : 0;
+                    const isAvailable = stock > 0;
+                    const isSelected = selectedSize === size;
+                    
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => isAvailable && setSelectedSize(size)}
+                        disabled={!isAvailable}
+                        className={`px-4 py-2 rounded-md border-2 transition-all relative ${
+                          isSelected
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : isAvailable
+                            ? 'border-gray-300 hover:border-primary hover:bg-primary/10'
+                            : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                        }`}
+                      >
+                        {size}
+                        {!isAvailable && (
+                          <span className="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                            ×
+                          </span>
+                        )}
+                        {isAvailable && stock > 0 && stock < 10 && (
+                          <span className="ml-1 text-xs opacity-75">({stock})</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+            )}
+
+            {/* Stock Information */}
+            {currentStock !== null && (
+              <div className="space-y-2">
+                <Label className="font-semibold text-base">Availability</Label>
+                <p className={`font-medium ${currentStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {currentStock > 0 
+                    ? `${currentStock} in stock` 
+                    : 'Out of stock'}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-semibold text-base">Material</Label>
                 <p className="text-muted-foreground capitalize">{product.material}</p>
@@ -394,12 +507,17 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                 <AddToCartButton 
                   product={product} 
                   quantity={1}
-                  size={selectedSize || product.size}
+                  size={selectedSize || product.size || undefined}
+                  color={product.color || undefined}
                   className="flex-1"
                   onSuccess={handleAddToCartSuccess}
+                  disabled={
+                    (product.variants && product.variants.length > 0 && !selectedSize) ||
+                    (currentStock !== null && currentStock === 0)
+                  }
                 >
                   <ShoppingCart className="mr-2 h-5 w-5" /> 
-                  Add to Cart
+                  {currentStock !== null && currentStock === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </AddToCartButton>
                 
                 <Button 
@@ -457,10 +575,30 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
               <div>
                 <h4 className="font-semibold mb-3">Specifications</h4>
                 <dl className="space-y-2">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Size:</dt>
-                    <dd className="font-medium">{product.size}</dd>
-                  </div>
+                  {selectedSize && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Size:</dt>
+                      <dd className="font-medium">{selectedSize}</dd>
+                    </div>
+                  )}
+                  {!selectedSize && product.size && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Size:</dt>
+                      <dd className="font-medium">{product.size}</dd>
+                    </div>
+                  )}
+                  {product.color && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Color:</dt>
+                      <dd className="font-medium flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded-full border border-gray-300"
+                          style={{ backgroundColor: product.color.hexCode }}
+                        />
+                        {product.color.name}
+                      </dd>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Material:</dt>
                     <dd className="font-medium capitalize">{product.material}</dd>

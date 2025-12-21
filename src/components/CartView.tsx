@@ -16,6 +16,10 @@ interface CartItem {
   productId: string;
   quantity: number;
   size?: string;
+  color?: {
+    name: string;
+    hexCode: string;
+  };
   product: {
     _id: string;
     name: string;
@@ -272,7 +276,20 @@ export function CartView() {
                 </Link>
                 
                 <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                  {item.size && <p>Size: {item.size}</p>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {item.size && <p>Size: <span className="font-medium">{item.size}</span></p>}
+                    {item.color && (
+                      <div className="flex items-center gap-1">
+                        <span>Color:</span>
+                        <div
+                          className="w-4 h-4 rounded-full border border-gray-300"
+                          style={{ backgroundColor: item.color.hexCode }}
+                          title={item.color.name}
+                        />
+                        <span className="font-medium">{item.color.name}</span>
+                      </div>
+                    )}
+                  </div>
                   <p>Material: {item.product.material}</p>
                 </div>
                 

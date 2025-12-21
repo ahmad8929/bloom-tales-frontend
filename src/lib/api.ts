@@ -875,7 +875,7 @@ export const cartApi = {
     }>('/cart'),
 
   // Add item to cart
-  addToCart: (productId: string, quantity: number = 1, size?: string) =>
+  addToCart: (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null) =>
     api.post<{ 
       status: string;
       message: string;
@@ -886,7 +886,8 @@ export const cartApi = {
     }>('/cart/add', { 
       productId, 
       quantity,
-      ...(size && { size })
+      ...(size && { size }),
+      ...(color && { color })
     }),
 
   // Update cart item quantity

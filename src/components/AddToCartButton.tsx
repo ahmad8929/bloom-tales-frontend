@@ -7,21 +7,13 @@ import { ShoppingCart, Check, Loader2, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cartApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
-
-interface Product {
-  _id: string;
-  id?: string;
-  name: string;
-  price: number;
-  size: string;
-  material?: string;
-  images?: Array<{ url: string; alt?: string }>;
-}
+import type { Product } from '@/types/product';
 
 interface AddToCartButtonProps {
   product: Product;
   quantity?: number;
   size?: string;
+  color?: { name: string; hexCode: string } | null;
   variant?: 'default' | 'outline' | 'secondary' | 'ghost';
   size_prop?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
@@ -34,6 +26,7 @@ export function AddToCartButton({
   product, 
   quantity = 1, 
   size,
+  color,
   variant = 'default',
   size_prop = 'default',
   className,
@@ -57,17 +50,18 @@ export function AddToCartButton({
     setIsLoading(true);
     
     try {
-      const productId = product._id || product.id;
+      const productId = (product as any)._id || product.id;
       if (!productId) {
         throw new Error('Product ID is required');
       }
 
-      console.log('Adding to cart:', { productId, quantity, size: size || product.size });
+      console.log('Adding to cart:', { productId, quantity, size: size || product.size, color });
 
       const response = await cartApi.addToCart(
         productId, 
         quantity, 
-        size || product.size
+        size || product.size,
+        color
       );
       
       console.log('Add to cart response:', response);
