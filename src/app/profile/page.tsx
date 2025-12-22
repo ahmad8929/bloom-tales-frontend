@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { profileApi } from '@/lib/api';
 import { User, MapPin, Plus, Edit, Trash2, Save, X, Clock, Mail, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getCookie } from '@/lib/utils';
 
 interface Address {
   _id: string;
@@ -84,13 +85,31 @@ export default function ProfilePage() {
   const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Check authentication state
-    if (!isAuthenticated) {
-      // Add returnUrl to preserve navigation intent
-      router.push('/login?returnUrl=/profile&reason=auth-required');
-      return;
+    // Check authentication state - verify with cookies, not just Redux
+    // This prevents redirect loops when cookies exist but Redux hasn't hydrated yet
+    if (typeof window !== 'undefined') {
+      const cookieToken = getCookie('auth-token');
+      
+      // If no cookie token exists, redirect to login
+      if (!cookieToken || cookieToken.length < 10) {
+        // Only redirect if we're sure there's no auth token
+        // Don't redirect if Redux is still loading
+        if (!isAuthenticated) {
+          router.push('/login?returnUrl=/profile&reason=auth-required');
+          return;
+        }
+      } else {
+        // Cookie exists, fetch profile even if Redux isn't ready yet
+        // The middleware will handle auth if token is invalid
+        fetchProfile();
+      }
+    } else {
+      // Server-side: rely on middleware to handle auth
+      // If we get here, middleware already validated the token
+      if (isAuthenticated) {
+        fetchProfile();
+      }
     }
-    fetchProfile();
   }, [isAuthenticated, router]);
 
   const fetchProfile = async () => {

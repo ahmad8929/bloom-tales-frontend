@@ -5,11 +5,27 @@ import { useDispatch } from 'react-redux';
 import { useAuth } from '@/hooks/useAuth';
 import { setAuthTokenCache } from '@/lib/api';
 import { getCookie } from '@/lib/utils';
-import { logout } from '@/store/slices/authSlice';
+import { logout, restoreAuthFromCookie } from '@/store/slices/authSlice';
 
 export function AuthInitializer() {
   const dispatch = useDispatch();
   const { refreshAccessToken, accessToken, refreshToken } = useAuth();
+
+  // Restore auth state from cookies on initial load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cookieToken = getCookie('auth-token');
+      const userRole = getCookie('user-role');
+      
+      // If cookies exist but Redux doesn't have auth state, restore it
+      // This handles page refreshes and initial loads
+      if (cookieToken && cookieToken.length >= 10 && !accessToken) {
+        console.log('Restoring auth state from cookies');
+        dispatch(restoreAuthFromCookie({ accessToken: cookieToken, userRole: userRole || undefined }));
+        setAuthTokenCache(cookieToken);
+      }
+    }
+  }, []); // Only run once on mount
 
   useEffect(() => {
     // Only run on client side after hydration

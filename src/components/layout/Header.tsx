@@ -7,6 +7,8 @@ import { productApi } from "@/lib/api";
 import { CartItem } from '@/types/cart';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 // Import components
 import { Logo } from '@/components/Logo';
 import { NavigationMenu } from '@/components/layout/NavigationMenu';
@@ -112,34 +114,54 @@ export function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="flex-1 flex justify-center mx-2 sm:mx-4 lg:mx-8">
+          {/* <div className="flex-1 flex justify-center mx-2 sm:mx-4 lg:mx-8">
             <NavigationMenu 
               categories={categories}
               loadingCategories={loadingCategories}
             />
-          </div>
+          </div> */}
 
           {/* Right side actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+
+             {/* <div className="hidden lg:block"> */}
+              <Button
+                asChild
+                className="
+                  bg-primary/90 text-primary-foreground
+                  hover:bg-hover
+                  hover:shadow-xl hover:shadow-primary/30
+                  hover:-translate-y-0.5
+                  transition-all duration-300
+                  px-5 py-2 rounded-full
+                  text-sm font-semibold
+                "
+              >
+                <Link href="/products">
+                  Our Products
+                </Link>
+              </Button>
+            {/* </div> */}
+
             {/* Cart Button - Desktop Only */}
-            <div className="hidden lg:block">
+            {/* <div className="hidden lg:block"> */}
               <CartButton itemCount={itemCount} />
-            </div>
+            {/* </div> */}
 
             {/* User Menu - Desktop Only */}
-            <div className="hidden lg:block">
+            {/* <div className="hidden lg:block"> */}
               <UserMenu 
                 user={user}
                 isAuthenticated={isAuthenticated}
                 logoutUser={logoutUser}
               />
-            </div>
+            {/* </div> */}
 
             {/* Mobile Menu Button */}
-            <MobileMenuButton 
+            {/* <MobileMenuButton 
               isOpen={mobileMenuOpen}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            />
+            /> */}
           </div>
         </div>
 

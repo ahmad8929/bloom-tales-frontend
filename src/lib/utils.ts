@@ -10,17 +10,24 @@ export function setCookie(name: string, value: string, expiryDays = 7) {
   date.setTime(date.getTime() + (expiryDays * 24 * 60 * 60 * 1000));
   const expires = `expires=${date.toUTCString()}`;
   
-  // Remove secure flag for localhost, use samesite=lax
-  const cookieString = `${name}=${value}; ${expires}; path=/; samesite=lax`;
+  // Use samesite=lax for proper cookie handling
+  // Add secure flag only in production (HTTPS)
+  const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  const secureFlag = isSecure ? '; secure' : '';
+  const cookieString = `${name}=${value}; ${expires}; path=/; samesite=lax${secureFlag}`;
   console.log(`Setting cookie: ${name}=${value.substring(0, 20)}...`);
   
   document.cookie = cookieString;
   
-  // Verify cookie was set
-  setTimeout(() => {
-    const verification = getCookie(name);
-    console.log(`Cookie ${name} verification:`, !!verification);
-  }, 50);
+  // Verify cookie was set immediately
+  const verification = getCookie(name);
+  if (!verification) {
+    console.error(`Failed to set cookie: ${name}`);
+    // Retry once
+    document.cookie = cookieString;
+  } else {
+    console.log(`Cookie ${name} set successfully`);
+  }
 }
 
 export function removeCookie(name: string) {

@@ -9,6 +9,7 @@ import * as z from 'zod';
 import { useDispatch } from 'react-redux';
 import { useAuth } from '@/hooks/useAuth';
 import { logout } from '@/store/slices/authSlice';
+import { getCookie } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -142,12 +143,34 @@ export function LoginForm() {
         // Get returnUrl from state or query params
         const redirectUrl = returnUrl || searchParams.get('returnUrl');
         
-        // Use window.location for reliable redirect in production
-        // This ensures cookies are properly set before redirect
-        setTimeout(() => {
+        // Verify cookies are set before redirecting
+        // This ensures middleware can see the cookies
+        const verifyAndRedirect = async () => {
+          let attempts = 0;
+          const maxAttempts = 20; // 1 second total wait time
+          
+          while (attempts < maxAttempts) {
+            const cookieToken = getCookie('auth-token');
+            
+            if (cookieToken && cookieToken.length >= 10) {
+              console.log('Cookie verified, redirecting...');
+              const redirectPath = redirectUrl && redirectUrl.startsWith('/') ? redirectUrl : '/';
+              window.location.href = redirectPath;
+              return;
+            }
+            
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // If verification times out, redirect anyway (cookies should be set)
+          console.warn('Cookie verification timeout, redirecting anyway');
           const redirectPath = redirectUrl && redirectUrl.startsWith('/') ? redirectUrl : '/';
           window.location.href = redirectPath;
-        }, 300);
+        };
+        
+        // Small delay to ensure Redux state is updated
+        setTimeout(verifyAndRedirect, 100);
       } else {
         if (result.code === 'EMAIL_NOT_VERIFIED') {
           setNeedsEmailVerification(true);

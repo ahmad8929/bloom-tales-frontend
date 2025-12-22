@@ -80,6 +80,14 @@ const authSlice = createSlice({
       state.error = null;
       state.isAuthenticated = false;
     },
+    restoreAuthFromCookie: (state, action: PayloadAction<{ accessToken: string; userRole?: string }>) => {
+      // Restore auth state from cookies (used on page load)
+      // Note: We only restore the token, user data should be fetched separately
+      console.log('Redux: Restoring auth from cookie');
+      state.accessToken = action.payload.accessToken;
+      state.isAuthenticated = !!action.payload.accessToken;
+      // Keep user as null - it should be fetched by components that need it
+    },
   },
 });
 
@@ -89,7 +97,8 @@ export const {
   loginFailure, 
   updateTokens,
   updateUser,
-  logout 
+  logout,
+  restoreAuthFromCookie
 } = authSlice.actions;
 
 export default authSlice.reducer;

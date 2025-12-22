@@ -17,8 +17,9 @@ const adminPaths = ['/admin'];
 
 // Helper function to verify if token is valid (basic check)
 function isValidToken(token: string): boolean {
-  if (!token || token.length < 10) return false;
-  // Add more validation if needed (e.g., JWT parsing)
+  if (!token || token.trim().length < 10) return false;
+  // Basic validation: token should be a non-empty string with minimum length
+  // For JWT tokens, you could add parsing here to check expiration
   return true;
 }
 
@@ -43,7 +44,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check authentication for protected routes
-  if (!token || !isValidToken(token)) {
+  // Trim token to handle any whitespace issues
+  const trimmedToken = token?.trim();
+  if (!trimmedToken || !isValidToken(trimmedToken)) {
     console.log('Middleware - Invalid/missing token, redirecting to login');
     const loginUrl = new URL('/login', request.url);
     
@@ -53,19 +56,22 @@ export async function middleware(request: NextRequest) {
     
     const response = NextResponse.redirect(loginUrl);
     
-    // Clear invalid cookies
-    response.cookies.set({
-      name: 'auth-token',
-      value: '',
-      path: '/',
-      expires: new Date(0),
-    });
-    response.cookies.set({
-      name: 'user-role',
-      value: '',
-      path: '/',
-      expires: new Date(0),
-    });
+    // Only clear cookies if they're actually invalid (not just missing)
+    // This prevents clearing cookies that are being set
+    if (token && !isValidToken(trimmedToken)) {
+      response.cookies.set({
+        name: 'auth-token',
+        value: '',
+        path: '/',
+        expires: new Date(0),
+      });
+      response.cookies.set({
+        name: 'user-role',
+        value: '',
+        path: '/',
+        expires: new Date(0),
+      });
+    }
     
     return response;
   }

@@ -85,32 +85,44 @@ export function useAuth() {
         
         console.log('Login successful - User:', user);
         
-        // Store tokens in Redux
-        dispatch(loginSuccess({ user, accessToken, refreshToken }));
-        
-        // Set cookies and token cache for middleware and API calls (only on client)
+        // Set cookies and token cache FIRST (before Redux) for middleware
+        // This ensures cookies are available when middleware runs
         if (typeof window !== 'undefined') {
           console.log('Setting auth cookies and token cache...');
           
-          // Set token cache immediately (before cookies)
+          // Set token cache immediately
           setAuthTokenCache(accessToken);
           
-          // Set cookies immediately
+          // Set cookies with proper settings
           setCookie('auth-token', accessToken, 7);
           setCookie('user-role', user.role, 7);
           
-          // Verify cookies were set
-          setTimeout(() => {
-            const cookieToken = getCookie('auth-token');
-            console.log('Cookie verification:', !!cookieToken);
-            if (!cookieToken) {
-              console.error('Warning: Cookie was not set properly, retrying...');
-              setCookie('auth-token', accessToken, 7);
-            }
-          }, 100);
+          // Wait and verify cookies are actually set before proceeding
+          // This is critical for middleware to see the cookies
+          await new Promise<void>((resolve) => {
+            let attempts = 0;
+            const maxAttempts = 10;
+            const checkCookie = () => {
+              const cookieToken = getCookie('auth-token');
+              if (cookieToken && cookieToken === accessToken) {
+                console.log('Cookie verified successfully');
+                resolve();
+              } else if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(checkCookie, 50);
+              } else {
+                console.warn('Cookie verification timeout, but proceeding anyway');
+                resolve();
+              }
+            };
+            checkCookie();
+          });
           
           console.log('Cookies and token cache set successfully');
         }
+        
+        // Store tokens in Redux AFTER cookies are set
+        dispatch(loginSuccess({ user, accessToken, refreshToken }));
         
         return { success: true, user };
       } else {
