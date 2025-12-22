@@ -208,20 +208,76 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
 
   // Initialize filters from URL params
   useEffect(() => {
-    const sizeParam = searchParams.get('size');
-    const colorParam = searchParams.get('color');
-    const materialParam = searchParams.get('material');
+    const sizeParams = searchParams.getAll('size');
+    const colorParams = searchParams.getAll('color');
+    const materialParams = searchParams.getAll('material');
     const searchParam = searchParams.get('search');
+    const priceParam = searchParams.get('maxPrice');
     const newArrivalParam = searchParams.get('isNewArrival');
     const saleParam = searchParams.get('isSale');
+    const sortParam = searchParams.get('sort') as SortOption | null;
 
-    if (sizeParam) setSelectedSizes([sizeParam]);
-    if (colorParam) setSelectedColors([colorParam]);
-    if (materialParam) setSelectedMaterials([materialParam]);
+    if (sizeParams.length > 0) setSelectedSizes(sizeParams);
+    if (colorParams.length > 0) setSelectedColors(colorParams);
+    if (materialParams.length > 0) setSelectedMaterials(materialParams);
     if (searchParam) setSearchQuery(searchParam);
+    if (priceParam) {
+      const price = parseInt(priceParam);
+      if (!isNaN(price)) setPriceRange(price);
+    }
     if (newArrivalParam === 'true') setIsNewArrival(true);
     if (saleParam === 'true') setIsSale(true);
+    if (sortParam && ['newest', 'price-asc', 'price-desc', 'name-asc'].includes(sortParam)) {
+      setSortOption(sortParam);
+    }
   }, [searchParams]);
+
+  // Update URL params when filters change (but skip initial mount to avoid conflicts)
+  const [isInitialMount, setIsInitialMount] = useState(true);
+  
+  useEffect(() => {
+    setIsInitialMount(false);
+  }, []);
+
+  useEffect(() => {
+    // Skip URL update on initial mount (let URL params initialize state first)
+    if (isInitialMount) return;
+    
+    const params = new URLSearchParams();
+    
+    selectedSizes.forEach(size => params.append('size', size));
+    selectedColors.forEach(color => params.append('color', color));
+    selectedMaterials.forEach(material => params.append('material', material));
+    
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery.trim());
+    }
+    
+    if (priceRange < 15000) {
+      params.set('maxPrice', priceRange.toString());
+    }
+    
+    if (isNewArrival) {
+      params.set('isNewArrival', 'true');
+    }
+    
+    if (isSale) {
+      params.set('isSale', 'true');
+    }
+    
+    if (sortOption !== 'newest') {
+      params.set('sort', sortOption);
+    }
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/products?${queryString}` : '/products';
+    const currentUrl = window.location.pathname + window.location.search;
+    
+    // Only update URL if it's different to avoid infinite loops
+    if (currentUrl !== newUrl) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [selectedSizes, selectedColors, selectedMaterials, searchQuery, priceRange, isNewArrival, isSale, sortOption, router, isInitialMount]);
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
@@ -241,6 +297,7 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
   
   const resetFilters = () => {
     setSelectedSizes([]);
+    setSelectedColors([]);
     setSelectedMaterials([]);
     setPriceRange(15000);
     setSortOption('newest');
@@ -316,9 +373,9 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
       default:
         return filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
-  }, [products, selectedSizes, selectedMaterials, priceRange, sortOption, searchQuery, isNewArrival, isSale]);
+  }, [products, selectedSizes, selectedColors, selectedMaterials, priceRange, sortOption, searchQuery, isNewArrival, isSale]);
 
-  const activeFilterCount = selectedSizes.length + selectedMaterials.length + 
+  const activeFilterCount = selectedSizes.length + selectedColors.length + selectedMaterials.length + 
     (priceRange < 15000 ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSale ? 1 : 0) + 
     (searchQuery.trim() ? 1 : 0);
 
