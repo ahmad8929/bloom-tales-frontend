@@ -9,6 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 import { headerIconButton } from '@/lib/ui';
@@ -29,38 +34,43 @@ interface UserMenuProps {
 export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
   if (!isAuthenticated || !user) {
     return (
-      <Button 
-        asChild
-        variant="outline"
-        size="icon"
-        className="
-          bg-card border-border
-          hover:bg-secondary-hover
-          hover:border-primary/30
-          shadow-sm hover:shadow-md
-          transition-all duration-300
-          h-10 w-10
-          rounded-md
-        "
-      >
-        <Link href="/login" className="flex items-center justify-center w-full h-full">
-          <User className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Link>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            asChild
+            variant="outline"
+            size="icon"
+            className={headerIconButton}
+          >
+            <Link href="/login" className="flex items-center justify-center w-full h-full">
+              <User className="h-5 w-5 text-text-normal" />
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="bg-primary text-primary-foreground border-none">
+          <p className="font-medium">Login / Sign Up</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-     <Button variant="outline" size="icon" className={headerIconButton}>
-  <Avatar className="h-6 w-6">
-    <AvatarFallback className="text-xs font-semibold">
-      {user.firstName?.[0] ?? 'U'}
-    </AvatarFallback>
-  </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
+    <Tooltip>
+      <DropdownMenu>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className={headerIconButton}>
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-xs font-semibold bg-secondary-hover text-text-normal">
+                  {user.firstName?.[0] ?? 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent className="bg-primary text-primary-foreground border-none">
+          <p className="font-medium">Account Menu</p>
+        </TooltipContent>
 
       <DropdownMenuContent align="end" className="w-60">
         {/* User Info */}
@@ -111,6 +121,7 @@ export function UserMenu({ user, isAuthenticated, logoutUser }: UserMenuProps) {
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+    </Tooltip>
   );
 }

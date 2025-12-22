@@ -10,6 +10,11 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Package } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 // Import components
 import { Logo } from '@/components/Logo';
 import { NavigationMenu } from '@/components/layout/NavigationMenu';
@@ -129,11 +134,18 @@ export function Header() {
               </Link>
             </Button> */}
 
-            <Button asChild variant="outline" size="icon" className={headerIconButton}>
-  <Link href="/products">
-    <Package className="h-5 w-5 text-text-normal" />
-  </Link>
-</Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="outline" size="icon" className={headerIconButton}>
+                  <Link href="/products" className="flex items-center justify-center w-full h-full">
+                    <Package className="h-5 w-5 text-text-normal" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-primary text-primary-foreground border-none">
+                <p className="font-medium">Products</p>
+              </TooltipContent>
+            </Tooltip>
 
 
             <CartButton itemCount={itemCount} />
