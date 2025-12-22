@@ -10,9 +10,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle } from 'lucide-react';
+import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle, Plus, Edit, MapPin } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { cartApi, orderApi } from '@/lib/api';
+import { cartApi, orderApi, profileApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -49,6 +49,20 @@ interface PaymentModalData {
   amount: number;
 }
 
+interface Address {
+  _id: string;
+  fullName: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  nearbyPlaces?: string;
+  isDefault: boolean;
+  addressType: 'home' | 'work' | 'other';
+}
+
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
   'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
@@ -64,17 +78,26 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [userEmail, setUserEmail] = useState('');
   
-  const [shippingData, setShippingData] = useState({
+  const [addressForm, setAddressForm] = useState({
     fullName: '',
-    email: '',
     phone: '',
-    address: '',
+    street: '',
     city: '',
     state: '',
-    pincode: '',
-    nearbyPlaces: ''
+    zipCode: '',
+    country: 'India',
+    nearbyPlaces: '',
+    isDefault: false,
+    addressType: 'home' as 'home' | 'work' | 'other'
   });
+
+  const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
 
   const [paymentData, setPaymentData] = useState<PaymentModalData>({
     payerName: '',
@@ -94,7 +117,34 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     fetchCart();
+    fetchAddresses();
   }, []);
+
+  const fetchAddresses = async () => {
+    try {
+      const response = await profileApi.getAddresses();
+      if (response.error) {
+        console.error('Error fetching addresses:', response.error);
+        return;
+      }
+      const fetchedAddresses = response.data?.data?.addresses || [];
+      setAddresses(fetchedAddresses);
+      
+      // Set default address or first address as selected
+      const defaultAddress = fetchedAddresses.find((addr: Address) => addr.isDefault) || fetchedAddresses[0];
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress._id);
+      }
+
+      // Fetch user email from profile
+      const profileResponse = await profileApi.getProfile();
+      if (!profileResponse.error && profileResponse.data?.data?.user) {
+        setUserEmail(profileResponse.data.data.user.email);
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
+  };
 
  const fetchCart = async () => {
   try {
@@ -149,8 +199,141 @@ export default function CheckoutPage() {
     });
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setShippingData(prev => ({ ...prev, [field]: value }));
+  const handleAddAddress = () => {
+    setEditingAddress(null);
+    setAddressForm({
+      fullName: '',
+      phone: '',
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'India',
+      nearbyPlaces: '',
+      isDefault: addresses.length === 0,
+      addressType: 'home'
+    });
+    setAddressFormErrors({});
+    setShowAddressModal(true);
+  };
+
+  const handleEditAddress = (address: Address) => {
+    setEditingAddress(address);
+    setAddressForm({
+      fullName: address.fullName,
+      phone: address.phone,
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      country: address.country,
+      nearbyPlaces: address.nearbyPlaces || '',
+      isDefault: address.isDefault,
+      addressType: address.addressType
+    });
+    setAddressFormErrors({});
+    setShowAddressModal(true);
+  };
+
+  const validateAddressForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Full Name validation
+    if (!addressForm.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    } else if (addressForm.fullName.trim().length < 2) {
+      errors.fullName = 'Full name must be at least 2 characters';
+    }
+
+    // Phone validation (Indian format)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    const cleanedPhone = addressForm.phone.replace(/\D/g, '').slice(-10);
+    if (!addressForm.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!phoneRegex.test(cleanedPhone)) {
+      errors.phone = 'Please enter a valid 10-digit Indian phone number';
+    }
+
+    // Street validation
+    if (!addressForm.street.trim()) {
+      errors.street = 'Street address is required';
+    } else if (addressForm.street.trim().length < 5) {
+      errors.street = 'Street address must be at least 5 characters';
+    }
+
+    // City validation
+    if (!addressForm.city.trim()) {
+      errors.city = 'City is required';
+    } else if (addressForm.city.trim().length < 2) {
+      errors.city = 'City must be at least 2 characters';
+    }
+
+    // State validation
+    if (!addressForm.state.trim()) {
+      errors.state = 'State is required';
+    }
+
+    // ZIP Code validation (Indian pincode)
+    const pincodeRegex = /^[1-9][0-9]{5}$/;
+    if (!addressForm.zipCode.trim()) {
+      errors.zipCode = 'Pincode is required';
+    } else if (!pincodeRegex.test(addressForm.zipCode.trim())) {
+      errors.zipCode = 'Please enter a valid 6-digit pincode';
+    }
+
+    setAddressFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveAddress = async () => {
+    // Validate form before submission
+    if (!validateAddressForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setAddressFormErrors({});
+      
+      if (editingAddress) {
+        const response = await profileApi.updateAddress(editingAddress._id, addressForm);
+        if (response.error) {
+          throw new Error(response.error);
+        }
+        toast({
+          title: 'Success',
+          description: 'Address updated successfully',
+        });
+      } else {
+        const response = await profileApi.addAddress(addressForm);
+        if (response.error) {
+          throw new Error(response.error);
+        }
+        toast({
+          title: 'Success',
+          description: 'Address added successfully',
+        });
+      }
+
+      setShowAddressModal(false);
+      setEditingAddress(null);
+      setAddressFormErrors({});
+      await fetchAddresses();
+    } catch (error: any) {
+      console.error('Error saving address:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save address',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePaymentInputChange = (field: string, value: string) => {
@@ -198,52 +381,30 @@ export default function CheckoutPage() {
   };
 
   const validateForm = () => {
-    const required = ['fullName', 'email', 'phone', 'address', 'city', 'state', 'pincode'];
-    for (const field of required) {
-      if (!shippingData[field as keyof typeof shippingData]) {
-        toast({
-          title: 'Validation Error',
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-          variant: 'destructive',
-        });
-        return false;
-      }
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(shippingData.email)) {
+    if (!selectedAddressId) {
       toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address',
+        title: 'Address Required',
+        description: 'Please select or add a delivery address',
         variant: 'destructive',
       });
       return false;
     }
 
-    // Phone validation (Indian format)
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(shippingData.phone.replace(/\D/g, '').slice(-10))) {
+    if (!userEmail) {
       toast({
-        title: 'Invalid Phone',
-        description: 'Please enter a valid 10-digit Indian phone number',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    // Pincode validation
-    const pincodeRegex = /^[1-9][0-9]{5}$/;
-    if (!pincodeRegex.test(shippingData.pincode)) {
-      toast({
-        title: 'Invalid Pincode',
-        description: 'Please enter a valid 6-digit pincode',
+        title: 'Email Required',
+        description: 'Please ensure your email is set in your profile',
         variant: 'destructive',
       });
       return false;
     }
 
     return true;
+  };
+
+  const getSelectedAddress = (): Address | null => {
+    if (!selectedAddressId) return null;
+    return addresses.find(addr => addr._id === selectedAddressId) || null;
   };
 
   const validatePaymentForm = () => {
@@ -299,8 +460,22 @@ export default function CheckoutPage() {
     setUploadProgress(0);
     
     try {
+      const selectedAddress = getSelectedAddress();
+      if (!selectedAddress) {
+        throw new Error('Please select a delivery address');
+      }
+
       const orderData = {
-        shippingAddress: shippingData,
+        shippingAddress: {
+          fullName: selectedAddress.fullName,
+          email: userEmail,
+          phone: selectedAddress.phone,
+          address: selectedAddress.street,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          pincode: selectedAddress.zipCode,
+          nearbyPlaces: selectedAddress.nearbyPlaces || ''
+        },
         paymentMethod: paymentMethod,
         ...(paymentMethod === 'upi' && { paymentDetails: paymentData })
       };
@@ -437,112 +612,94 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5" />
-                Shipping Information
-              </CardTitle>
-              <CardDescription>Please provide your delivery details</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-headline flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5" />
+                    Delivery Address
+                  </CardTitle>
+                  <CardDescription>Select or add a delivery address</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddAddress}
+                  disabled={orderCreated}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Address
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input 
-                    id="fullName" 
-                    placeholder="Enter your full name"
-                    value={shippingData.fullName}
-                    onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    disabled={orderCreated}
-                  />
+              {addresses.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                  <p className="text-muted-foreground mb-4">No addresses saved</p>
+                  <Button variant="outline" onClick={handleAddAddress} disabled={orderCreated}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Your First Address
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="your@email.com"
-                    value={shippingData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    disabled={orderCreated}
-                  />
+              ) : (
+                <div className="space-y-3">
+                  {addresses.map((address) => (
+                    <div
+                      key={address._id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedAddressId === address._id
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:bg-muted/50'
+                      } ${orderCreated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={() => !orderCreated && setSelectedAddressId(address._id)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <input
+                              type="radio"
+                              checked={selectedAddressId === address._id}
+                              onChange={() => !orderCreated && setSelectedAddressId(address._id)}
+                              disabled={orderCreated}
+                              className="w-4 h-4"
+                            />
+                            <span className="font-medium">{address.fullName}</span>
+                            {address.isDefault && (
+                              <Badge variant="default" className="text-xs">Default</Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {address.addressType}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground ml-6">
+                            {address.street}, {address.city}, {address.state} - {address.zipCode}
+                          </p>
+                          <p className="text-sm text-muted-foreground ml-6">{address.country}</p>
+                          <p className="text-sm text-muted-foreground ml-6 mt-1">
+                            Phone: {address.phone}
+                          </p>
+                          {address.nearbyPlaces && (
+                            <p className="text-sm text-muted-foreground ml-6 mt-1">
+                              Landmark: {address.nearbyPlaces}
+                            </p>
+                          )}
+                        </div>
+                        {!orderCreated && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditAddress(address);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input 
-                  id="phone" 
-                  type="tel" 
-                  placeholder="+91 XXXXX XXXXX"
-                  value={shippingData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  disabled={orderCreated}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Street Address *</Label>
-                <Input 
-                  id="address" 
-                  placeholder="House no, Street, Area"
-                  value={shippingData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  disabled={orderCreated}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City *</Label>
-                  <Input 
-                    id="city" 
-                    placeholder="Enter city"
-                    value={shippingData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    disabled={orderCreated}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State *</Label>
-                  <Select 
-                    value={shippingData.state} 
-                    onValueChange={(value) => handleInputChange('state', value)}
-                    disabled={orderCreated}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDIAN_STATES.map(state => (
-                        <SelectItem key={state} value={state}>{state}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pincode">Pincode *</Label>
-                  <Input 
-                    id="pincode" 
-                    placeholder="000000"
-                    value={shippingData.pincode}
-                    onChange={(e) => handleInputChange('pincode', e.target.value)}
-                    disabled={orderCreated}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nearbyPlaces">Nearby Places/Landmarks</Label>
-                  <Input 
-                    id="nearbyPlaces" 
-                    placeholder="Hospital, Mall, etc. (Optional)"
-                    value={shippingData.nearbyPlaces}
-                    onChange={(e) => handleInputChange('nearbyPlaces', e.target.value)}
-                    disabled={orderCreated}
-                  />
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -922,6 +1079,225 @@ export default function CheckoutPage() {
                   </div>
                 ) : (
                   'Confirm Payment'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Address Modal */}
+      <Dialog open={showAddressModal} onOpenChange={setShowAddressModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              {editingAddress ? 'Edit Address' : 'Add New Address'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingAddress
+                ? 'Update your address details below'
+                : 'Add a new delivery address to your profile'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="addressFullName">Full Name *</Label>
+              <Input
+                id="addressFullName"
+                value={addressForm.fullName}
+                onChange={(e) => {
+                  setAddressForm({ ...addressForm, fullName: e.target.value });
+                  if (addressFormErrors.fullName) {
+                    setAddressFormErrors({ ...addressFormErrors, fullName: '' });
+                  }
+                }}
+                placeholder="Enter full name"
+                disabled={isSubmitting}
+                className={addressFormErrors.fullName ? 'border-destructive' : ''}
+              />
+              {addressFormErrors.fullName && (
+                <p className="text-sm text-destructive">{addressFormErrors.fullName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="addressPhone">Phone Number *</Label>
+              <Input
+                id="addressPhone"
+                type="tel"
+                value={addressForm.phone}
+                onChange={(e) => {
+                  setAddressForm({ ...addressForm, phone: e.target.value });
+                  if (addressFormErrors.phone) {
+                    setAddressFormErrors({ ...addressFormErrors, phone: '' });
+                  }
+                }}
+                placeholder="+91 XXXXX XXXXX"
+                disabled={isSubmitting}
+                className={addressFormErrors.phone ? 'border-destructive' : ''}
+              />
+              {addressFormErrors.phone && (
+                <p className="text-sm text-destructive">{addressFormErrors.phone}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="addressStreet">Street Address *</Label>
+              <Input
+                id="addressStreet"
+                value={addressForm.street}
+                onChange={(e) => {
+                  setAddressForm({ ...addressForm, street: e.target.value });
+                  if (addressFormErrors.street) {
+                    setAddressFormErrors({ ...addressFormErrors, street: '' });
+                  }
+                }}
+                placeholder="House no, Street, Area"
+                disabled={isSubmitting}
+                className={addressFormErrors.street ? 'border-destructive' : ''}
+              />
+              {addressFormErrors.street && (
+                <p className="text-sm text-destructive">{addressFormErrors.street}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressCity">City *</Label>
+                <Input
+                  id="addressCity"
+                  value={addressForm.city}
+                  onChange={(e) => {
+                    setAddressForm({ ...addressForm, city: e.target.value });
+                    if (addressFormErrors.city) {
+                      setAddressFormErrors({ ...addressFormErrors, city: '' });
+                    }
+                  }}
+                  placeholder="Enter city"
+                  disabled={isSubmitting}
+                  className={addressFormErrors.city ? 'border-destructive' : ''}
+                />
+                {addressFormErrors.city && (
+                  <p className="text-sm text-destructive">{addressFormErrors.city}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressState">State *</Label>
+                <Select
+                  value={addressForm.state}
+                  onValueChange={(value) => {
+                    setAddressForm({ ...addressForm, state: value });
+                    if (addressFormErrors.state) {
+                      setAddressFormErrors({ ...addressFormErrors, state: '' });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger className={addressFormErrors.state ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDIAN_STATES.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {addressFormErrors.state && (
+                  <p className="text-sm text-destructive">{addressFormErrors.state}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressZipCode">Pincode *</Label>
+                <Input
+                  id="addressZipCode"
+                  value={addressForm.zipCode}
+                  onChange={(e) => {
+                    setAddressForm({ ...addressForm, zipCode: e.target.value });
+                    if (addressFormErrors.zipCode) {
+                      setAddressFormErrors({ ...addressFormErrors, zipCode: '' });
+                    }
+                  }}
+                  placeholder="000000"
+                  disabled={isSubmitting}
+                  className={addressFormErrors.zipCode ? 'border-destructive' : ''}
+                />
+                {addressFormErrors.zipCode && (
+                  <p className="text-sm text-destructive">{addressFormErrors.zipCode}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressType">Address Type</Label>
+                <Select
+                  value={addressForm.addressType}
+                  onValueChange={(value: any) => setAddressForm({ ...addressForm, addressType: value })}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="home">Home</SelectItem>
+                    <SelectItem value="work">Work</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="addressNearbyPlaces">Nearby Places/Landmarks</Label>
+              <Input
+                id="addressNearbyPlaces"
+                value={addressForm.nearbyPlaces}
+                onChange={(e) => setAddressForm({ ...addressForm, nearbyPlaces: e.target.value })}
+                placeholder="Hospital, Mall, etc. (Optional)"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isDefault"
+                checked={addressForm.isDefault}
+                onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                className="rounded border-gray-300"
+                disabled={isSubmitting}
+              />
+              <Label htmlFor="isDefault" className="cursor-pointer">
+                Set as default address
+              </Label>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddressModal(false);
+                  setEditingAddress(null);
+                }}
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveAddress} disabled={isSubmitting} className="flex-1">
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </div>
+                ) : editingAddress ? (
+                  'Update Address'
+                ) : (
+                  'Add Address'
                 )}
               </Button>
             </div>

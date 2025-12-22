@@ -5,6 +5,8 @@ import type { NextRequest } from 'next/server';
 const protectedPaths = [
   '/cart',
   '/checkout',
+  '/profile',
+  '/orders',
   '/admin',
   '/api/cart',
   '/api/orders',
@@ -45,8 +47,9 @@ export async function middleware(request: NextRequest) {
     console.log('Middleware - Invalid/missing token, redirecting to login');
     const loginUrl = new URL('/login', request.url);
     
-    // Add return URL as query parameter
+    // Add return URL and reason as query parameters
     loginUrl.searchParams.set('returnUrl', pathname);
+    loginUrl.searchParams.set('reason', 'auth-required');
     
     const response = NextResponse.redirect(loginUrl);
     
@@ -83,6 +86,8 @@ export const config = {
     '/admin/:path*', 
     '/cart', 
     '/checkout',
+    '/profile/:path*',
+    '/orders/:path*',
     '/api/cart/:path*',
     '/api/orders/:path*'
   ],

@@ -1,7 +1,7 @@
 import { getCookie, removeCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = "https://bloom-backend-rtch.onrender.com";
+const API_URL = "http://localhost:5000";
 
 interface ApiResponse<T> {
   data?: T;
@@ -1214,4 +1214,164 @@ export const orderApi = {
         };
       };
     }>(`/orders/${orderId}/invoice`),
+};
+
+// Profile APIs
+export const profileApi = {
+  // Get user profile
+  getProfile: () => api.get<{
+    status: string;
+    data: {
+      user: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        age?: number;
+        gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+        role: string;
+        avatar?: string;
+        bio?: string;
+        dateOfBirth?: string;
+        lastLogin?: string;
+        addresses: Array<{
+          _id: string;
+          fullName: string;
+          phone: string;
+          street: string;
+          city: string;
+          state: string;
+          zipCode: string;
+          country: string;
+          nearbyPlaces?: string;
+          isDefault: boolean;
+          addressType: 'home' | 'work' | 'other';
+        }>;
+        createdAt: string;
+        updatedAt: string;
+      };
+    };
+  }>('/profile'),
+
+  // Update user profile
+  updateProfile: (data: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    age?: number;
+    gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+  }) => api.put<{
+    status: string;
+    message: string;
+    data: {
+      user: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        age?: number;
+        gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+        role: string;
+        avatar?: string;
+        bio?: string;
+        dateOfBirth?: string;
+        lastLogin?: string;
+        addresses: Array<any>;
+        createdAt: string;
+        updatedAt: string;
+      };
+    };
+  }>('/profile', data),
+
+  // Get all addresses
+  getAddresses: () => api.get<{
+    status: string;
+    data: {
+      addresses: Array<{
+        _id: string;
+        fullName: string;
+        phone: string;
+        street: string;
+        city: string;
+        state: string;
+        zipCode: string;
+        country: string;
+        nearbyPlaces?: string;
+        isDefault: boolean;
+        addressType: 'home' | 'work' | 'other';
+      }>;
+    };
+  }>('/profile/addresses'),
+
+  // Add new address
+  addAddress: (data: {
+    fullName: string;
+    phone: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country?: string;
+    nearbyPlaces?: string;
+    isDefault?: boolean;
+    addressType?: 'home' | 'work' | 'other';
+  }) => api.post<{
+    status: string;
+    message: string;
+    data: {
+      address: {
+        _id: string;
+        fullName: string;
+        phone: string;
+        street: string;
+        city: string;
+        state: string;
+        zipCode: string;
+        country: string;
+        nearbyPlaces?: string;
+        isDefault: boolean;
+        addressType: 'home' | 'work' | 'other';
+      };
+    };
+  }>('/profile/addresses', data),
+
+  // Update address
+  updateAddress: (addressId: string, data: {
+    fullName?: string;
+    phone?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+    nearbyPlaces?: string;
+    isDefault?: boolean;
+    addressType?: 'home' | 'work' | 'other';
+  }) => api.put<{
+    status: string;
+    message: string;
+    data: {
+      address: {
+        _id: string;
+        fullName: string;
+        phone: string;
+        street: string;
+        city: string;
+        state: string;
+        zipCode: string;
+        country: string;
+        nearbyPlaces?: string;
+        isDefault: boolean;
+        addressType: 'home' | 'work' | 'other';
+      };
+    };
+  }>(`/profile/addresses/${addressId}`, data),
+
+  // Delete address
+  deleteAddress: (addressId: string) => api.delete<{
+    status: string;
+    message: string;
+  }>(`/profile/addresses/${addressId}`),
 };

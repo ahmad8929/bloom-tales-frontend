@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useDispatch } from 'react-redux';
 import { useAuth } from '@/hooks/useAuth';
+import { logout } from '@/store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -33,6 +35,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dispatch = useDispatch();
   const { login, isLoading, isAuthenticated, user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
@@ -43,27 +46,57 @@ export function LoginForm() {
 
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [redirectReason, setRedirectReason] = useState<string | null>(null);
 
-  // Get returnUrl from query params on mount
+  // Get returnUrl and reason from query params on mount
   useEffect(() => {
     const url = searchParams.get('returnUrl');
+    const reason = searchParams.get('reason');
     if (url && url.startsWith('/')) {
       setReturnUrl(url);
     }
+    if (reason) {
+      setRedirectReason(reason);
+    }
   }, [searchParams]);
 
-  // Check if user is actually authenticated (verify with cookies, not just Redux)
-  const isActuallyAuthenticated = () => {
-    if (typeof window === 'undefined') return false;
+  // Clear stale Redux auth state if cookies don't exist
+  // This handles the case where middleware cleared cookies but Redux still thinks user is authenticated
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     
-    // Check both Redux state AND cookies
     const cookieToken = document.cookie
       .split('; ')
       .find(row => row.startsWith('auth-token='))
       ?.split('=')[1];
     
-    // Only consider authenticated if BOTH Redux and cookies agree
-    return isAuthenticated && user && !!cookieToken;
+    // If Redux says authenticated but no cookie exists, clear Redux state
+    // This prevents showing "Redirecting..." when user should see login form
+    if (isAuthenticated && !cookieToken) {
+      console.log('Clearing stale auth state - no cookie found');
+      dispatch(logout());
+    }
+  }, [isAuthenticated, dispatch]);
+
+  // Check if user is actually authenticated (verify with cookies, not just Redux)
+  const isActuallyAuthenticated = () => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check cookies first - if no cookie, definitely not authenticated
+    const cookieToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('auth-token='))
+      ?.split('=')[1];
+    
+    // If there's no cookie token, user is NOT authenticated (even if Redux says otherwise)
+    // This handles the case where middleware cleared cookies but Redux state is stale
+    if (!cookieToken) {
+      return false;
+    }
+    
+    // Only consider authenticated if BOTH Redux and cookies agree AND cookie is valid
+    // Cookie must be at least 10 characters (basic validation)
+    return isAuthenticated && user && cookieToken.length >= 10;
   };
 
   // Handle redirect after authentication
@@ -162,8 +195,12 @@ export function LoginForm() {
   };
   const handleResetPasswordModalClose = () => setShowResetPasswordModal(false);
 
-  // Only show redirecting if actually authenticated (has cookies)
-  if (isActuallyAuthenticated()) {
+  // Only show redirecting if actually authenticated (has valid cookies)
+  // If we have a redirectReason (like 'auth-required'), it means user was redirected
+  // from a protected route, so we should show the login form even if Redux has stale state
+  const shouldShowRedirecting = isActuallyAuthenticated() && returnUrl && !redirectReason;
+  
+  if (shouldShowRedirecting) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -184,6 +221,22 @@ export function LoginForm() {
             Sign in to your account to continue
           </p>
         </div>
+
+        {/* Redirect Reason Alert */}
+        {redirectReason && !needsEmailVerification && !error && (
+          <Alert className="border-blue-200 bg-blue-50 text-blue-900 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              {redirectReason === 'auth-required' && 'Please log in to access this page.'}
+              {redirectReason === 'session-expired' && 'Your session has expired. Please log in again to continue.'}
+              {returnUrl && (
+                <span className="block mt-1 text-sm">
+                  You'll be redirected back to {returnUrl} after logging in.
+                </span>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Email Verification Alert */}
         {needsEmailVerification && (
