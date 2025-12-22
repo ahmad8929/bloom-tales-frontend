@@ -541,14 +541,14 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
           {/* Features */}
           <div className="grid grid-cols-2 gap-4 pt-6 border-t">
-            <div className="flex items-center gap-3 text-sm">
+            {/* <div className="flex items-center gap-3 text-sm">
               <Truck className="h-5 w-5 text-primary" />
               <span>Free Delivery</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <RotateCcw className="h-5 w-5 text-primary" />
               <span>Easy Returns</span>
-            </div>
+            </div> */}
             <div className="flex items-center gap-3 text-sm">
               <Shield className="h-5 w-5 text-primary" />
               <span>Secure Payment</span>
@@ -564,7 +564,7 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
       <Separator className="my-16" />
 
       {/* Product Details Section */}
-      <div className="mb-16">
+      {/* <div className="mb-16">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Product Details</CardTitle>
@@ -644,16 +644,16 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
-      <Separator className="my-16" />
+      {/* <Separator className="my-16" /> */}
 
       {/* New Arrivals Section */}
       {/* <div className="mb-8">
         <NewArrival limit={4} showViewAll={false} />
       </div> */}
 
-      <Separator className="my-16" />
+      {/* <Separator className="my-16" /> */}
 
       {/* Sale Section */}
       {/* <div>
