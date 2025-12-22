@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Star, Quote, ChevronLeft, ChevronRight, Users, Heart } from 'lucide-react';
+import { Star, Quote, Users, Heart } from 'lucide-react';
 import { testimonials } from '@/dummyData';
 
 interface CustomerTestimonialsProps {
@@ -190,33 +190,8 @@ export function CustomerTestimonials({
         
         {/* Testimonials Carousel */}
         <div className="relative group">
-          {/* Navigation Buttons */}
-          {testimonials.length > visibleCards && (
-            <>
-              <button
-                onClick={() => {
-                  prevSlide();
-                  setIsPlaying(false);
-                  setTimeout(() => setIsPlaying(true), 3000);
-                }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 hover:bg-card active:bg-card text-primary p-2 md:p-3 rounded-full shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95 hover:scale-110 transition-all duration-300 -translate-x-1 md:-translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-              </button>
-              <button
-                onClick={() => {
-                  nextSlide();
-                  setIsPlaying(false);
-                  setTimeout(() => setIsPlaying(true), 3000);
-                }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 hover:bg-card active:bg-card text-primary p-2 md:p-3 rounded-full shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95 hover:scale-110 transition-all duration-300 translate-x-1 md:translate-x-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-manipulation"
-                aria-label="Next slide"
-              >
-                <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-              </button>
-            </>
-          )}
+          {/* Navigation Buttons - Removed */}
+          {/* Forward/backward buttons have been removed as requested */}
 
           {/* Testimonials Container */}
           <div 

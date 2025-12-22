@@ -169,8 +169,22 @@ export function Header() {
               <CartButton itemCount={itemCount} />
             </div>
 
+            {/* Cart Button - Mobile Only */}
+            <div className="lg:hidden">
+              <CartButton itemCount={itemCount} />
+            </div>
+
             {/* User Menu - Desktop Only */}
             <div className="hidden lg:block">
+              <UserMenu 
+                user={user}
+                isAuthenticated={isAuthenticated}
+                logoutUser={logoutUser}
+              />
+            </div>
+
+            {/* User Menu - Mobile Only */}
+            <div className="lg:hidden">
               <UserMenu 
                 user={user}
                 isAuthenticated={isAuthenticated}
