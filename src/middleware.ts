@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
     
     // Only clear cookies if they're actually invalid (not just missing)
     // This prevents clearing cookies that are being set
-    if (token && !isValidToken(trimmedToken)) {
+    if (token && trimmedToken && !isValidToken(trimmedToken)) {
       response.cookies.set({
         name: 'auth-token',
         value: '',
