@@ -58,11 +58,15 @@ export function Footer() {
             <div className="space-y-2 text-sm text-text-muted">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                <span>Mumbai, Maharashtra, India</span>
+                <span>Bareli, Uttar Pardesh, India</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <span>+91 98765 43210</span>
+                <span>+91 8076465961</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>eshaanZama@gmai.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -195,14 +199,14 @@ export function Footer() {
           </div>
 
           {/* Trust Badges */}
-          <div className="flex gap-3 opacity-70">
+          {/* <div className="flex gap-3 opacity-70">
             <div className="text-xs text-text-muted bg-card/20 px-2 py-1 rounded border border-border">
               🔒 SSL Secured
             </div>
             <div className="text-xs text-text-muted bg-card/20 px-2 py-1 rounded border border-border">
               ✅ Verified Store
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Floating Animation */}

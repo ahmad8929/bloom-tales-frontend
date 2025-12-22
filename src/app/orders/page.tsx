@@ -671,6 +671,18 @@ interface Order {
   adminApproval: {
     status: 'pending' | 'approved' | 'rejected';
     remarks?: string;
+    approvedAt?: string;
+    rejectedAt?: string;
+    approvedBy?: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+    };
+    rejectedBy?: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+    };
   };
   paymentDetails?: {
     payerName: string;
@@ -694,6 +706,16 @@ interface Order {
   estimatedDelivery?: string;
   trackingNumber?: string;
   category: 'ongoing' | 'completed' | 'cancelled';
+  timeline?: Array<{
+    status: string;
+    note: string;
+    timestamp: string;
+    updatedBy?: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+    };
+  }>;
 }
 
 interface OrderDetailsModalProps {
@@ -864,6 +886,26 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
               </Card>
             )}
 
+            {/* Approval Remarks */}
+            {order.adminApproval.status === 'approved' && order.adminApproval.remarks && (
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="font-medium text-green-800">Admin Remarks</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    {order.adminApproval.remarks}
+                  </p>
+                  {order.adminApproval.approvedAt && (
+                    <p className="text-xs text-green-600 mt-2">
+                      Approved on {new Date(order.adminApproval.approvedAt).toLocaleString()}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Rejection Notice */}
             {order.status === 'rejected' && order.adminApproval.remarks && (
               <Card className="border-red-200 bg-red-50">
@@ -875,6 +917,86 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
                   <p className="text-sm text-red-700">
                     <strong>Reason:</strong> {order.adminApproval.remarks}
                   </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Order Timeline */}
+            {order.timeline && order.timeline.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    Order Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative">
+                    {order.timeline
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                      .filter((entry, index, self) => {
+                        // Remove duplicates - keep only the first occurrence of each status
+                        return index === self.findIndex(e => e.status === entry.status);
+                      })
+                      .map((entry, index, filteredArray) => {
+                        const isLast = index === filteredArray.length - 1;
+                        const getStatusIcon = (status: string) => {
+                          switch (status) {
+                            case 'awaiting_approval':
+                              return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+                            case 'confirmed':
+                              return <CheckCircle className="w-4 h-4 text-blue-500" />;
+                            case 'processing':
+                              return <Clock className="w-4 h-4 text-blue-500" />;
+                            case 'shipped':
+                              return <Truck className="w-4 h-4 text-purple-500" />;
+                            case 'delivered':
+                              return <CheckCircle className="w-4 h-4 text-green-500" />;
+                            case 'rejected':
+                            case 'cancelled':
+                              return <XCircle className="w-4 h-4 text-red-500" />;
+                            default:
+                              return <Clock className="w-4 h-4 text-gray-500" />;
+                          }
+                        };
+
+                        const getStatusLabel = (status: string) => {
+                          const labels: Record<string, string> = {
+                            'awaiting_approval': 'Awaiting Approval',
+                            'confirmed': 'Order Confirmed',
+                            'processing': 'Processing',
+                            'shipped': 'Shipped',
+                            'delivered': 'Delivered',
+                            'rejected': 'Rejected',
+                            'cancelled': 'Cancelled'
+                          };
+                          return labels[status] || status;
+                        };
+
+                        return (
+                          <div key={`${entry.status}-${entry.timestamp}`} className="relative pb-6">
+                            {!isLast && (
+                              <div className="absolute left-4 top-8 bottom-0 w-0.5 bg-border" />
+                            )}
+                            <div className="flex gap-4">
+                              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-card border-2 border-primary flex items-center justify-center">
+                                {getStatusIcon(entry.status)}
+                              </div>
+                              <div className="flex-1 pb-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm">
+                                    {getStatusLabel(entry.status)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -1316,9 +1438,9 @@ export default function UserOrdersPage() {
     <div className="container mx-auto px-4 py-12 min-h-screen">
       <div className="text-center mb-12">
         <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4">My Orders</h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+        {/* <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
           Track and manage all your orders in one place
-        </p>
+        </p> */}
       </div>
 
       <div className="max-w-6xl mx-auto">
@@ -1338,33 +1460,74 @@ export default function UserOrdersPage() {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="flex items-center justify-between">
-              <TabsList className="grid w-full max-w-md grid-cols-3">
-                <TabsTrigger value="ongoing" className="relative">
-                  Ongoing
-                  {orders.ongoing.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {orders.ongoing.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="completed" className="relative">
-                  Completed
-                  {orders.completed.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {orders.completed.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="cancelled" className="relative">
-                  Cancelled
-                  {orders.cancelled.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {orders.cancelled.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+  <TabsTrigger
+    value="ongoing"
+    className="
+      relative font-medium text-sm
+      !text-white
+      data-[state=active]:!text-black
+    "
+  >
+    Ongoing
+    {orders.ongoing.length > 0 && (
+      <Badge
+        className="
+          ml-2 text-xs
+          !bg-white !text-black
+          data-[state=active]:!bg-secondary data-[state=active]:!text-secondary-foreground
+        "
+      >
+        {orders.ongoing.length}
+      </Badge>
+    )}
+  </TabsTrigger>
+
+  <TabsTrigger
+    value="completed"
+    className="
+      relative font-medium text-sm
+      !text-white
+      data-[state=active]:!text-black
+    "
+  >
+    Completed
+    {orders.completed.length > 0 && (
+      <Badge
+        className="
+          ml-2 text-xs
+          !bg-white !text-black
+          data-[state=active]:!bg-secondary data-[state=active]:!text-secondary-foreground
+        "
+      >
+        {orders.completed.length}
+      </Badge>
+    )}
+  </TabsTrigger>
+
+  <TabsTrigger
+    value="cancelled"
+    className="
+      relative font-medium text-sm
+      !text-white
+      data-[state=active]:!text-black
+    "
+  >
+    Cancelled
+    {orders.cancelled.length > 0 && (
+      <Badge
+        className="
+          ml-2 text-xs
+          !bg-white !text-black
+          data-[state=active]:!bg-secondary data-[state=active]:!text-secondary-foreground
+        "
+      >
+        {orders.cancelled.length}
+      </Badge>
+    )}
+  </TabsTrigger>
+</TabsList>
+
               <Button
                 variant="outline"
                 size="sm"

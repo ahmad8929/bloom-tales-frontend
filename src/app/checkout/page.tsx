@@ -408,7 +408,7 @@ export default function CheckoutPage() {
   };
 
   const validatePaymentForm = () => {
-    const required = ['payerName', 'transactionId', 'paymentDate', 'paymentTime'];
+    const required = ['payerName', 'paymentDate', 'paymentTime'];
     for (const field of required) {
       if (!paymentData[field as keyof PaymentModalData]) {
         toast({
@@ -424,16 +424,6 @@ export default function CheckoutPage() {
       toast({
         title: 'Payment Proof Required',
         description: 'Please upload a screenshot of your payment',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    // Transaction ID validation (basic)
-    if (paymentData.transactionId.length < 6) {
-      toast({
-        title: 'Invalid Transaction ID',
-        description: 'Transaction ID must be at least 6 characters long',
         variant: 'destructive',
       });
       return false;
@@ -703,93 +693,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                Payment Method
-              </CardTitle>
-              <CardDescription>Choose your preferred payment option</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup 
-                value={paymentMethod} 
-                onValueChange={setPaymentMethod} 
-                className="space-y-4"
-                disabled={orderCreated}
-              >
-                <div className={`flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${paymentMethod === 'upi' ? 'border-primary bg-primary/5' : ''} ${orderCreated ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <RadioGroupItem value="upi" id="upi" disabled={orderCreated} />
-                  <Smartphone className="w-5 h-5 text-primary" />
-                  <div className="flex-1">
-                    <Label htmlFor="upi" className="font-medium cursor-pointer">UPI Payment</Label>
-                    <div className="text-sm text-muted-foreground">Pay using Google Pay, PhonePe, Paytm, etc.</div>
-                  </div>
-                  <Badge variant="secondary">Recommended</Badge>
-                </div>
-
-                <div className={`flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : ''} ${orderCreated ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <RadioGroupItem value="card" id="card" disabled={orderCreated} />
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  <div className="flex-1">
-                    <Label htmlFor="card" className="font-medium cursor-pointer">Credit/Debit Card</Label>
-                    <div className="text-sm text-muted-foreground">Visa, Mastercard, RuPay accepted</div>
-                  </div>
-                  <Badge variant="outline">Coming Soon</Badge>
-                </div>
-
-                <div className={`flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : ''} ${orderCreated ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <RadioGroupItem value="cod" id="cod" disabled={orderCreated} />
-                  <ShoppingBag className="w-5 h-5 text-primary" />
-                  <div className="flex-1">
-                    <Label htmlFor="cod" className="font-medium cursor-pointer">Cash on Delivery</Label>
-                    <div className="text-sm text-muted-foreground">Pay when you receive your order</div>
-                  </div>
-                </div>
-              </RadioGroup>
-
-              {/* UPI Payment Section */}
-              {paymentMethod === 'upi' && !orderCreated && (
-                <div className="mt-6 p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border">
-                  <div className="text-center space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center justify-center gap-2">
-                      <QrCode className="w-5 h-5" />
-                      Complete Your Payment
-                    </h3>
-                    
-                    <div className="bg-white p-4 rounded-lg inline-block shadow-lg">
-                      <img 
-                        src={`${QR_CODE_URL}${total}`} 
-                        alt="UPI QR Code" 
-                        className="w-48 h-48 mx-auto"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Scan QR code or use UPI ID below:</p>
-                      <div className="flex items-center justify-center gap-2">
-                        <code className="bg-muted px-3 py-2 rounded font-mono text-sm flex items-center gap-2">
-                          {UPI_ID}
-                          <Button size="sm" variant="ghost" onClick={copyUpiId} className="h-6 w-6 p-0">
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </code>
-                      </div>
-                    </div>
-                    
-                    <div className="text-lg font-semibold text-primary bg-white/50 rounded-lg p-3">
-                      Amount: ₹{total.toLocaleString('en-IN')}
-                    </div>
-                    
-                    <div className="text-xs text-muted-foreground bg-white/30 rounded p-2">
-                      After payment, you'll need to provide transaction details and upload payment proof
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Order Summary */}
@@ -874,7 +777,7 @@ export default function CheckoutPage() {
                   className="w-full" 
                   size="lg" 
                   onClick={handleSubmitOrder}
-                  disabled={isSubmitting || paymentMethod === 'card'}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -885,12 +788,6 @@ export default function CheckoutPage() {
                     `Place Order - ₹${total.toLocaleString('en-IN')}`
                   )}
                 </Button>
-              )}
-
-              {paymentMethod === 'card' && !orderCreated && (
-                <p className="text-xs text-center text-muted-foreground">
-                  Card payments coming soon! Please use UPI or COD for now.
-                </p>
               )}
 
               {!orderCreated && (
@@ -907,43 +804,114 @@ export default function CheckoutPage() {
       </div>
 
       {/* Payment Confirmation Modal */}
-      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <Dialog 
+        open={showPaymentModal} 
+        onOpenChange={(open) => {
+          // Prevent closing by clicking outside or pressing ESC - only allow via close button
+          // Don't update state if trying to close (unless from our button)
+          if (!open) {
+            // Prevent closing - keep modal open
+            return;
+          }
+        }}
+      >
+        <DialogContent 
+          className="sm:max-w-lg max-h-[90vh] overflow-y-auto [&>button]:hidden"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              Payment Confirmation
-            </DialogTitle>
+            <div className="flex items-center justify-between pr-8">
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                Payment Confirmation
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-muted absolute right-4 top-4"
+                onClick={() => {
+                  if (!isSubmitting) {
+                    setShowPaymentModal(false);
+                  }
+                }}
+                disabled={isSubmitting}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
             <DialogDescription>
-              Please provide your payment details and upload payment proof to confirm the transaction.
+              Complete your payment using the QR code or UPI ID below, then provide your payment details.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="payerName">Payer Name *</Label>
-              <Input 
-                id="payerName" 
-                placeholder="Name on UPI account"
-                value={paymentData.payerName}
-                onChange={(e) => handlePaymentInputChange('payerName', e.target.value)}
-                disabled={isSubmitting}
-              />
+          <div className="space-y-6">
+            {/* QR Code and UPI Section */}
+            <div className="p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
+              <div className="text-center space-y-4">
+                <h3 className="font-semibold text-lg flex items-center justify-center gap-2">
+                  <QrCode className="w-5 h-5" />
+                  Scan QR Code or Use UPI ID
+                </h3>
+                
+                <div className="bg-white p-4 rounded-lg inline-block shadow-lg">
+                  <img 
+                    src={`${QR_CODE_URL}${total}`} 
+                    alt="UPI QR Code" 
+                    className="w-56 h-56 mx-auto"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Or send payment to UPI ID:</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <code className="bg-white px-4 py-2 rounded-lg font-mono text-base font-semibold flex items-center gap-2 border-2 border-primary/30">
+                      {UPI_ID}
+                      <Button size="sm" variant="ghost" onClick={copyUpiId} className="h-7 w-7 p-0 hover:bg-primary/10">
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </code>
+                  </div>
+                </div>
+                
+                <div className="text-xl font-bold text-primary bg-white/70 rounded-lg p-3 border-2 border-primary/30">
+                  Amount: ₹{total.toLocaleString('en-IN')}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="transactionId">Transaction ID/UTR Number *</Label>
-              <Input 
-                id="transactionId" 
-                placeholder="12-digit transaction ID"
-                value={paymentData.transactionId}
-                onChange={(e) => handlePaymentInputChange('transactionId', e.target.value)}
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-muted-foreground">
-                You can find this in your payment app after successful payment
-              </p>
-            </div>
+            <Separator />
+
+            {/* Payment Details Form */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payerName">Payer Name *</Label>
+                <Input 
+                  id="payerName" 
+                  placeholder="Name on UPI account"
+                  value={paymentData.payerName}
+                  onChange={(e) => handlePaymentInputChange('payerName', e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="transactionId">Transaction ID/UTR Number</Label>
+                <Input 
+                  id="transactionId" 
+                  placeholder="12-digit transaction ID"
+                  value={paymentData.transactionId}
+                  onChange={(e) => handlePaymentInputChange('transactionId', e.target.value)}
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-muted-foreground">
+                  You can find this in your payment app after successful payment (Optional)
+                </p>
+              </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -966,6 +934,7 @@ export default function CheckoutPage() {
                   disabled={isSubmitting}
                 />
               </div>
+            </div>
             </div>
 
             {/* Payment Proof Upload */}
@@ -1061,11 +1030,15 @@ export default function CheckoutPage() {
             <div className="flex gap-2 pt-4">
               <Button 
                 variant="outline" 
-                onClick={() => setShowPaymentModal(false)} 
+                onClick={() => {
+                  if (!isSubmitting) {
+                    setShowPaymentModal(false);
+                  }
+                }} 
                 className="flex-1"
                 disabled={isSubmitting}
               >
-                Cancel
+                Close
               </Button>
               <Button 
                 onClick={handlePaymentSubmit} 

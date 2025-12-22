@@ -649,16 +649,16 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
       <Separator className="my-16" />
 
       {/* New Arrivals Section */}
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <NewArrival limit={4} showViewAll={false} />
-      </div>
+      </div> */}
 
       <Separator className="my-16" />
 
       {/* Sale Section */}
-      <div>
+      {/* <div>
         <Sale limit={4} showViewAll={false} title="Don't Miss These Deals!" />
-      </div>
+      </div> */}
     </div>
   );
 }

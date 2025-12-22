@@ -693,6 +693,11 @@ export const adminApi = {
             paymentDate?: string;
             paymentTime?: string;
             amount?: number;
+            paymentProof?: {
+              url: string;
+              publicId: string;
+              uploadedAt: string;
+            };
           };
         }>;
         pagination: {

@@ -122,12 +122,12 @@ export function FeaturedProducts({
         </div>
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
+          {/* <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
             <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
-            {/* <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
+            <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
-            </h2> */}
-          </div>
+            </h2>
+          </div> */}
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <span className="ml-3 text-foreground font-medium">Loading products...</span>
@@ -148,7 +148,7 @@ export function FeaturedProducts({
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg shadow-primary/25 mb-6">
-            <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+            {/* <Sparkles className="w-5 h-5 md:w-6 md:h-6" /> */}
             {/* <h2 className="font-headline text-xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
               {title}
             </h2> */}
@@ -214,6 +214,7 @@ export function FeaturedProducts({
     </section>
   );
 }
+
 
 
 

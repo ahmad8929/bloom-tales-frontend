@@ -49,8 +49,10 @@ import {
   User,
   AlertTriangle,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Image as ImageIcon
 } from 'lucide-react';
+import Image from 'next/image';
 import { adminApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
@@ -109,6 +111,11 @@ interface Order {
     paymentDate?: string;
     paymentTime?: string;
     amount?: number;
+    paymentProof?: {
+      url: string;
+      publicId: string;
+      uploadedAt: string;
+    };
   };
 }
 
@@ -276,6 +283,55 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
                     </div>
                   )}
                 </div>
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    Payment Proof Screenshot
+                  </p>
+                  {order.paymentDetails?.paymentProof?.url ? (
+                    <>
+                      <div className="relative w-full max-w-md group">
+                        <div 
+                          className="relative w-full aspect-video rounded-lg border-2 border-primary/20 shadow-sm cursor-pointer overflow-hidden bg-muted hover:border-primary/40 transition-colors"
+                          onClick={() => window.open(order.paymentDetails?.paymentProof?.url, '_blank')}
+                        >
+                          <Image
+                            src={order.paymentDetails.paymentProof.url}
+                            alt="Payment proof screenshot"
+                            fill
+                            className="object-contain group-hover:opacity-90 transition-opacity"
+                            sizes="(max-width: 768px) 100vw, 400px"
+                            unoptimized
+                            onError={(e) => {
+                              console.error('Error loading payment proof image:', e);
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          Click image to view full size
+                        </p>
+                        {order.paymentDetails.paymentProof.uploadedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Uploaded: {new Date(order.paymentDetails.paymentProof.uploadedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-4 bg-muted rounded-lg border border-dashed">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        No payment proof screenshot available
+                      </p>
+                      {order.paymentMethod !== 'cod' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Customer has not uploaded a transaction screenshot yet.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -385,37 +441,65 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
               <CardContent className="space-y-4">
                 {actionType === 'status' && (
                   <div>
-                    <label className="text-sm font-medium">New Status</label>
+                    <label className="text-sm font-medium">Update Order Status</label>
                     <Select value={newStatus} onValueChange={setNewStatus}>
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder="Select status to update" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="processing">Processing</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
+                        <SelectItem value="confirmed">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-blue-500" />
+                            Order Confirmed
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="processing">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            Order Initiated / Processing
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="shipped">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-purple-500" />
+                            Shipped
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="delivered">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            Delivered
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Current status: <span className="font-medium">{order.status}</span>
+                    </p>
                   </div>
                 )}
                 
-                <div>
-                  <label className="text-sm font-medium">
-                    {actionType === 'reject' ? 'Rejection Reason *' : 'Remarks (Optional)'}
-                  </label>
-                  <Textarea
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder={
-                      actionType === 'approve' ? 'Optional approval notes...' :
-                      actionType === 'reject' ? 'Please provide a reason for rejection...' :
-                      'Optional status update notes...'
-                    }
-                    className="mt-1"
-                    rows={3}
-                  />
-                </div>
+                {actionType !== 'status' && (
+                  <div>
+                    <label className="text-sm font-medium">
+                      {actionType === 'reject' ? 'Rejection Reason *' : 
+                       actionType === 'approve' && order.adminApproval.status === 'approved' ? 'Update Remarks' :
+                       'Remarks (Optional)'}
+                    </label>
+                    <Textarea
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
+                      placeholder={
+                        actionType === 'approve' && order.adminApproval.status === 'approved' ? 'Update approval remarks...' :
+                        actionType === 'approve' ? 'Optional approval notes...' :
+                        actionType === 'reject' ? 'Please provide a reason for rejection...' :
+                        'Optional status update notes...'
+                      }
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                )}
                 
                 <div className="flex gap-2 pt-2">
                   <Button
@@ -442,6 +526,7 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
                         Processing...
                       </div>
                     ) : (
+                      actionType === 'approve' && order.adminApproval.status === 'approved' ? 'Update Remarks' :
                       actionType === 'approve' ? 'Approve Order' :
                       actionType === 'reject' ? 'Reject Order' :
                       'Update Status'
@@ -479,14 +564,27 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
           )}
           
           {order.adminApproval.status === 'approved' && order.status !== 'delivered' && (
-            <Button
-              onClick={() => setActionType('status')}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Truck className="w-4 h-4" />
-              Update Status
-            </Button>
+            <>
+              <Button
+                onClick={() => {
+                  setActionType('approve');
+                  setRemarks(order.adminApproval.remarks || '');
+                }}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <ThumbsUp className="w-4 h-4" />
+                Update Remarks
+              </Button>
+              <Button
+                onClick={() => setActionType('status')}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Truck className="w-4 h-4" />
+                Update Status
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>
@@ -513,15 +611,38 @@ export default function AdminOrdersPage() {
     const response = await adminApi.getOrders();
     if (response.data?.data?.orders) {
       // Map API response to match Order interface
-      const mappedOrders = response.data.data.orders.map(order => ({
-        ...order,
-        status: order.status as 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected',
-        paymentStatus: order.paymentStatus as 'pending' | 'completed' | 'failed' | 'refunded',
-        adminApproval: {
-          ...order.adminApproval,
-          status: order.adminApproval.status as 'pending' | 'approved' | 'rejected'
+      // Use spread operator to preserve all fields including paymentProof
+      const mappedOrders = response.data.data.orders.map(order => {
+        // Debug: Log paymentProof data to console
+        if (order.paymentDetails) {
+          console.log('Order paymentDetails:', {
+            orderNumber: order.orderNumber,
+            hasPaymentDetails: !!order.paymentDetails,
+            hasPaymentProof: !!order.paymentDetails.paymentProof,
+            paymentProof: order.paymentDetails.paymentProof
+          });
         }
-      }));
+        
+        return {
+          ...order,
+          status: order.status as 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected',
+          paymentStatus: order.paymentStatus as 'pending' | 'completed' | 'failed' | 'refunded',
+          adminApproval: {
+            ...order.adminApproval,
+            status: order.adminApproval.status as 'pending' | 'approved' | 'rejected'
+          },
+          // Explicitly preserve paymentDetails including paymentProof
+          // Keep paymentProof even if url is missing (for debugging)
+          paymentDetails: order.paymentDetails ? {
+            ...order.paymentDetails,
+            paymentProof: order.paymentDetails.paymentProof && 
+                          (order.paymentDetails.paymentProof.url || 
+                           order.paymentDetails.paymentProof.publicId) 
+                          ? order.paymentDetails.paymentProof 
+                          : undefined
+          } : undefined
+        };
+      });
       setOrders(mappedOrders);
     }
  } catch (error) {
@@ -543,13 +664,17 @@ export default function AdminOrdersPage() {
         await fetchOrders(); // Refresh the orders list
         toast({
           title: 'Success',
-          description: 'Order approved successfully',
+          description: response.data?.message || 'Order approved successfully',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Approve order error:', error);
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Failed to approve order';
       toast({
         title: 'Error',
-        description: 'Failed to approve order',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -576,7 +701,8 @@ export default function AdminOrdersPage() {
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
     try {
-      const response = await adminApi.updateOrderStatus(orderId, status);
+      // Update status without note/remarks
+      const response = await adminApi.updateOrderStatus(orderId, status, undefined);
       if (response.data) {
         await fetchOrders(); // Refresh the orders list
         toast({
