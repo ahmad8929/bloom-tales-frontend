@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing. Free shipping on orders above ₹999.',
     images: [
       {
-        url: '/logo.png',
+        url: '/image.png',
         width: 1200,
         height: 630,
         alt: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
@@ -60,9 +60,10 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
-    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear.',
-    images: ['/logo.png'],
+    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear. Free shipping on orders above ₹999.',
+    images: ['/image.png'],
     creator: '@bloomtales_clothing',
+    site: '@bloomtales_clothing',
   },
   robots: {
     index: true,
@@ -112,13 +113,72 @@ export default function RootLayout({
         <meta name="distribution" content="global" />
         <meta name="rating" content="general" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#8B5CF6" />
-        <meta name="msapplication-TileColor" content="#8B5CF6" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
+        <link rel="icon" type="image/png" href="/image.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/image.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/image.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/image.png" />
+        <link rel="shortcut icon" href="/image.png" />
+        <meta name="application-name" content="Bloomtales Boutique" />
+        <meta name="apple-mobile-web-app-title" content="Bloomtales" />
+        <meta name="msapplication-TileImage" content="/image.png" />
+        <meta name="msapplication-TileColor" content="#B88A4E" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:secure_url" content="https://bloomtales.com/image.png" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="bingbot" content="index, follow" />
+        <meta name="yandex" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "OnlineStore",
+              "name": "Bloomtales Boutique",
+              "description": "Discover the latest in women's fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing.",
+              "url": "https://bloomtales.com",
+              "logo": "https://bloomtales.com/image.png",
+              "image": "https://bloomtales.com/image.png",
+              "priceRange": "₹₹",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Bareli",
+                "addressRegion": "Uttar Pradesh",
+                "addressCountry": "IN"
+              },
+              "sameAs": [
+                "https://www.facebook.com/bloomtales",
+                "https://www.instagram.com/bloomtales",
+                "https://twitter.com/bloomtales_clothing"
+              ],
+              "offers": {
+                "@type": "Offer",
+                "priceCurrency": "INR",
+                "availability": "https://schema.org/InStock"
+              }
+            })
+          }}
+        />
+        <meta name="target" content="all" />
+        <meta name="audience" content="all" />
+        <meta name="expires" content="never" />
+        <meta name="copyright" content="Bloomtales Boutique" />
+        <meta name="designer" content="Mohd Ahmad" />
+        <meta name="reply-to" content="info@bloomtales.com" />
+        <meta name="owner" content="Bloomtales Boutique" />
+        <meta name="url" content="https://bloomtales.com" />
+        <meta name="identifier-URL" content="https://bloomtales.com" />
+        <meta name="directory" content="submission" />
+        <meta name="pagename" content="Bloomtales Boutique - Women's Fashion & Ethnic Wear" />
+        <meta name="category" content="Fashion, E-commerce, Clothing" />
+        <meta name="referrer" content="no-referrer-when-downgrade" />
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="MobileOptimized" content="320" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link rel="canonical" href="https://bloomtales.com" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
