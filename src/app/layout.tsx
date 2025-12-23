@@ -10,23 +10,59 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
-  description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop our curated collection of sarees, kurtis, ethnic wear, and modern clothing with premium quality and craftsmanship.',
-  keywords: 'women fashion, sarees, kurtis, ethnic wear, boutique, online shopping, traditional wear, modern clothing',
+  metadataBase: new URL('https://bloomtales.com'),
+  title: {
+    default: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
+    template: '%s | Bloomtales Boutique',
+  },
+  description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop our curated collection of sarees, kurtis, ethnic wear, and modern clothing with premium quality and craftsmanship. Free shipping on orders above ₹999.',
+  keywords: [
+    'women fashion',
+    'sarees',
+    'kurtis',
+    'ethnic wear',
+    'boutique',
+    'online shopping',
+    'traditional wear',
+    'modern clothing',
+    'indian fashion',
+    'anarkali',
+    'lehenga',
+    'bloomtales',
+    'women clothing',
+    'fashion boutique',
+    'premium clothing',
+  ],
   authors: [{ name: 'Mohd Ahmad', url: 'https://www.linkedin.com/in/ahmad8929/' }],
   creator: 'Mohd Ahmad',
+  publisher: 'Bloomtales Boutique',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_IN',
     url: 'https://bloomtales.com',
-    title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
-    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear.',
     siteName: 'Bloomtales Boutique',
+    title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
+    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing. Free shipping on orders above ₹999.',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear.',
+    images: ['/logo.png'],
+    creator: '@bloomtales_clothing',
   },
   robots: {
     index: true,
@@ -42,6 +78,17 @@ export const metadata: Metadata = {
   verification: {
     google: 'your-google-verification-code',
   },
+  alternates: {
+    canonical: 'https://bloomtales.com',
+  },
+  category: 'Fashion',
+  classification: 'E-commerce, Fashion, Clothing',
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'Bloomtales',
+  },
 };
 
 export default function RootLayout({
@@ -56,9 +103,22 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="theme-color" content="#8B5CF6" />
         <meta name="color-scheme" content="light" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="geo.region" content="IN-UP" />
+        <meta name="geo.placename" content="Bareli, Uttar Pradesh" />
+        <meta name="language" content="English" />
+        <meta name="revisit-after" content="7 days" />
+        <meta name="distribution" content="global" />
+        <meta name="rating" content="general" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#8B5CF6" />
+        <meta name="msapplication-TileColor" content="#8B5CF6" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
