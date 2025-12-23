@@ -176,15 +176,17 @@ export default function CheckoutPage() {
 
   const calculateTotals = (cartData: CartData) => {
     if (!cartData || !cartData.items.length) {
-      return { subtotal: 0, shipping: 0, tax: 0, total: 0 };
+      return { subtotal: 0, shipping: 0, platformFee: 0, otherFees: 0, handlingFee: 0, total: 0 };
     }
 
     const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
-    const shipping = subtotal > 1000 ? 0 : 99;
-    const tax = Math.round(subtotal * 0.18);
-    const total = subtotal + shipping + tax;
+    const shipping = 149; // Always charge ₹149 for shipping
+    const platformFee = 49; // Original fee, but shown as Free
+    const otherFees = 0; // Free
+    const handlingFee = 49; // Original fee, but shown as Free
+    const total = subtotal + shipping; // Shipping is always charged
 
-    return { subtotal, shipping, tax, total };
+    return { subtotal, shipping, platformFee, otherFees, handlingFee, total };
   };
 
   const calculateTotal = (cartData: CartData) => {
@@ -569,24 +571,24 @@ export default function CheckoutPage() {
     );
   }
 
-  const { subtotal, shipping, tax, total } = calculateTotals(cart);
+  const { subtotal, shipping, platformFee, otherFees, handlingFee, total } = calculateTotals(cart);
 
   return (
-    <div className="container mx-auto px-4 py-12 min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4">Checkout</h1>
-        <p className="text-muted-foreground">Complete your order details below</p>
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
+      <div className="text-center mb-6 sm:mb-12">
+        <h1 className="font-headline text-2xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4">Checkout</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Complete your order details below</p>
       </div>
 
       {/* Order Flow Notice */}
-      <div className="max-w-4xl mx-auto mb-8">
+      <div className="max-w-4xl mx-auto mb-4 sm:mb-8">
         <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-blue-900 mb-2">Order Review Process</h3>
-                <p className="text-blue-800 text-sm leading-relaxed">
+                <h3 className="font-semibold text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">Order Review Process</h3>
+                <p className="text-blue-800 text-xs sm:text-sm leading-relaxed">
                   After placing your order, it will be sent to our admin team for review and approval. 
                   You'll be notified via email once your order is approved and ready for processing. 
                   This helps us ensure quality and prevent any issues with your order.
@@ -597,24 +599,25 @@ export default function CheckoutPage() {
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto">
         {/* Shipping Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                  <CardTitle className="font-headline flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" />
+                  <CardTitle className="font-headline flex items-center gap-2 text-base sm:text-lg">
+                    <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                     Delivery Address
                   </CardTitle>
-                  <CardDescription>Select or add a delivery address</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm">Select or add a delivery address</CardDescription>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleAddAddress}
                   disabled={orderCreated}
+                  className="w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Address
@@ -635,24 +638,24 @@ export default function CheckoutPage() {
                   {addresses.map((address) => (
                     <div
                       key={address._id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition-colors ${
                         selectedAddressId === address._id
                           ? 'border-primary bg-primary/5'
                           : 'hover:bg-muted/50'
                       } ${orderCreated ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onClick={() => !orderCreated && setSelectedAddressId(address._id)}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
                             <input
                               type="radio"
                               checked={selectedAddressId === address._id}
                               onChange={() => !orderCreated && setSelectedAddressId(address._id)}
                               disabled={orderCreated}
-                              className="w-4 h-4"
+                              className="w-4 h-4 flex-shrink-0"
                             />
-                            <span className="font-medium">{address.fullName}</span>
+                            <span className="font-medium text-sm sm:text-base">{address.fullName}</span>
                             {address.isDefault && (
                               <Badge variant="default" className="text-xs">Default</Badge>
                             )}
@@ -660,15 +663,15 @@ export default function CheckoutPage() {
                               {address.addressType}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground ml-6">
+                          <p className="text-xs sm:text-sm text-muted-foreground ml-6 break-words">
                             {address.street}, {address.city}, {address.state} - {address.zipCode}
                           </p>
-                          <p className="text-sm text-muted-foreground ml-6">{address.country}</p>
-                          <p className="text-sm text-muted-foreground ml-6 mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground ml-6">{address.country}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground ml-6 mt-1">
                             Phone: {address.phone}
                           </p>
                           {address.nearbyPlaces && (
-                            <p className="text-sm text-muted-foreground ml-6 mt-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground ml-6 mt-1">
                               Landmark: {address.nearbyPlaces}
                             </p>
                           )}
@@ -677,6 +680,7 @@ export default function CheckoutPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 p-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEditAddress(address);
@@ -697,34 +701,34 @@ export default function CheckoutPage() {
 
         {/* Order Summary */}
         <div>
-          <Card className="sticky top-4">
+          <Card className="lg:sticky lg:top-4 h-fit">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                 Order Summary
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4">
               {/* Order Items */}
-              <div className="space-y-3 max-h-60 overflow-y-auto">
+              <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-60 overflow-y-auto">
                 {cart.items.map(item => (
-                  <div key={item._id} className="flex gap-3 p-3 border rounded-lg bg-muted/20">
-                    <div className="relative h-12 w-12 flex-shrink-0">
+                  <div key={item._id} className="flex gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg bg-muted/20">
+                    <div className="relative h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
                       <Image
                         src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
                         alt={item.product.name}
                         fill
                         className="object-cover rounded"
-                        sizes="48px"
+                        sizes="(max-width: 640px) 40px, 48px"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.product.name}</p>
+                      <p className="text-xs sm:text-sm font-medium truncate">{item.product.name}</p>
                       <p className="text-xs text-muted-foreground">
                         Qty: {item.quantity} • Size: {item.size || item.product.size}
                       </p>
                     </div>
-                    <p className="text-sm font-medium">
+                    <p className="text-xs sm:text-sm font-medium flex-shrink-0">
                       ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
                     </p>
                   </div>
@@ -735,33 +739,37 @@ export default function CheckoutPage() {
 
               {/* Price Breakdown */}
               <div className="space-y-2">
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm sm:text-base">
                   <span>Subtotal ({cart.totalItems} items)</span>
                   <span>₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm sm:text-base">
                   <span>Shipping</span>
-                  <span className={shipping === 0 ? "text-green-600 font-medium" : ""}>
-                    {shipping === 0 ? 'Free' : `₹${shipping.toLocaleString('en-IN')}`}
+                  <span>₹{shipping.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span>Handling Fee</span>
+                  <span className="flex items-center gap-2">
+                    <span className="line-through text-muted-foreground">₹{handlingFee.toLocaleString('en-IN')}</span>
+                    <span className="text-green-600 font-medium">Free</span>
                   </span>
                 </div>
-                {shipping === 0 && (
-                  <p className="text-xs text-green-600">🎉 You saved ₹99 on shipping!</p>
-                )}
-                <div className="flex justify-between">
-                  <span>Tax (GST 18%)</span>
-                  <span>₹{tax.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span>Platform Fee</span>
+                  <span className="flex items-center gap-2">
+                    <span className="line-through text-muted-foreground">₹{platformFee.toLocaleString('en-IN')}</span>
+                    <span className="text-green-600 font-medium">Free</span>
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span>Other Expense</span>
+                  <span className="text-green-600 font-medium">Free</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between text-lg font-semibold">
+                <div className="flex justify-between text-base sm:text-lg font-semibold">
                   <span>Total</span>
                   <span>₹{total.toLocaleString('en-IN')}</span>
                 </div>
-                {subtotal < 1000 && (
-                  <p className="text-xs text-muted-foreground">
-                    Add ₹{(1000 - subtotal).toLocaleString('en-IN')} more for free shipping
-                  </p>
-                )}
               </div>
 
               {orderCreated ? (
@@ -785,7 +793,9 @@ export default function CheckoutPage() {
                       Processing...
                     </div>
                   ) : (
-                    `Place Order - ₹${total.toLocaleString('en-IN')}`
+                    <span className="text-sm sm:text-base">
+                      Place Order - ₹{total.toLocaleString('en-IN')}
+                    </span>
                   )}
                 </Button>
               )}
@@ -816,7 +826,7 @@ export default function CheckoutPage() {
         }}
       >
         <DialogContent 
-          className="sm:max-w-lg max-h-[90vh] overflow-y-auto [&>button]:hidden"
+          className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto [&>button]:hidden"
           onInteractOutside={(e) => {
             e.preventDefault();
           }}
@@ -826,14 +836,14 @@ export default function CheckoutPage() {
         >
           <DialogHeader>
             <div className="flex items-center justify-between pr-8">
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 Payment Confirmation
               </DialogTitle>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full hover:bg-muted absolute right-4 top-4"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-muted absolute right-3 sm:right-4 top-3 sm:top-4"
                 onClick={() => {
                   if (!isSubmitting) {
                     setShowPaymentModal(false);
@@ -841,44 +851,44 @@ export default function CheckoutPage() {
                 }}
                 disabled={isSubmitting}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               Complete your payment using the QR code or UPI ID below, then provide your payment details.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* QR Code and UPI Section */}
-            <div className="p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
-              <div className="text-center space-y-4">
-                <h3 className="font-semibold text-lg flex items-center justify-center gap-2">
-                  <QrCode className="w-5 h-5" />
+            <div className="p-4 sm:p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
+              <div className="text-center space-y-3 sm:space-y-4">
+                <h3 className="font-semibold text-base sm:text-lg flex items-center justify-center gap-2">
+                  <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
                   Scan QR Code or Use UPI ID
                 </h3>
                 
-                <div className="bg-white p-4 rounded-lg inline-block shadow-lg">
+                <div className="bg-white p-2 sm:p-4 rounded-lg inline-block shadow-lg">
                   <img 
                     src={`${QR_CODE_URL}${total}`} 
                     alt="UPI QR Code" 
-                    className="w-56 h-56 mx-auto"
+                    className="w-40 h-40 sm:w-56 sm:h-56 mx-auto"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Or send payment to UPI ID:</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <code className="bg-white px-4 py-2 rounded-lg font-mono text-base font-semibold flex items-center gap-2 border-2 border-primary/30">
-                      {UPI_ID}
-                      <Button size="sm" variant="ghost" onClick={copyUpiId} className="h-7 w-7 p-0 hover:bg-primary/10">
-                        <Copy className="w-4 h-4" />
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Or send payment to UPI ID:</p>
+                  <div className="flex items-center justify-center gap-2 px-2">
+                    <code className="bg-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-xs sm:text-base font-semibold flex items-center gap-1 sm:gap-2 border-2 border-primary/30 break-all">
+                      <span className="break-all">{UPI_ID}</span>
+                      <Button size="sm" variant="ghost" onClick={copyUpiId} className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-primary/10 flex-shrink-0">
+                        <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </code>
                   </div>
                 </div>
                 
-                <div className="text-xl font-bold text-primary bg-white/70 rounded-lg p-3 border-2 border-primary/30">
+                <div className="text-lg sm:text-xl font-bold text-primary bg-white/70 rounded-lg p-2 sm:p-3 border-2 border-primary/30">
                   Amount: ₹{total.toLocaleString('en-IN')}
                 </div>
               </div>
@@ -913,25 +923,27 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="paymentDate">Payment Date *</Label>
+                <Label htmlFor="paymentDate" className="text-sm">Payment Date *</Label>
                 <Input 
                   id="paymentDate" 
                   type="date"
                   value={paymentData.paymentDate}
                   onChange={(e) => handlePaymentInputChange('paymentDate', e.target.value)}
                   disabled={isSubmitting}
+                  className="text-sm sm:text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentTime">Payment Time *</Label>
+                <Label htmlFor="paymentTime" className="text-sm">Payment Time *</Label>
                 <Input 
                   id="paymentTime" 
                   type="time"
                   value={paymentData.paymentTime}
                   onChange={(e) => handlePaymentInputChange('paymentTime', e.target.value)}
                   disabled={isSubmitting}
+                  className="text-sm sm:text-base"
                 />
               </div>
             </div>
@@ -1027,7 +1039,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -1035,7 +1047,7 @@ export default function CheckoutPage() {
                     setShowPaymentModal(false);
                   }
                 }} 
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
                 disabled={isSubmitting}
               >
                 Close
@@ -1043,7 +1055,7 @@ export default function CheckoutPage() {
               <Button 
                 onClick={handlePaymentSubmit} 
                 disabled={isSubmitting} 
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
@@ -1061,7 +1073,7 @@ export default function CheckoutPage() {
 
       {/* Address Modal */}
       <Dialog open={showAddressModal} onOpenChange={setShowAddressModal}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5" />
@@ -1136,9 +1148,9 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="addressCity">City *</Label>
+                <Label htmlFor="addressCity" className="text-sm">City *</Label>
                 <Input
                   id="addressCity"
                   value={addressForm.city}
@@ -1150,14 +1162,14 @@ export default function CheckoutPage() {
                   }}
                   placeholder="Enter city"
                   disabled={isSubmitting}
-                  className={addressFormErrors.city ? 'border-destructive' : ''}
+                  className={`text-sm sm:text-base ${addressFormErrors.city ? 'border-destructive' : ''}`}
                 />
                 {addressFormErrors.city && (
-                  <p className="text-sm text-destructive">{addressFormErrors.city}</p>
+                  <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.city}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="addressState">State *</Label>
+                <Label htmlFor="addressState" className="text-sm">State *</Label>
                 <Select
                   value={addressForm.state}
                   onValueChange={(value) => {
@@ -1168,7 +1180,7 @@ export default function CheckoutPage() {
                   }}
                   disabled={isSubmitting}
                 >
-                  <SelectTrigger className={addressFormErrors.state ? 'border-destructive' : ''}>
+                  <SelectTrigger className={`text-sm sm:text-base ${addressFormErrors.state ? 'border-destructive' : ''}`}>
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1180,14 +1192,14 @@ export default function CheckoutPage() {
                   </SelectContent>
                 </Select>
                 {addressFormErrors.state && (
-                  <p className="text-sm text-destructive">{addressFormErrors.state}</p>
+                  <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.state}</p>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="addressZipCode">Pincode *</Label>
+                <Label htmlFor="addressZipCode" className="text-sm">Pincode *</Label>
                 <Input
                   id="addressZipCode"
                   value={addressForm.zipCode}
@@ -1199,20 +1211,20 @@ export default function CheckoutPage() {
                   }}
                   placeholder="000000"
                   disabled={isSubmitting}
-                  className={addressFormErrors.zipCode ? 'border-destructive' : ''}
+                  className={`text-sm sm:text-base ${addressFormErrors.zipCode ? 'border-destructive' : ''}`}
                 />
                 {addressFormErrors.zipCode && (
-                  <p className="text-sm text-destructive">{addressFormErrors.zipCode}</p>
+                  <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.zipCode}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="addressType">Address Type</Label>
+                <Label htmlFor="addressType" className="text-sm">Address Type</Label>
                 <Select
                   value={addressForm.addressType}
                   onValueChange={(value: any) => setAddressForm({ ...addressForm, addressType: value })}
                   disabled={isSubmitting}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm sm:text-base">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1249,19 +1261,19 @@ export default function CheckoutPage() {
               </Label>
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button
                 variant="outline"
                 onClick={() => {
                   setShowAddressModal(false);
                   setEditingAddress(null);
                 }}
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button onClick={handleSaveAddress} disabled={isSubmitting} className="flex-1">
+              <Button onClick={handleSaveAddress} disabled={isSubmitting} className="flex-1 w-full sm:w-auto">
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

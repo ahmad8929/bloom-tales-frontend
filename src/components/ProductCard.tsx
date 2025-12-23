@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { Star, Tag } from 'lucide-react';
 import { cartApi } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: any; // Using any to match your current API structure
@@ -106,11 +107,15 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
     e.stopPropagation();
 
     try {
-      // Add to cart first
+      // Clear cart first to ensure only this product is in checkout
+      await cartApi.clearCart();
+      
+      // Add product to cart with default size "L" if no size specified
+      const sizeToUse = product.size || 'L';
       const response = await cartApi.addToCart(
         productId,
         1,
-        product.size
+        sizeToUse
       );
 
       if (response.error) {
@@ -121,8 +126,11 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
       router.push('/checkout');
     } catch (error: any) {
       console.error('Error in Buy Now:', error);
-      // If error, still try to redirect (maybe item is already in cart)
-      router.push('/checkout');
+      toast({
+        title: 'Error',
+        description: 'Failed to proceed with Buy Now. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 

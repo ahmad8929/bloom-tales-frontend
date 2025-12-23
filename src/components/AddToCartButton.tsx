@@ -55,12 +55,15 @@ export function AddToCartButton({
         throw new Error('Product ID is required');
       }
 
-      console.log('Adding to cart:', { productId, quantity, size: size || product.size, color });
+      // Default to "L" if no size is provided
+      const finalSize = size || product.size || 'L';
+      
+      console.log('Adding to cart:', { productId, quantity, size: finalSize, color });
 
       const response = await cartApi.addToCart(
         productId, 
         quantity, 
-        size || product.size,
+        finalSize,
         color
       );
       

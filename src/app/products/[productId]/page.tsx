@@ -174,33 +174,38 @@ export default function ProductDetailPage() {
         throw new Error('Product not found');
       }
 
-      // Validate variant selection if product has variants
+      // Clear cart first to ensure only this product is in checkout
+      await cartApi.clearCart();
+
+      // Use selected size or default to "L" if no size is selected
+      const sizeToUse = selectedSize || product?.size || 'L';
+
+      // Check stock for selected/default size
       if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
-        if (!selectedSize) {
-          throw new Error('Please select a size');
+        const variant = product.variants.find((v: any) => v?.size === sizeToUse);
+        const stock = variant ? variant.stock ?? 0 : 0;
+        if (stock === 0) {
+          throw new Error(`Size ${sizeToUse} is out of stock`);
         }
-        if (currentStock !== null && currentStock === 0) {
-          throw new Error('Selected size is out of stock');
-        }
+      } else if (currentStock !== null && currentStock === 0) {
+        throw new Error('Product is out of stock');
       }
 
-      // Add to cart first if not already in cart
-      if (!isInCart) {
-        const productIdToAdd = product._id || product.id;
-        if (!productIdToAdd) {
-          throw new Error('Product ID is required');
-        }
+      // Add product to cart with default size "L" if not selected
+      const productIdToAdd = product._id || product.id;
+      if (!productIdToAdd) {
+        throw new Error('Product ID is required');
+      }
 
-        const response = await cartApi.addToCart(
-          productIdToAdd,
-          cartQuantity || 1,
-          selectedSize || product?.size || undefined,
-          product?.color || undefined
-        );
+      const response = await cartApi.addToCart(
+        productIdToAdd,
+        cartQuantity || 1,
+        sizeToUse,
+        product?.color || undefined
+      );
 
-        if (response.error) {
-          throw new Error(response.error);
-        }
+      if (response.error) {
+        throw new Error(response.error);
       }
 
       // Redirect to checkout
@@ -266,11 +271,23 @@ export default function ProductDetailPage() {
   }
 
   // Format care instructions
-  const careInstructions = typeof product.careInstructions === 'string' 
-    ? product.careInstructions.split('\n').filter(Boolean)
-    : Array.isArray(product.careInstructions) 
-    ? product.careInstructions 
-    : [];
+  // const careInstructions = typeof product.careInstructions === 'string' 
+  //   ? product.careInstructions.split('\n').filter(Boolean)
+  //   : Array.isArray(product.careInstructions) 
+  //   ? product.careInstructions 
+  //   : [];
+
+    const careInstructions = typeof product.careInstructions === 'string'
+  ? product.careInstructions
+      .split(/\r?\n/)          // handles \n and \r\n
+      .map(line => line.trim())
+      .filter(Boolean)         // removes empty lines
+  : Array.isArray(product.careInstructions)
+  ? product.careInstructions
+      .map(line => String(line).trim())
+      .filter(Boolean)
+  : [];
+
 
   // Calculate discount if compare price exists
 const hasDiscount = product.comparePrice && product.comparePrice > product.price;
@@ -406,44 +423,56 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
               <div className="space-y-2">
                 <Label className="font-semibold text-base">Size</Label>
                 <div className="flex flex-wrap gap-2">
-                  {PRODUCT_SIZES.map((size) => {
-                    const variant = product.variants?.find((v: any) => v && v.size === size);
-                    const stock = variant ? (variant.stock ?? 0) : 0;
-                    const isAvailable = stock > 0;
-                    const isSelected = selectedSize === size;
-                    
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => isAvailable && setSelectedSize(size)}
-                        disabled={!isAvailable}
-                        className={`px-4 py-2 rounded-md border-2 transition-all relative ${
-                          isSelected
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : isAvailable
-                            ? 'border-gray-300 hover:border-primary hover:bg-primary/10'
-                            : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
-                        }`}
-                      >
-                        {size}
-                        {!isAvailable && (
-                          <span className="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
-                            ×
-                          </span>
-                        )}
-                        {isAvailable && stock > 0 && stock < 10 && (
-                          <span className="ml-1 text-xs opacity-75">({stock})</span>
-                        )}
-                      </button>
-                    );
-                  })}
+               {PRODUCT_SIZES.map((size) => {
+  const variant = product.variants?.find((v: any) => v?.size === size);
+  const stock = variant ? variant.stock ?? 0 : 0;
+  const isAvailable = stock > 0;
+  const isSelected = selectedSize === size;
+
+  return (
+    <div key={size} className="relative group">
+      <button
+        type="button"
+        disabled={!isAvailable}
+        onClick={() => isAvailable && setSelectedSize(size)}
+        className={`
+          px-4 py-2 rounded-md border text-sm font-medium min-w-[48px]
+          transition-all
+          ${
+            isSelected
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'border-gray-300 hover:border-primary hover:bg-primary/10'
+          }
+          ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
+      >
+        {size}
+      </button>
+
+      {/* Hover tooltip ONLY for out of stock */}
+      {!isAvailable && (
+        <span
+          className="
+            pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2
+            whitespace-nowrap rounded bg-black px-2 py-1 text-[11px] text-white
+            opacity-0 group-hover:opacity-100 transition-opacity
+          "
+        >
+          Out of stock
+        </span>
+      )}
+    </div>
+  );
+})}
+
+
+
                 </div>
               </div>
             )}
 
             {/* Stock Information */}
-            {currentStock !== null && (
+            {/* {currentStock !== null && (
               <div className="space-y-2">
                 <Label className="font-semibold text-base">Availability</Label>
                 <p className={`font-medium ${currentStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -452,7 +481,7 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                     : 'Out of stock'}
                 </p>
               </div>
-            )}
+            )} */}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -463,19 +492,23 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
 
             {/* Care Instructions */}
-            {careInstructions.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Care Instructions</h3>
-                <ul className="space-y-1">
-                  {careInstructions.map((instruction: string, index: number) => (
-                    <li key={index} className="text-muted-foreground flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></span>
-                      {instruction.trim()}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+           {careInstructions.length > 0 && (
+  <div>
+    <h3 className="font-semibold text-lg mb-2">Care Instructions</h3>
+    <ul className="space-y-1">
+      {careInstructions.map((instruction, index) => (
+        <li
+          key={index}
+          className="text-muted-foreground flex items-start gap-2"
+        >
+          <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+          {instruction}
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
           </div>
 
           {/* Action Buttons */}
@@ -507,12 +540,11 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                 <AddToCartButton 
                   product={product} 
                   quantity={1}
-                  size={selectedSize || product.size || undefined}
+                  size={selectedSize || product.size || 'L'}
                   color={product.color || undefined}
                   className="flex-1"
                   onSuccess={handleAddToCartSuccess}
                   disabled={
-                    (product.variants && product.variants.length > 0 && !selectedSize) ||
                     (currentStock !== null && currentStock === 0)
                   }
                 >

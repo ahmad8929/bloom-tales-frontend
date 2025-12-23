@@ -182,18 +182,20 @@ export function CartView() {
 
   const calculateTotals = () => {
     if (!cart || !cart.items.length) {
-      return { subtotal: 0, shipping: 0, tax: 0, total: 0 };
+      return { subtotal: 0, shipping: 0, platformFee: 0, otherFees: 0, handlingFee: 0, total: 0 };
     }
 
     const subtotal = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
-    const shipping = subtotal > 1000 ? 0 : 99; // Free shipping above ₹1000
-    const tax = Math.round(subtotal * 0.18); // 18% GST
-    const total = subtotal + shipping + tax;
+    const shipping = 149; // Always charge ₹149 for shipping
+    const platformFee = 49; // Original fee, but shown as Free
+    const otherFees = 0; // Free
+    const handlingFee = 49; // Original fee, but shown as Free
+    const total = subtotal + shipping; // Shipping is always charged
 
-    return { subtotal, shipping, tax, total };
+    return { subtotal, shipping, platformFee, otherFees, handlingFee, total };
   };
 
-  const { subtotal, shipping, tax, total } = calculateTotals();
+  const { subtotal, shipping, platformFee, otherFees, handlingFee, total } = calculateTotals();
 
   if (isLoading) {
     return <CartSkeleton />;
@@ -237,17 +239,17 @@ export function CartView() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-8">
+    <div className="grid lg:grid-cols-3 gap-4 md:gap-8">
       <div className="lg:col-span-2 space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold">
             Cart Items ({cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'})
           </h2>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={fetchCart}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -256,136 +258,144 @@ export function CartView() {
 
         {cart.items.map(item => (
           <Card key={item._id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <div className="flex gap-4 p-4">
-              <div className="relative h-24 w-24 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row gap-4 p-4">
+              <div className="relative h-32 w-full sm:h-24 sm:w-24 flex-shrink-0 mx-auto sm:mx-0">
                 <Image
                   src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
                   alt={item.product.images?.[0]?.alt || item.product.name}
                   fill
                   className="object-cover rounded-md"
-                  sizes="96px"
+                  sizes="(max-width: 640px) 100vw, 96px"
                 />
               </div>
               
-              <div className="flex-grow min-w-0">
-                <Link 
-                  href={`/products/${item.product.slug || item.productId}`}
-                  className="text-lg font-semibold hover:text-primary transition-colors block truncate"
-                >
-                  {item.product.name}
-                </Link>
-                
-                <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {item.size && <p>Size: <span className="font-medium">{item.size}</span></p>}
-                    {item.color && (
-                      <div className="flex items-center gap-1">
-                        <span>Color:</span>
-                        <div
-                          className="w-4 h-4 rounded-full border border-gray-300"
-                          style={{ backgroundColor: item.color.hexCode }}
-                          title={item.color.name}
-                        />
-                        <span className="font-medium">{item.color.name}</span>
-                      </div>
+              <div className="flex-grow min-w-0 flex flex-col sm:flex-row sm:justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <Link 
+                    href={`/products/${item.product.slug || item.productId}`}
+                    className="text-base sm:text-lg font-semibold hover:text-primary transition-colors block line-clamp-2"
+                  >
+                    {item.product.name}
+                  </Link>
+                  
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.size && <p>Size: <span className="font-medium">{item.size}</span></p>}
+                      {item.color && (
+                        <div className="flex items-center gap-1">
+                          <span>Color:</span>
+                          <div
+                            className="w-4 h-4 rounded-full border border-gray-300"
+                            style={{ backgroundColor: item.color.hexCode }}
+                            title={item.color.name}
+                          />
+                          <span className="font-medium">{item.color.name}</span>
+                        </div>
+                      )}
+                    </div>
+                    <p>Material: {item.product.material}</p>
+                  </div>
+                  
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="font-semibold text-base sm:text-lg">
+                      ₹{item.product.price.toLocaleString('en-IN')}
+                    </span>
+                    {item.product.comparePrice && item.product.comparePrice > item.product.price && (
+                      <span className="text-xs sm:text-sm text-muted-foreground line-through">
+                        ₹{item.product.comparePrice.toLocaleString('en-IN')}
+                      </span>
                     )}
                   </div>
-                  <p>Material: {item.product.material}</p>
                 </div>
-                
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="font-semibold text-lg">
-                    ₹{item.product.price.toLocaleString('en-IN')}
-                  </span>
-                  {item.product.comparePrice && item.product.comparePrice > item.product.price && (
-                    <span className="text-sm text-muted-foreground line-through">
-                      ₹{item.product.comparePrice.toLocaleString('en-IN')}
-                    </span>
-                  )}
-                </div>
-              </div>
 
-              <div className="flex flex-col items-end gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4 sm:gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 sm:h-10 sm:w-10"
+                      disabled={updatingItems.has(item._id) || item.quantity <= 1}
+                      onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-10 sm:w-12 text-center font-medium text-sm sm:text-base">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 sm:h-10 sm:w-10"
+                      disabled={updatingItems.has(item._id)}
+                      onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="text-right sm:text-right">
+                    <p className="text-xs sm:text-sm text-muted-foreground">Subtotal</p>
+                    <p className="font-semibold text-sm sm:text-base">
+                      ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    disabled={updatingItems.has(item._id) || item.quantity <= 1}
-                    onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-12 text-center font-medium">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
+                    className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-destructive"
                     disabled={updatingItems.has(item._id)}
-                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                    onClick={() => removeFromCart(item._id)}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Subtotal</p>
-                  <p className="font-semibold">
-                    ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
-                  </p>
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={updatingItems.has(item._id)}
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => removeFromCart(item._id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </Card>
         ))}
       </div>
 
-      <div>
-        <Card className="sticky top-4">
+      <div className="lg:sticky lg:top-4 h-fit">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               Order Summary
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between">
+          <CardContent className="space-y-3 sm:space-y-4">
+            <div className="flex justify-between text-sm sm:text-base">
               <span>Subtotal ({cart.totalItems} items)</span>
               <span>₹{subtotal.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm sm:text-base">
               <span>Shipping</span>
-              <span className={shipping === 0 ? "text-green-600 font-medium" : ""}>
-                {shipping === 0 ? 'Free' : `₹${shipping.toLocaleString('en-IN')}`}
+              <span>₹{shipping.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between text-sm sm:text-base">
+              <span>Handling Fee</span>
+              <span className="flex items-center gap-2">
+                <span className="line-through text-muted-foreground">₹{handlingFee.toLocaleString('en-IN')}</span>
+                <span className="text-green-600 font-medium">Free</span>
               </span>
             </div>
-            {shipping === 0 && (
-              <p className="text-xs text-green-600">🎉 You saved ₹99 on shipping!</p>
-            )}
-            <div className="flex justify-between">
-              <span>Tax (GST 18%)</span>
-              <span>₹{tax.toLocaleString('en-IN')}</span>
+            <div className="flex justify-between text-sm sm:text-base">
+              <span>Platform Fee</span>
+              <span className="flex items-center gap-2">
+                <span className="line-through text-muted-foreground">₹{platformFee.toLocaleString('en-IN')}</span>
+                <span className="text-green-600 font-medium">Free</span>
+              </span>
+            </div>
+            <div className="flex justify-between text-sm sm:text-base">
+              <span>Other Expense</span>
+              <span className="text-green-600 font-medium">Free</span>
             </div>
             <Separator />
-            <div className="flex justify-between text-lg font-semibold">
+            <div className="flex justify-between text-base sm:text-lg font-semibold">
               <span>Total</span>
               <span>₹{total.toLocaleString('en-IN')}</span>
             </div>
-            {subtotal < 1000 && (
-              <p className="text-xs text-muted-foreground">
-                Add ₹{(1000 - subtotal).toLocaleString('en-IN')} more for free shipping
-              </p>
-            )}
           </CardContent>
-          <CardFooter className="flex flex-col gap-3">
+          <CardFooter className="flex flex-col gap-3 pt-4">
             <Button className="w-full" size="lg" asChild>
               <Link href="/checkout">
                 Proceed to Checkout
