@@ -76,7 +76,7 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             <h3 className="text-lg font-semibold text-card mb-4 relative">
               Quick Links
               <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
@@ -95,7 +95,7 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Customer Service */}
           <div className="space-y-4">
@@ -120,7 +120,7 @@ export function Footer() {
           </div>
 
           {/* Developer Info & Newsletter */}
-          <div className="space-y-6">
+          {/* <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-card mb-4 relative">
                 Developer
@@ -148,7 +148,7 @@ export function Footer() {
                 Passionate about crafting clean, responsive, and high-performance web applications.
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Divider with animation */}

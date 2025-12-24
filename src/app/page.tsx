@@ -110,7 +110,7 @@ export default function Home() {
 
 
       {/* Customer Testimonials */}
-      <CustomerTestimonials
+      {/* <CustomerTestimonials
         title="What Our Customers Say"
         subtitle="Real stories from real customers who love shopping with Bloomtales Boutique"
         showCTA={true}
@@ -121,7 +121,7 @@ export default function Home() {
           tablet: 2,
           desktop: 3
         }}
-      />
+      /> */}
     </div>
   );
 }
