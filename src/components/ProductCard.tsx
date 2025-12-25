@@ -107,6 +107,14 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
     e.stopPropagation();
 
     try {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        // Redirect to login with returnUrl pointing to checkout
+        const productSlug = product.slug || productId;
+        router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
+        return;
+      }
+
       // Clear cart first to ensure only this product is in checkout
       await cartApi.clearCart();
       
@@ -126,9 +134,17 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
       router.push('/checkout');
     } catch (error: any) {
       console.error('Error in Buy Now:', error);
+      
+      // Check if it's an authentication error
+      const errorMessage = error.message || error.error || 'Failed to proceed with Buy Now';
+      if (errorMessage.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('unauthorized')) {
+        router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
+        return;
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to proceed with Buy Now. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

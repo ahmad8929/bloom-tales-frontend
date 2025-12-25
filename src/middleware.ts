@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Paths that require authentication
+// Paths that require authentication (cart is now accessible to guests)
 const protectedPaths = [
-  '/cart',
   '/checkout',
   '/profile',
   '/orders',
@@ -90,7 +89,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*', 
-    '/cart', 
     '/checkout',
     '/profile/:path*',
     '/orders/:path*',

@@ -65,7 +65,7 @@ export function SignupForm() {
       if (result && !result.error) {
         toast({
           title: 'Account created successfully!',
-          description: 'Please check your email to verify your account.',
+          description: 'Please check your email to verify your account. If you don\'t see it, check your spam folder.',
         });
         form.reset();
       } else {

@@ -12,9 +12,10 @@ import {
   removeFromCartLocal,
   clearCartLocal,
 } from '@/store/slices/cartSlice';
-import { cartApi } from '@/lib/api';
+import { cartApi, productApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import type { CartItem } from '@/types/cart';
+import type { Product } from '@/types/product';
 
 export const useCart = () => {
   const dispatch = useDispatch();
@@ -69,14 +70,13 @@ const fetchCart = async () => {
 };
 
   // Add item to cart
- // Add item to cart
-const addToCart = async (productId: string, quantity: number = 1) => {
+const addToCart = async (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null) => {
   try {
     dispatch(setLoading(true));
     
     if (isAuthenticated) {
       // Add to server cart
-      const response = await cartApi.addToCart(productId, quantity);
+      const response = await cartApi.addToCart(productId, quantity, size, color);
       
       // Fix: Use consistent path to access cart items
       if (response.data?.data?.cart?.items) {
@@ -87,26 +87,46 @@ const addToCart = async (productId: string, quantity: number = 1) => {
         });
       }
     } else {
-      // For guest users, we need to fetch product details first
-      // This is a simplified version - you might want to improve this
-      toast({
-        title: 'Please login',
-        description: 'Please log in to add items to your cart.',
-        // action: {
-        //   label: 'Login',
-        //   onClick: () => router.push('/login'),
-        // },
-      });
+      // For guest users, fetch product details and add to local cart
+      try {
+        const productResponse = await productApi.getProduct(productId);
+        const productData = productResponse.data?.data?.product || productResponse.data?.product;
+        
+        if (!productData) {
+          throw new Error('Product not found');
+        }
+
+        const cartItem: CartItem = {
+          product: {
+            ...productData,
+            id: productData._id || productData.id,
+            _id: productData._id || productData.id,
+          } as Product,
+          quantity,
+          size: size || productData.size,
+          color: color || productData.color,
+        };
+
+        dispatch(addToCartLocal(cartItem));
+        
+        toast({
+          title: 'Added to cart',
+          description: 'Item has been added to your cart.',
+        });
+      } catch (productError: any) {
+        console.error('Error fetching product for guest cart:', productError);
+        throw new Error('Failed to add item to cart. Please try again.');
+      }
     }
   } catch (error: any) {
     const errorMessage = error.message || 'Failed to add to cart';
     dispatch(setError(errorMessage));
     
-    // Handle authentication errors
-    if (errorMessage.includes('Authentication required') || errorMessage.includes('token')) {
+    // Handle authentication errors (only for authenticated users)
+    if (isAuthenticated && (errorMessage.includes('Authentication required') || errorMessage.includes('token'))) {
       toast({
-        title: 'Authentication Required',
-        description: 'Please log in to add items to your cart.',
+        title: 'Session Expired',
+        description: 'Please log in again to continue.',
         variant: 'destructive',
       });
       // Optionally redirect to login with returnUrl
@@ -213,8 +233,60 @@ const addToCart = async (productId: string, quantity: number = 1) => {
 
   // Merge guest cart with user cart on login
   const mergeGuestCart = async () => {
-    // This would be called after login to merge any guest cart items
-    // Implementation depends on how you want to handle this
+    if (!isAuthenticated) return;
+    
+    try {
+      dispatch(setLoading(true));
+      
+      // Get current local cart items (guest cart)
+      const guestCartItems = items;
+      
+      if (guestCartItems.length === 0) {
+        // No guest cart items to merge, just fetch user's cart
+        await fetchCart();
+        return;
+      }
+
+      // Fetch user's current cart from server
+      const serverCartResponse = await cartApi.getCart();
+      const serverCartItems = serverCartResponse.data?.data?.cart?.items || [];
+
+      // Merge guest cart items with server cart
+      // For each guest cart item, add it to the server cart
+      for (const guestItem of guestCartItems) {
+        const productId = guestItem.product.id || guestItem.product._id;
+        if (!productId) continue;
+
+        try {
+          await cartApi.addToCart(
+            productId,
+            guestItem.quantity,
+            guestItem.size || guestItem.product.size,
+            guestItem.color || guestItem.product.color
+          );
+        } catch (error: any) {
+          console.error(`Error merging item ${productId}:`, error);
+          // Continue with other items even if one fails
+        }
+      }
+
+      // Fetch updated cart after merging
+      await fetchCart();
+      
+      // Clear local cart after successful merge
+      dispatch(clearCartLocal());
+      
+      toast({
+        title: 'Cart merged',
+        description: 'Your cart items have been saved to your account.',
+      });
+    } catch (error: any) {
+      console.error('Error merging guest cart:', error);
+      // Don't show error toast - just fetch the server cart
+      await fetchCart();
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 
   return {

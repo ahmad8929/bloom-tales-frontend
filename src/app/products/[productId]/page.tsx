@@ -169,6 +169,14 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     try {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        // Redirect to login with returnUrl pointing to checkout
+        const currentPath = `/products/${productId}`;
+        router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
+        return;
+      }
+
       // Check if product exists
       if (!product) {
         throw new Error('Product not found');
@@ -212,9 +220,17 @@ export default function ProductDetailPage() {
       router.push('/checkout');
     } catch (error: any) {
       console.error('Error in Buy Now:', error);
+      
+      // Check if it's an authentication error
+      const errorMessage = error.message || 'Failed to proceed to checkout';
+      if (errorMessage.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403')) {
+        router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
+        return;
+      }
+      
       toast({
         title: 'Error',
-        description: error.message || 'Failed to proceed to checkout',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

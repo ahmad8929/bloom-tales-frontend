@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,10 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { cartApi } from '@/lib/api';
+import { RootState } from '@/store';
+import { updateCartItemLocal, removeFromCartLocal } from '@/store/slices/cartSlice';
+import { useCart } from '@/hooks/useCart';
+import type { CartItem } from '@/types/cart';
 
 interface CartItem {
   _id: string;
@@ -43,19 +48,69 @@ interface CartData {
 }
 
 export function CartView() {
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { cartItems: reduxCartItems } = useCart();
   const [cart, setCart] = useState<CartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [isGuestCart, setIsGuestCart] = useState(false);
+
+  const loadGuestCart = useCallback(() => {
+    setIsLoading(true);
+    setIsGuestCart(true);
+    
+    if (reduxCartItems && reduxCartItems.length > 0) {
+      // Convert Redux cart items to CartData format
+      const guestCartData: CartData = {
+        _id: 'guest-cart',
+        userId: 'guest',
+        items: reduxCartItems.map((item: CartItem, index: number) => ({
+          _id: `guest-item-${index}`,
+          productId: item.product.id || item.product._id || '',
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+          product: {
+            _id: item.product._id || item.product.id || '',
+            name: item.product.name,
+            price: item.product.price,
+            comparePrice: item.product.comparePrice,
+            images: item.product.images || [],
+            size: item.product.size || item.size || 'L',
+            material: item.product.material || '',
+            slug: item.product.slug || '',
+          },
+        })),
+        totalItems: reduxCartItems.reduce((sum, item) => sum + item.quantity, 0),
+        totalAmount: reduxCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setCart(guestCartData);
+      setError(null);
+    } else {
+      setCart(null);
+      setError(null);
+    }
+    setIsLoading(false);
+  }, [reduxCartItems]);
 
   // Fetch cart data
   useEffect(() => {
-    fetchCart();
-  }, []);
+    if (isAuthenticated) {
+      fetchCart();
+    } else {
+      // For guest users, use Redux state
+      loadGuestCart();
+    }
+  }, [isAuthenticated, loadGuestCart]);
 
  const fetchCart = async () => {
   try {
     setIsLoading(true);
+    setIsGuestCart(false);
     setError(null);
     const response = await cartApi.getCart();
     
@@ -91,36 +146,54 @@ export function CartView() {
     setUpdatingItems(prev => new Set(prev).add(itemId));
     
     try {
-      const response = await cartApi.updateCartItem(itemId, newQuantity);
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      // Update local state
-      setCart(prevCart => {
-        if (!prevCart) return null;
+      if (isGuestCart) {
+        // For guest cart, update Redux state
+        const cartItem = cart?.items.find(item => item._id === itemId);
+        if (cartItem) {
+          const productId = cartItem.productId;
+          dispatch(updateCartItemLocal({ productId, quantity: newQuantity }));
+          
+          // Reload guest cart to reflect changes
+          loadGuestCart();
+          
+          toast({
+            title: 'Updated',
+            description: 'Cart item quantity updated',
+          });
+        }
+      } else {
+        // For authenticated users, use API
+        const response = await cartApi.updateCartItem(itemId, newQuantity);
         
-        return {
-          ...prevCart,
-          items: prevCart.items.map(item => 
-            item._id === itemId 
-              ? { ...item, quantity: newQuantity }
-              : item
-          ),
-          totalItems: prevCart.items.reduce((sum, item) => 
-            sum + (item._id === itemId ? newQuantity : item.quantity), 0
-          ),
-          totalAmount: prevCart.items.reduce((sum, item) => 
-            sum + (item._id === itemId ? newQuantity : item.quantity) * item.product.price, 0
-          )
-        };
-      });
+        if (response.error) {
+          throw new Error(response.error);
+        }
 
-      toast({
-        title: 'Updated',
-        description: 'Cart item quantity updated',
-      });
+        // Update local state
+        setCart(prevCart => {
+          if (!prevCart) return null;
+          
+          return {
+            ...prevCart,
+            items: prevCart.items.map(item => 
+              item._id === itemId 
+                ? { ...item, quantity: newQuantity }
+                : item
+            ),
+            totalItems: prevCart.items.reduce((sum, item) => 
+              sum + (item._id === itemId ? newQuantity : item.quantity), 0
+            ),
+            totalAmount: prevCart.items.reduce((sum, item) => 
+              sum + (item._id === itemId ? newQuantity : item.quantity) * item.product.price, 0
+            )
+          };
+        });
+
+        toast({
+          title: 'Updated',
+          description: 'Cart item quantity updated',
+        });
+      }
     } catch (error: any) {
       console.error('Error updating quantity:', error);
       toast({
@@ -141,29 +214,47 @@ export function CartView() {
     setUpdatingItems(prev => new Set(prev).add(itemId));
     
     try {
-      const response = await cartApi.removeFromCart(itemId);
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      // Update local state
-      setCart(prevCart => {
-        if (!prevCart) return null;
+      if (isGuestCart) {
+        // For guest cart, update Redux state
+        const cartItem = cart?.items.find(item => item._id === itemId);
+        if (cartItem) {
+          const productId = cartItem.productId;
+          dispatch(removeFromCartLocal(productId));
+          
+          // Reload guest cart to reflect changes
+          loadGuestCart();
+          
+          toast({
+            title: 'Removed',
+            description: 'Item removed from cart',
+          });
+        }
+      } else {
+        // For authenticated users, use API
+        const response = await cartApi.removeFromCart(itemId);
         
-        const updatedItems = prevCart.items.filter(item => item._id !== itemId);
-        return {
-          ...prevCart,
-          items: updatedItems,
-          totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-          totalAmount: updatedItems.reduce((sum, item) => sum + item.quantity * item.product.price, 0)
-        };
-      });
+        if (response.error) {
+          throw new Error(response.error);
+        }
 
-      toast({
-        title: 'Removed',
-        description: 'Item removed from cart',
-      });
+        // Update local state
+        setCart(prevCart => {
+          if (!prevCart) return null;
+          
+          const updatedItems = prevCart.items.filter(item => item._id !== itemId);
+          return {
+            ...prevCart,
+            items: updatedItems,
+            totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
+            totalAmount: updatedItems.reduce((sum, item) => sum + item.quantity * item.product.price, 0)
+          };
+        });
+
+        toast({
+          title: 'Removed',
+          description: 'Item removed from cart',
+        });
+      }
     } catch (error: any) {
       console.error('Error removing item:', error);
       toast({
@@ -245,15 +336,25 @@ export function CartView() {
           <h2 className="text-lg sm:text-xl font-semibold">
             Cart Items ({cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'})
           </h2>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchCart}
-            className="flex items-center gap-2 w-full sm:w-auto"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
+          {!isGuestCart && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchCart}
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+          )}
+          {isGuestCart && (
+            <div className="text-sm text-muted-foreground">
+              <Link href="/login" className="text-primary hover:underline">
+                Log in
+              </Link>
+              {' to save your cart'}
+            </div>
+          )}
         </div>
 
         {cart.items.map(item => (
@@ -396,15 +497,31 @@ export function CartView() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3 pt-4">
-            <Button className="w-full" size="lg" asChild>
-              <Link href="/checkout">
-                Proceed to Checkout
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="/products">Continue Shopping</Link>
-            </Button>
+            {isGuestCart ? (
+              <>
+                <Button className="w-full" size="lg" asChild>
+                  <Link href="/login?returnUrl=/checkout">
+                    Log in to Checkout
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/products">Continue Shopping</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button className="w-full" size="lg" asChild>
+                  <Link href="/checkout">
+                    Proceed to Checkout
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/products">Continue Shopping</Link>
+                </Button>
+              </>
+            )}
           </CardFooter>
         </Card>
       </div>

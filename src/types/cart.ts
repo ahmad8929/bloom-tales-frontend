@@ -1,8 +1,10 @@
-import type { Product } from './product';
+import type { Product, ProductColor } from './product';
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  size?: string;
+  color?: ProductColor;
 }
 
 export interface CartResponse {

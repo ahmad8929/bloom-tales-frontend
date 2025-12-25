@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useDispatch } from 'react-redux';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import { logout } from '@/store/slices/authSlice';
 import { getCookie } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const { login, isLoading, isAuthenticated, user } = useAuth();
+  const { mergeGuestCart } = useCart();
   const [error, setError] = useState<string | null>(null);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
@@ -140,6 +142,14 @@ export function LoginForm() {
           description: 'You have been logged in successfully.',
         });
         
+        // Merge guest cart with user cart after login
+        try {
+          await mergeGuestCart();
+        } catch (error) {
+          console.error('Error merging guest cart:', error);
+          // Don't block login if cart merge fails
+        }
+        
         // Get returnUrl from state or query params
         const redirectUrl = returnUrl || searchParams.get('returnUrl');
         
@@ -169,8 +179,8 @@ export function LoginForm() {
           window.location.href = redirectPath;
         };
         
-        // Small delay to ensure Redux state is updated
-        setTimeout(verifyAndRedirect, 100);
+        // Small delay to ensure Redux state is updated and cart is merged
+        setTimeout(verifyAndRedirect, 300);
       } else {
         if (result.code === 'EMAIL_NOT_VERIFIED') {
           setNeedsEmailVerification(true);
