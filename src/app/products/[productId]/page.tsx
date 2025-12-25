@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
+import { updateCartItemLocal } from '@/store/slices/cartSlice';
+import { useCart } from '@/hooks/useCart';
 import { productApi, cartApi } from "@/lib/api";
 import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Heart } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
@@ -23,7 +25,9 @@ import type { Product } from "@/types/product";
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { cartItems: reduxCartItems } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,20 +114,54 @@ export default function ProductDetailPage() {
 
   // Check if product is in cart - MUST be before early returns
   useEffect(() => {
-    if (!isAuthenticated || !product) {
+    if (!product) {
       setIsInCart(false);
       return;
     }
 
-    const checkCart = async () => {
-      try {
-        const response = await cartApi.getCart();
-        if (response.data?.data?.cart?.items) {
-          const cartItem = response.data.data.cart.items.find(
+    const checkCart = () => {
+      if (isAuthenticated) {
+        // For authenticated users, check server cart
+        const checkServerCart = async () => {
+          try {
+            const response = await cartApi.getCart();
+            if (response.data?.data?.cart?.items) {
+              const cartItem = response.data.data.cart.items.find(
+                (item: any) => {
+                  try {
+                    const sameProduct = item.productId === productId || item.product?._id === productId;
+                    const sameSize = item.size === selectedSize || (!selectedSize && item.size === product?.size);
+                    return sameProduct && sameSize;
+                  } catch (error) {
+                    console.error('Error checking cart item:', error);
+                    return false;
+                  }
+                }
+              );
+              if (cartItem) {
+                setIsInCart(true);
+                setCartItemId(cartItem._id);
+                setCartQuantity(cartItem.quantity);
+              } else {
+                setIsInCart(false);
+                setCartItemId(undefined);
+                setCartQuantity(1);
+              }
+            }
+          } catch (error) {
+            console.log('Cart check failed:', error);
+            setIsInCart(false);
+          }
+        };
+        checkServerCart();
+      } else {
+        // For guest users, check Redux cart state
+        if (reduxCartItems && reduxCartItems.length > 0) {
+          const cartItem = reduxCartItems.find(
             (item: any) => {
               try {
-                const sameProduct = item.productId === productId || item.product?._id === productId;
-                const sameSize = item.size === selectedSize || (!selectedSize && item.size === product?.size);
+                const sameProduct = item.product.id === productId || item.product._id === productId;
+                const sameSize = item.size === selectedSize || (!selectedSize && (item.size === product?.size || item.product.size === product?.size));
                 return sameProduct && sameSize;
               } catch (error) {
                 console.error('Error checking cart item:', error);
@@ -133,17 +171,18 @@ export default function ProductDetailPage() {
           );
           if (cartItem) {
             setIsInCart(true);
-            setCartItemId(cartItem._id);
+            setCartItemId(undefined); // No cartItemId for guest items
             setCartQuantity(cartItem.quantity);
           } else {
             setIsInCart(false);
             setCartItemId(undefined);
             setCartQuantity(1);
           }
+        } else {
+          setIsInCart(false);
+          setCartItemId(undefined);
+          setCartQuantity(1);
         }
-      } catch (error) {
-        console.log('Cart check failed:', error);
-        setIsInCart(false);
       }
     };
 
@@ -151,14 +190,12 @@ export default function ProductDetailPage() {
 
     // Listen for cart updates
     const handleCartUpdate = () => {
-      if (isAuthenticated) {
-        checkCart();
-      }
+      checkCart();
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
-  }, [productId, isAuthenticated, product, selectedSize]);
+  }, [productId, isAuthenticated, product, selectedSize, reduxCartItems]);
 
   const handleAddToCartSuccess = () => {
     // Trigger cart update to refresh state

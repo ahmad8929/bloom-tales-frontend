@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { useCart } from '@/hooks/useCart';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AddToCartButton } from './AddToCartButton';
@@ -28,6 +29,7 @@ interface ProductCardProps {
 export function ProductCard({ product, cartItems }: ProductCardProps) {
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { cartItems: reduxCartItems } = useCart();
   const [isInCart, setIsInCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | undefined>();
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -59,41 +61,62 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
   // Create link to product detail page
   const productId = product._id || product.id;
 
-  // Check if product is in cart using provided cartItems or listen for updates
+  // Check if product is in cart using provided cartItems or Redux state
   useEffect(() => {
-    if (!isAuthenticated || !cartItems) {
-      setIsInCart(false);
-      return;
-    }
+    if (isAuthenticated) {
+      // For authenticated users, use provided cartItems
+      if (!cartItems) {
+        setIsInCart(false);
+        return;
+      }
 
-    const cartItem = cartItems.find(
-      (item: any) => item.productId === productId || item.product._id === productId
-    );
+      const cartItem = cartItems.find(
+        (item: any) => item.productId === productId || item.product._id === productId
+      );
 
-    if (cartItem) {
-      setIsInCart(true);
-      setCartItemId(cartItem._id);
-      setCartQuantity(cartItem.quantity);
+      if (cartItem) {
+        setIsInCart(true);
+        setCartItemId(cartItem._id);
+        setCartQuantity(cartItem.quantity);
+      } else {
+        setIsInCart(false);
+        setCartItemId(undefined);
+        setCartQuantity(1);
+      }
     } else {
-      setIsInCart(false);
-      setCartItemId(undefined);
-      setCartQuantity(1);
+      // For guest users, check Redux cart state
+      if (reduxCartItems && reduxCartItems.length > 0) {
+        const cartItem = reduxCartItems.find(
+          (item: any) => item.product.id === productId || item.product._id === productId
+        );
+
+        if (cartItem) {
+          setIsInCart(true);
+          setCartItemId(undefined); // No cartItemId for guest items
+          setCartQuantity(cartItem.quantity);
+        } else {
+          setIsInCart(false);
+          setCartItemId(undefined);
+          setCartQuantity(1);
+        }
+      } else {
+        setIsInCart(false);
+        setCartItemId(undefined);
+        setCartQuantity(1);
+      }
     }
-  }, [productId, cartItems, isAuthenticated]);
+  }, [productId, cartItems, isAuthenticated, reduxCartItems]);
 
   // Listen for cart updates
   useEffect(() => {
     const handleCartUpdate = (event: CustomEvent) => {
-      // Re-check cart when it's updated
-      if (isAuthenticated && event.detail?.action) {
-        // Cart was updated, we'll rely on parent to pass updated cartItems
-        // For now, just reset state and let parent handle it
-      }
+      // Re-check cart when it's updated - the useEffect above will handle the update
+      // This is just to trigger a re-check
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate as EventListener);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate as EventListener);
-  }, [isAuthenticated]);
+  }, []);
 
   const handleAddToCartSuccess = () => {
     // Trigger cart update event - parent will refetch and pass new cartItems

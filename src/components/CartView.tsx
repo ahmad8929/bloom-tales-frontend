@@ -16,7 +16,8 @@ import { updateCartItemLocal, removeFromCartLocal } from '@/store/slices/cartSli
 import { useCart } from '@/hooks/useCart';
 import type { CartItem } from '@/types/cart';
 
-interface CartItem {
+// Interface for API cart item response (different from Redux CartItem)
+interface ApiCartItem {
   _id: string;
   productId: string;
   quantity: number;
@@ -40,7 +41,7 @@ interface CartItem {
 interface CartData {
   _id: string;
   userId: string;
-  items: CartItem[];
+  items: ApiCartItem[];
   totalItems: number;
   totalAmount: number;
   createdAt: string;

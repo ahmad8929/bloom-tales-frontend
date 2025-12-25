@@ -90,7 +90,29 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
       // For guest users, fetch product details and add to local cart
       try {
         const productResponse = await productApi.getProduct(productId);
-        const productData = productResponse.data?.data?.product || productResponse.data?.product;
+        
+        if (productResponse.error) {
+          throw new Error(productResponse.error);
+        }
+        
+        // Handle the API response structure with safe type checking
+        let productData = null;
+        
+        // Check for nested data structure: { data: { data: { product: {...} } } }
+        if (productResponse.data && typeof productResponse.data === 'object' && 'data' in productResponse.data) {
+          const nestedData = (productResponse.data as any).data;
+          if (nestedData && typeof nestedData === 'object' && 'product' in nestedData) {
+            productData = nestedData.product;
+          }
+        }
+        // Check for direct product in response.data: { data: { product: {...} } }
+        else if (productResponse.data && typeof productResponse.data === 'object' && 'product' in (productResponse.data as any)) {
+          productData = (productResponse.data as any).product;
+        }
+        // Check if product data is directly in response.data
+        else if (productResponse.data && typeof productResponse.data === 'object') {
+          productData = productResponse.data;
+        }
         
         if (!productData) {
           throw new Error('Product not found');
