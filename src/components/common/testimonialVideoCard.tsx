@@ -14,6 +14,8 @@ interface TestimonialVideoCardProps {
   link: string;
   productLink?: string;
   productName?: string;
+  onVideoRef?: (id: number, video: HTMLVideoElement | null) => void;
+  isActive?: boolean;
 }
 
 const TestimonialVideoCard: React.FC<TestimonialVideoCardProps> = ({
@@ -22,6 +24,8 @@ const TestimonialVideoCard: React.FC<TestimonialVideoCardProps> = ({
   link,
   productLink,
   productName,
+  onVideoRef,
+  isActive = true,
 }) => {
   const context = useContext(VideoContext);
   if (!context) {
@@ -154,16 +158,28 @@ const TestimonialVideoCard: React.FC<TestimonialVideoCardProps> = ({
     }
   }, [currentPlayingVideo, videoId]);
 
-  // Handle playing state
+  // Register video ref
   useEffect(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
+    if (videoRef.current && onVideoRef) {
+      onVideoRef(id, videoRef.current);
+      return () => {
+        onVideoRef(id, null);
+      };
+    }
+  }, [id, onVideoRef]);
+
+  // Handle playing state - let parent component control playback on mobile
+  useEffect(() => {
+    if (videoRef.current && !isMobile) {
+      // Desktop behavior
+      if (isPlaying && isActive) {
         videoRef.current.play().catch(console.error);
       } else {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying]);
+    // Mobile playback is controlled by parent component (instagramReels)
+  }, [isPlaying, isActive, isMobile]);
 
   // Handle global mute state
   useEffect(() => {
@@ -194,13 +210,13 @@ const TestimonialVideoCard: React.FC<TestimonialVideoCardProps> = ({
       onClick={handleCardClick}
     >
       {/* Video Container - Instagram Reels Style */}
-      <div className="relative rounded-xl overflow-hidden aspect-[9/16] bg-card border border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <div className="relative rounded-xl overflow-hidden aspect-[9/16] bg-card border border-border shadow-lg hover:shadow-xl transition-shadow duration-300 max-w-full">
         {/* Video Element */}
         <video
           ref={videoRef}
           src={video}
           className="w-full h-full object-cover"
-          loop
+          loop={!isMobile}
           muted={globalMuted}
           playsInline
           onLoadedData={handleVideoLoad}
@@ -287,23 +303,6 @@ const TestimonialVideoCard: React.FC<TestimonialVideoCardProps> = ({
           </div>
         )}
 
-        {/* Hover/Click Play Indicator */}
-        {!isPlaying && isLoaded && (isHovering || isMobile) && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center transition-all duration-300 pointer-events-none">
-            <div className="bg-primary/90 rounded-full p-5 backdrop-blur-sm transform scale-100 group-hover:scale-110 transition-transform duration-300 shadow-2xl">
-              <Play className="w-12 h-12 text-primary-foreground ml-1" fill="currentColor" />
-            </div>
-          </div>
-        )}
-
-        {/* Pause Indicator - Shows briefly when clicking to pause */}
-        {isManuallyPaused && !isPlaying && isLoaded && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center transition-all duration-300 pointer-events-none">
-            <div className="bg-primary/90 rounded-full p-5 backdrop-blur-sm shadow-2xl">
-              <Pause className="w-12 h-12 text-primary-foreground" fill="currentColor" />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

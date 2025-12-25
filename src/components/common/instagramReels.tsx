@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, createContext } from "react";
+import React, { useState, createContext, useEffect, useRef, useCallback } from "react";
 import TestimonialVideoCard from "./testimonialVideoCard";
 
 interface Reel {
@@ -60,6 +60,177 @@ export const VideoContext = createContext<VideoContextType | undefined>(undefine
 const InstagramReels: React.FC = () => {
   const [currentPlayingVideo, setCurrentPlayingVideo] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSectionVisible, setIsSectionVisible] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Intersection Observer to detect when section comes into view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsSectionVisible(true);
+            // Auto-play first video when section becomes visible
+            if (isMobile && reels.length > 0) {
+              const firstVideo = videoRefs.current[reels[0].id];
+              if (firstVideo) {
+                firstVideo.play().catch(console.error);
+                setCurrentPlayingVideo(`reel-${reels[0].id}`);
+              }
+            }
+          } else {
+            setIsSectionVisible(false);
+            // Pause all videos when section goes out of view
+            Object.values(videoRefs.current).forEach((video) => {
+              if (video) video.pause();
+            });
+            setCurrentPlayingVideo(null);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isMobile, setCurrentPlayingVideo]);
+
+  // Pause previous video when slide changes and play current
+  useEffect(() => {
+    if (!isMobile || !isSectionVisible) return;
+
+    const currentReelId = reels[currentSlide]?.id;
+    
+    // Pause all videos
+    Object.keys(videoRefs.current).forEach((key) => {
+      const videoId = parseInt(key);
+      const video = videoRefs.current[videoId];
+      if (video) {
+        video.pause();
+      }
+    });
+
+    // Play current video
+    if (currentReelId) {
+      const currentVideo = videoRefs.current[currentReelId];
+      if (currentVideo) {
+        currentVideo.currentTime = 0; // Reset to start
+        currentVideo.play().catch(console.error);
+        setCurrentPlayingVideo(`reel-${currentReelId}`);
+      }
+    }
+  }, [currentSlide, isMobile, isSectionVisible, setCurrentPlayingVideo]);
+
+  // Handle touch events for swipe (no animation)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) {
+      touchStartX.current = null;
+      touchEndX.current = null;
+      return;
+    }
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50;
+
+    if (distance > minSwipeDistance && currentSlide < reels.length - 1) {
+      // Swipe left - next slide
+      setCurrentSlide(currentSlide + 1);
+    } else if (distance < -minSwipeDistance && currentSlide > 0) {
+      // Swipe right - previous slide
+      setCurrentSlide(currentSlide - 1);
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  // Auto-advance to next reel after video completes
+  const handleVideoEnd = useCallback((reelId: number) => {
+    if (!isMobile || !isSectionVisible) return;
+    
+    // Find which slide index this reel is at
+    const reelIndex = reels.findIndex(r => r.id === reelId);
+    
+    // Only advance if this is the currently playing reel
+    if (reelIndex === currentSlide) {
+      if (currentSlide < reels.length - 1) {
+        // Auto-advance to next reel
+        setCurrentSlide(currentSlide + 1);
+      } else {
+        // Loop back to first reel after last one
+        setCurrentSlide(0);
+      }
+    }
+  }, [isMobile, isSectionVisible, currentSlide]);
+
+  // Register video ref callback
+  const registerVideoRef = useCallback((id: number, video: HTMLVideoElement | null) => {
+    if (video) {
+      videoRefs.current[id] = video;
+      
+      // Create a handler that uses the current state
+      const handleEnd = () => {
+        if (!isMobile || !isSectionVisible) return;
+        const reelIndex = reels.findIndex(r => r.id === id);
+        
+        // Only advance if this is the currently playing reel
+        setCurrentSlide((prevSlide) => {
+          if (reelIndex === prevSlide) {
+            if (prevSlide < reels.length - 1) {
+              return prevSlide + 1;
+            } else {
+              return 0; // Loop back to first
+            }
+          }
+          return prevSlide;
+        });
+      };
+      
+      video.addEventListener('ended', handleEnd);
+      
+      return () => {
+        video.removeEventListener('ended', handleEnd);
+        delete videoRefs.current[id];
+      };
+    } else {
+      delete videoRefs.current[id];
+    }
+  }, [isMobile, isSectionVisible]);
 
   return (
     <VideoContext.Provider
@@ -70,7 +241,7 @@ const InstagramReels: React.FC = () => {
         setGlobalMuted,
       }}
     >
-      <section className="bg-background py-12 md:py-16 lg:py-20">
+      <section ref={sectionRef} className="bg-background py-12 md:py-16 lg:py-20">
         <div className="xl:max-w-[1400px] px-4 md:px-6 mx-auto">
           <div className="text-center mb-12 md:mb-16">
             <h3 className="font-headline font-semibold lg:text-5xl md:text-4xl text-3xl mb-4">
@@ -111,18 +282,71 @@ const InstagramReels: React.FC = () => {
             </p>
           </div>
           
-          {/* Reels Grid - Responsive grid with proper spacing */}
-          <div className="grid xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 grid-cols-2 gap-4 md:gap-5 lg:gap-6">
-            {reels.map((reel) => (
-              <TestimonialVideoCard
-                key={reel.id}
-                id={reel.id}
-                video={reel.video}
-                link={reel.link}
-                productLink={reel.productLink}
-                productName={reel.productName}
-              />
-            ))}
+          {/* Reels - Carousel on mobile, Grid on desktop */}
+          <div className="relative">
+            {/* Mobile Carousel */}
+            <div 
+              ref={carouselRef}
+              className="md:hidden overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div 
+                className="flex transition-transform duration-300 ease-in-out"
+                style={{ 
+                  transform: `translateX(-${currentSlide * 100}%)`
+                }}
+              >
+                {reels.map((reel) => (
+                  <div key={reel.id} className="min-w-full px-2 flex justify-center">
+                    <div className="w-full max-w-[280px]">
+                      <TestimonialVideoCard
+                        id={reel.id}
+                        video={reel.video}
+                        link={reel.link}
+                        productLink={reel.productLink}
+                        productName={reel.productName}
+                        onVideoRef={registerVideoRef}
+                        isActive={currentSlide === reels.findIndex(r => r.id === reel.id)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dots Indicator - Mobile */}
+              {reels.length > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  {reels.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        index === currentSlide
+                          ? "w-8 bg-primary"
+                          : "w-2 bg-primary/30"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Grid */}
+            <div className="hidden md:grid xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
+              {reels.map((reel) => (
+                <TestimonialVideoCard
+                  key={reel.id}
+                  id={reel.id}
+                  video={reel.video}
+                  link={reel.link}
+                  productLink={reel.productLink}
+                  productName={reel.productName}
+                />
+              ))}
+            </div>
           </div>
           
           {/* CTA Button */}
