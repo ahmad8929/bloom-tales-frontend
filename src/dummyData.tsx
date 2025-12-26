@@ -190,8 +190,8 @@ export const categories: Category[] = [
 export const features: Feature[] = [
   {
     id: 1,
-    title: "Free Delivery",
-    description: "Free shipping on orders above ₹999",
+    title: "Pan India Delivery",
+    description: "Shipping across all of India at ₹149",
     icon: "truck"
   },
   {
@@ -224,7 +224,7 @@ export const bannerOffers: BannerOffer[] = [
   {
     id: 2,
     emoji: "🚚",
-    text: "Free shipping on all orders above ₹999"
+    text: "Shipping across India at just ₹149"
   },
   {
     id: 3,

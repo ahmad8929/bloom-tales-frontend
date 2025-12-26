@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     default: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     template: '%s | Bloomtales Boutique',
   },
-  description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop our curated collection of sarees, kurtis, ethnic wear, and modern clothing with premium quality and craftsmanship. Free shipping on orders above ₹999.',
+  description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop our curated collection of sarees, kurtis, ethnic wear, and modern clothing with premium quality and craftsmanship. Shipping across all of India.',
   keywords: [
     'women fashion',
     'sarees',
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     url: 'https://bloomtales.com',
     siteName: 'Bloomtales Boutique',
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
-    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing. Free shipping on orders above ₹999.',
+    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing. Shipping across all of India.',
     images: [
       {
         url: '/image.png',
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
-    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear. Free shipping on orders above ₹999.',
+    description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear. Shipping across all of India.',
     images: ['/image.png'],
     creator: '@bloomtales_clothing',
     site: '@bloomtales_clothing',
