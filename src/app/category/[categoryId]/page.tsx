@@ -283,7 +283,6 @@ export default function CategoryProductsPage() {
       <ShopClient 
         products={filteredProducts} 
         allSizes={allSizes}
-        allMaterials={allMaterials}
       />
     </div>
   );

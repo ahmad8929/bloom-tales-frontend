@@ -22,21 +22,17 @@ import {
 
 interface ShopClientProps {
   products: any[];
-  allMaterials: string[];
   allSizes: string[];
 }
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'name-asc';
 
 const FilterSidebar = ({ 
-    allMaterials, 
     allSizes,
     selectedSizes,
     handleSizeChange,
     selectedColors,
     handleColorChange,
-    selectedMaterials,
-    handleMaterialChange,
     priceRange,
     handlePriceChange,
     isNewArrival,
@@ -111,31 +107,13 @@ const FilterSidebar = ({
                             />
                             <Label 
                                 htmlFor={`size-${size}`} 
-                                className={`text-sm ${!isAvailable ? 'text-muted-foreground opacity-50' : ''}`}
+                                className={`text-sm cursor-pointer ${!isAvailable ? 'text-muted-foreground opacity-50' : ''}`}
                             >
                                 {size}
                             </Label>
                         </div>
                     );
                 })}
-            </div>
-        </div>
-
-        <div>
-            <h3 className="font-headline text-lg mb-4">Material</h3>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-                {allMaterials.map((material: string) => (
-                    <div key={material} className="flex items-center gap-2">
-                        <Checkbox 
-                            id={`material-${material}`} 
-                            checked={selectedMaterials.includes(material)} 
-                            onCheckedChange={() => handleMaterialChange(material)} 
-                        />
-                        <Label htmlFor={`material-${material}`} className="text-sm capitalize">
-                            {material}
-                        </Label>
-                    </div>
-                ))}
             </div>
         </div>
 
@@ -157,11 +135,10 @@ const FilterSidebar = ({
     </div>
 );
 
-export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps) {
+export function ShopClient({ products, allSizes }: ShopClientProps) {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number>(15000);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -210,7 +187,6 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
   useEffect(() => {
     const sizeParams = searchParams.getAll('size');
     const colorParams = searchParams.getAll('color');
-    const materialParams = searchParams.getAll('material');
     const searchParam = searchParams.get('search');
     const priceParam = searchParams.get('maxPrice');
     const newArrivalParam = searchParams.get('isNewArrival');
@@ -219,7 +195,6 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
 
     if (sizeParams.length > 0) setSelectedSizes(sizeParams);
     if (colorParams.length > 0) setSelectedColors(colorParams);
-    if (materialParams.length > 0) setSelectedMaterials(materialParams);
     if (searchParam) setSearchQuery(searchParam);
     if (priceParam) {
       const price = parseInt(priceParam);
@@ -247,7 +222,6 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
     
     selectedSizes.forEach(size => params.append('size', size));
     selectedColors.forEach(color => params.append('color', color));
-    selectedMaterials.forEach(material => params.append('material', material));
     
     if (searchQuery.trim()) {
       params.set('search', searchQuery.trim());
@@ -277,7 +251,7 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
     if (currentUrl !== newUrl) {
       router.replace(newUrl, { scroll: false });
     }
-  }, [selectedSizes, selectedColors, selectedMaterials, searchQuery, priceRange, isNewArrival, isSale, sortOption, router, isInitialMount]);
+  }, [selectedSizes, selectedColors, searchQuery, priceRange, isNewArrival, isSale, sortOption, router, isInitialMount]);
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
@@ -285,10 +259,6 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
 
   const handleColorChange = (color: string) => {
     setSelectedColors(prev => prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]);
-  };
-  
-  const handleMaterialChange = (material: string) => {
-    setSelectedMaterials(prev => prev.includes(material) ? prev.filter(m => m !== material) : [...prev, material]);
   };
 
   const handlePriceChange = (value: number) => {
@@ -298,7 +268,6 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
   const resetFilters = () => {
     setSelectedSizes([]);
     setSelectedColors([]);
-    setSelectedMaterials([]);
     setPriceRange(15000);
     setSortOption('newest');
     setSearchQuery('');
@@ -340,15 +309,6 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
       });
     }
 
-    // Material filter
-    if (selectedMaterials.length > 0) {
-      filtered = filtered.filter(product => 
-        selectedMaterials.some(material => 
-          product.material?.toLowerCase().includes(material.toLowerCase())
-        )
-      );
-    }
-
     // Price filter
     filtered = filtered.filter(product => product.price <= priceRange);
 
@@ -373,9 +333,9 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
       default:
         return filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
-  }, [products, selectedSizes, selectedColors, selectedMaterials, priceRange, sortOption, searchQuery, isNewArrival, isSale]);
+  }, [products, selectedSizes, selectedColors, priceRange, sortOption, searchQuery, isNewArrival, isSale]);
 
-  const activeFilterCount = selectedSizes.length + selectedColors.length + selectedMaterials.length + 
+  const activeFilterCount = selectedSizes.length + selectedColors.length + 
     (priceRange < 15000 ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSale ? 1 : 0) + 
     (searchQuery.trim() ? 1 : 0);
 
@@ -384,14 +344,11 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
       <aside className="hidden lg:block lg:col-span-1">
         <div className="sticky top-4">
           <FilterSidebar
-              allMaterials={allMaterials}
               allSizes={allSizes}
               selectedSizes={selectedSizes}
               handleSizeChange={handleSizeChange}
-               selectedColors={selectedColors}
-  handleColorChange={handleColorChange}
-              selectedMaterials={selectedMaterials}
-              handleMaterialChange={handleMaterialChange}
+              selectedColors={selectedColors}
+              handleColorChange={handleColorChange}
               priceRange={priceRange}
               handlePriceChange={handlePriceChange}
               isNewArrival={isNewArrival}
@@ -429,14 +386,11 @@ export function ShopClient({ products, allMaterials, allSizes }: ShopClientProps
                             <div className="p-6">
                                 <h2 className="text-lg font-semibold mb-4">Filters</h2>
                                 <FilterSidebar
-                                    allMaterials={allMaterials}
                                     allSizes={allSizes}
                                     selectedSizes={selectedSizes}
                                     handleSizeChange={handleSizeChange}
-                                    selectedColors={selectedColors}          
-  handleColorChange={handleColorChange}
-                                    selectedMaterials={selectedMaterials}
-                                    handleMaterialChange={handleMaterialChange}
+                                    selectedColors={selectedColors}
+                                    handleColorChange={handleColorChange}
                                     priceRange={priceRange}
                                     handlePriceChange={handlePriceChange}
                                     isNewArrival={isNewArrival}

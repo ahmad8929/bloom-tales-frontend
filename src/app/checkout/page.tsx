@@ -10,9 +10,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle, Plus, Edit, MapPin } from 'lucide-react';
+import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { cartApi, orderApi, profileApi } from '@/lib/api';
+import { cartApi, orderApi, profileApi, couponApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -111,6 +111,10 @@ export default function CheckoutPage() {
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [orderCreated, setOrderCreated] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const UPI_ID = "bloompayments@paytm"; // Replace with your actual UPI ID
   const QR_CODE_URL = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=" + UPI_ID + "&pn=Bloom%20Tales&am=";
@@ -176,17 +180,66 @@ export default function CheckoutPage() {
 
   const calculateTotals = (cartData: CartData) => {
     if (!cartData || !cartData.items.length) {
-      return { subtotal: 0, shipping: 0, platformFee: 0, otherFees: 0, handlingFee: 0, total: 0 };
+      return { subtotal: 0, shipping: 0, platformFee: 0, otherFees: 0, handlingFee: 0, discount: 0, total: 0 };
     }
 
     const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+    const discount = appliedCoupon?.discountAmount || 0;
+    const subtotalAfterDiscount = Math.max(0, subtotal - discount);
     const shipping = 149; // Always charge ₹149 for shipping
     const platformFee = 49; // Original fee, but shown as Free
     const otherFees = 0; // Free
     const handlingFee = 49; // Original fee, but shown as Free
-    const total = subtotal + shipping; // Shipping is always charged
+    const total = subtotalAfterDiscount + shipping; // Shipping is always charged
 
-    return { subtotal, shipping, platformFee, otherFees, handlingFee, total };
+    return { subtotal, shipping, platformFee, otherFees, handlingFee, discount, total };
+  };
+
+  const handleValidateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    if (!cart) {
+      return;
+    }
+
+    setIsValidatingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const response = await couponApi.validateCoupon(couponCode, cart.totalAmount);
+      
+      if (response.error) {
+        setCouponError(response.error);
+        setAppliedCoupon(null);
+        return;
+      }
+
+      if (response.data?.data?.discount) {
+        setAppliedCoupon({
+          code: couponCode.toUpperCase(),
+          discountAmount: response.data.data.discount.discountAmount
+        });
+        toast({
+          title: 'Coupon Applied!',
+          description: `You saved ₹${response.data.data.discount.discountAmount.toLocaleString('en-IN')}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error validating coupon:', error);
+      setCouponError(error.message || 'Invalid coupon code');
+      setAppliedCoupon(null);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError(null);
   };
 
   const calculateTotal = (cartData: CartData) => {
@@ -469,7 +522,8 @@ export default function CheckoutPage() {
           nearbyPlaces: selectedAddress.nearbyPlaces || ''
         },
         paymentMethod: paymentMethod,
-        ...(paymentMethod === 'upi' && { paymentDetails: paymentData })
+        ...(paymentMethod === 'upi' && { paymentDetails: paymentData }),
+        ...(appliedCoupon && { couponCode: appliedCoupon.code })
       };
 
       setUploadProgress(25);
@@ -571,7 +625,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const { subtotal, shipping, platformFee, otherFees, handlingFee, total } = calculateTotals(cart);
+  const { subtotal, shipping, platformFee, otherFees, handlingFee, discount, total } = calculateTotals(cart);
 
   return (
     <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
@@ -739,12 +793,82 @@ export default function CheckoutPage() {
 
               <Separator />
 
+              {/* Coupon Code Section */}
+              <div className="space-y-2">
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value.toUpperCase());
+                        setCouponError(null);
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleValidateCoupon();
+                        }
+                      }}
+                      disabled={isValidatingCoupon || orderCreated}
+                      className="text-xs sm:text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleValidateCoupon}
+                      disabled={isValidatingCoupon || !couponCode.trim() || orderCreated}
+                      className="flex-shrink-0"
+                    >
+                      {isValidatingCoupon ? (
+                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                      ) : (
+                        'Apply'
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-xs sm:text-sm font-medium text-green-800">
+                        {appliedCoupon.code}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] sm:text-xs bg-green-100 text-green-800 border-green-300">
+                        -₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveCoupon}
+                      disabled={orderCreated}
+                      className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="text-xs text-red-600">{couponError}</p>
+                )}
+              </div>
+
+              <Separator />
+
               {/* Price Breakdown */}
               <div className="space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
                   <span className="break-words">Subtotal ({cart.totalItems} items)</span>
                   <span className="flex-shrink-0 ml-2">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span className="text-green-600 font-medium">Discount ({appliedCoupon?.code})</span>
+                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">-₹{discount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
                   <span>Shipping</span>
                   <span className="flex-shrink-0 ml-2">₹{shipping.toLocaleString('en-IN')}</span>

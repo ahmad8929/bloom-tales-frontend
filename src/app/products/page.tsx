@@ -4,22 +4,7 @@ import { useState, useEffect } from 'react';
 import { ShopClient } from "@/components/ShopClient";
 import { productApi } from "@/lib/api";
 import { Loader2 } from "lucide-react";
-
-interface Product {
-  _id: string;
-  id?: string;
-  name: string;
-  price: number;
-  comparePrice?: number;
-  images: Array<{ url: string; alt?: string }>;
-  size: string;
-  material: string;
-  isNewArrival: boolean;
-  isSale: boolean;
-  slug: string;
-  createdAt?: string;
-  description?: string;
-}
+import type { Product } from "@/types/product";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,21 +53,27 @@ export default function ProductsPage() {
     }
   };
 
-  // Extract all available sizes and materials for filter options
+  // Extract all available sizes for filter options (from variants and legacy size field)
   const allSizes: string[] = [...new Set(
-    products
-      .map(p => p.size)
-      .filter((size): size is string => Boolean(size) && typeof size === 'string')
-  )];
-
-  const allMaterials: string[] = [...new Set(
-    products
-      .map(p => p.material)
-      .filter((material): material is string => Boolean(material) && typeof material === 'string')
+    products.flatMap(p => {
+      const sizes: string[] = [];
+      // Check variants first
+      if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
+        p.variants.forEach((v: any) => {
+          if (v.size && v.stock > 0 && typeof v.size === 'string') {
+            sizes.push(v.size);
+          }
+        });
+      }
+      // Fallback to legacy size field
+      if (p.size && typeof p.size === 'string') {
+        sizes.push(p.size);
+      }
+      return sizes;
+    }).filter((size): size is string => Boolean(size))
   )];
 
   console.log('All sizes:', allSizes);
-  console.log('All materials:', allMaterials);
 
   if (loading) {
     return (
@@ -168,7 +159,6 @@ export default function ProductsPage() {
       <ShopClient 
         products={products} 
         allSizes={allSizes}
-        allMaterials={allMaterials}
       />
     </div>
   );

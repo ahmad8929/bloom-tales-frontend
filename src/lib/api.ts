@@ -1,7 +1,7 @@
 import { getCookie, removeCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = "https://bloom-backend-rtch.onrender.com";
+const API_URL = "http://localhost:5000";
 
 interface ApiResponse<T> {
   data?: T;
@@ -957,6 +957,7 @@ export const orderApi = {
       paymentTime: string;
       amount: number;
     };
+    couponCode?: string;
   }) => api.post<{ 
     status: string;
     message: string;
@@ -1379,4 +1380,186 @@ export const profileApi = {
     status: string;
     message: string;
   }>(`/profile/addresses/${addressId}`),
+};
+
+// Coupon APIs
+export const couponApi = {
+  // Validate coupon code
+  validateCoupon: (code: string, subtotal: number) => {
+    const params = new URLSearchParams({
+      code,
+      subtotal: subtotal.toString()
+    });
+    return api.get<{
+      status: string;
+      message: string;
+      data: {
+        coupon: {
+          code: string;
+          description?: string;
+          discountType: 'percentage' | 'fixed';
+          discountValue: number;
+          minPurchaseAmount: number;
+          maxDiscountAmount?: number;
+        };
+        discount: {
+          discountAmount: number;
+          finalAmount: number;
+        };
+      };
+    }>(`/coupons/validate?${params.toString()}`);
+  },
+
+  // Admin: Create coupon
+  createCoupon: (data: {
+    code: string;
+    description?: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    minPurchaseAmount?: number;
+    maxDiscountAmount?: number;
+    validFrom?: string;
+    validUntil: string;
+    usageLimit?: number;
+    userUsageLimit?: number;
+    applicableCategories?: string[];
+    applicableProducts?: string[];
+  }) => api.post<{
+    status: string;
+    message: string;
+    data: { coupon: any };
+  }>('/coupons', data),
+
+  // Admin: Get all coupons
+  getCoupons: (params?: string) => api.get<{
+    status: string;
+    data: {
+      coupons: Array<{
+        _id: string;
+        code: string;
+        description?: string;
+        discountType: 'percentage' | 'fixed';
+        discountValue: number;
+        minPurchaseAmount: number;
+        maxDiscountAmount?: number;
+        validFrom: string;
+        validUntil: string;
+        usageLimit?: number;
+        usageCount: number;
+        userUsageLimit: number;
+        isActive: boolean;
+        totalDiscountGiven: number;
+        isExpired: boolean;
+        isCurrentlyValid: boolean;
+        createdAt: string;
+        createdBy: {
+          _id: string;
+          firstName: string;
+          lastName: string;
+          email: string;
+        };
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+      };
+    };
+  }>(`/coupons${params ? `?${params}` : ''}`),
+
+  // Admin: Get single coupon
+  getCoupon: (couponId: string) => api.get<{
+    status: string;
+    data: {
+      coupon: {
+        _id: string;
+        code: string;
+        description?: string;
+        discountType: 'percentage' | 'fixed';
+        discountValue: number;
+        minPurchaseAmount: number;
+        maxDiscountAmount?: number;
+        validFrom: string;
+        validUntil: string;
+        usageLimit?: number;
+        usageCount: number;
+        userUsageLimit: number;
+        isActive: boolean;
+        totalDiscountGiven: number;
+        usageHistory: Array<{
+          orderNumber: string;
+          orderAmount: number;
+          discountAmount: number;
+          user: {
+            _id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+          };
+          usedAt: string;
+        }>;
+        createdAt: string;
+      };
+    };
+  }>(`/coupons/${couponId}`),
+
+  // Admin: Update coupon
+  updateCoupon: (couponId: string, data: {
+    description?: string;
+    discountType?: 'percentage' | 'fixed';
+    discountValue?: number;
+    minPurchaseAmount?: number;
+    maxDiscountAmount?: number;
+    validFrom?: string;
+    validUntil?: string;
+    usageLimit?: number;
+    userUsageLimit?: number;
+    isActive?: boolean;
+    applicableCategories?: string[];
+    applicableProducts?: string[];
+  }) => api.put<{
+    status: string;
+    message: string;
+    data: { coupon: any };
+  }>(`/coupons/${couponId}`, data),
+
+  // Admin: Delete coupon
+  deleteCoupon: (couponId: string) => api.delete<{
+    status: string;
+    message: string;
+  }>(`/coupons/${couponId}`),
+
+  // Admin: Get coupon analytics
+  getCouponAnalytics: (params?: string) => api.get<{
+    status: string;
+    data: {
+      analytics: Array<{
+        _id: string;
+        code: string;
+        discountType: string;
+        discountValue: number;
+        usageCount: number;
+        usageLimit?: number;
+        validFrom: string;
+        validUntil: string;
+        isActive: boolean;
+        totalDiscountGiven: number;
+        totalOrders: number;
+        totalRevenue: number;
+        createdAt: string;
+      }>;
+      overallStats: {
+        totalCoupons: number;
+        activeCoupons: number;
+        expiredCoupons: number;
+        totalUsage: number;
+        totalDiscountGiven: number;
+        totalOrders: number;
+        totalRevenue: number;
+      };
+    };
+  }>(`/coupons/analytics${params ? '?' + params : ''}`),
 };
