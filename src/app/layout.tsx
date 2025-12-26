@@ -166,7 +166,7 @@ export default function RootLayout({
         <meta name="expires" content="never" />
         <meta name="copyright" content="Bloomtales Boutique" />
         <meta name="designer" content="Mohd Ahmad" />
-        <meta name="reply-to" content="info@bloomtales.com" />
+        <meta name="reply-to" content="bloomtalesclothing@gmail.com" />
         <meta name="owner" content="Bloomtales Boutique" />
         <meta name="url" content="https://bloomtales.com" />
         <meta name="identifier-URL" content="https://bloomtales.com" />

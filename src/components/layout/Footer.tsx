@@ -25,7 +25,7 @@ export function Footer() {
     { icon: Facebook, href: "#", label: "Facebook" },
     { icon: Instagram, href: "https://www.instagram.com/bloomtales_clothing/", label: "Instagram" },
     { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Mail, href: "mailto:info@bloomtales.com", label: "Email" }
+    { icon: Mail, href: "mailto:bloomtalesclothing@gmail.com", label: "Email" }
   ];
 
   return (
@@ -66,7 +66,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                <span>eshaanZama@gmai.com</span>
+                <span>bloomtalesclothing@gmail.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />

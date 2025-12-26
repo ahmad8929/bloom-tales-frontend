@@ -102,7 +102,7 @@ export default function ShippingPage() {
             <div>
               <h3 className="text-xl font-semibold mb-2 text-subheading">Refund Process</h3>
               <ol className="list-decimal ml-6 space-y-2">
-                <li>Contact our customer support team at <strong>support@bloomtales.shop</strong> or call our 
+                <li>Contact our customer support team at <strong>bloomtalesclothing@gmail.com</strong> or call our 
                 helpline within 48 hours of delivery (or expected delivery date for non-delivery cases).</li>
                 <li>Provide your order number, photos/videos of the issue (for damaged/wrong items), and a detailed 
                 description of the problem.</li>
@@ -130,7 +130,7 @@ export default function ShippingPage() {
           <div className="space-y-2 text-text-normal">
             <p>For any shipping or refund related queries, please contact us:</p>
             <ul className="list-none space-y-2">
-              <li><strong>Email:</strong> support@bloomtales.shop</li>
+              <li><strong>Email:</strong> bloomtalesclothing@gmail.com</li>
               <li><strong>Phone:</strong> Available on our contact page</li>
               <li><strong>Business Hours:</strong> Monday to Saturday, 10:00 AM - 7:00 PM IST</li>
             </ul>

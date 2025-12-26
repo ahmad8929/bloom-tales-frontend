@@ -326,7 +326,7 @@ export default function TermsPage() {
             <p>If you have any questions about these Terms, please contact us:</p>
             <div className="bg-card border border-border rounded-lg p-6">
               <ul className="list-none space-y-2">
-                <li><strong>Email:</strong> support@bloomtales.shop</li>
+                <li><strong>Email:</strong> bloomtalesclothing@gmail.com</li>
                 <li><strong>Website:</strong> www.bloomtales.shop</li>
                 <li><strong>Business Address:</strong> Available on our contact page</li>
                 <li><strong>Business Hours:</strong> Monday to Saturday, 10:00 AM - 7:00 PM IST</li>

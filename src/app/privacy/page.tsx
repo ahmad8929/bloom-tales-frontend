@@ -188,7 +188,7 @@ export default function PrivacyPage() {
               <li><strong>Opt-Out:</strong> Unsubscribe from promotional emails by clicking the unsubscribe link</li>
             </ul>
             <p>
-              To exercise these rights, please contact us at <strong>privacy@bloomtales.shop</strong>. We will respond 
+              To exercise these rights, please contact us at <strong>bloomtalesclothing@gmail.com</strong>. We will respond 
               to your request within 30 days.
             </p>
           </div>
@@ -281,8 +281,8 @@ export default function PrivacyPage() {
             <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
             <div className="bg-card border border-border rounded-lg p-6">
               <ul className="list-none space-y-2">
-                <li><strong>Email:</strong> privacy@bloomtales.shop</li>
-                <li><strong>Support Email:</strong> support@bloomtales.shop</li>
+                <li><strong>Email:</strong> bloomtalesclothing@gmail.com</li>
+                <li><strong>Support Email:</strong> bloomtalesclothing@gmail.com</li>
                 <li><strong>Website:</strong> www.bloomtales.shop</li>
                 <li><strong>Business Address:</strong> Available on our contact page</li>
               </ul>

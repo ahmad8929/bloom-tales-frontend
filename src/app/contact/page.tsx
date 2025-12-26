@@ -8,7 +8,7 @@ export default function ContactPage() {
       <div className="space-y-2 mb-6">
         <p><strong>Address:</strong> Bloomtales Boutique, Shaheen Bagh, New Delhi</p>
         <p><strong>Phone:</strong> +91 98765 43210</p>
-        <p><strong>Email:</strong> support@bloomtales.com</p>
+        <p><strong>Email:</strong> bloomtalesclothing@gmail.com</p>
       </div>
       {/* <form className="max-w-lg space-y-4">
         <input type="text" placeholder="Your Name" className="w-full border rounded-lg px-3 py-2" />
