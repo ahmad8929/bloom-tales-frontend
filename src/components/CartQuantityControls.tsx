@@ -8,7 +8,7 @@ import { cartApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { RootState } from '@/store';
-import { updateCartItemLocal } from '@/store/slices/cartSlice';
+import { updateCartItemLocal, removeFromCartLocal } from '@/store/slices/cartSlice';
 
 interface CartQuantityControlsProps {
   productId: string;
@@ -16,6 +16,7 @@ interface CartQuantityControlsProps {
   cartItemId?: string;
   className?: string;
   onQuantityChange?: (quantity: number) => void;
+  onRemove?: () => void;
 }
 
 export function CartQuantityControls({
@@ -24,6 +25,7 @@ export function CartQuantityControls({
   cartItemId,
   className,
   onQuantityChange,
+  onRemove,
 }: CartQuantityControlsProps) {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -34,6 +36,71 @@ export function CartQuantityControls({
   useEffect(() => {
     setQuantity(initialQuantity);
   }, [initialQuantity]);
+
+  const removeItem = async () => {
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      if (isAuthenticated) {
+        // For authenticated users, use API
+        if (cartItemId) {
+          const response = await cartApi.removeFromCart(cartItemId);
+          
+          if (response.error) {
+            throw new Error(response.error);
+          }
+
+          // Trigger cart refresh event
+          window.dispatchEvent(new CustomEvent('cartUpdated', {
+            detail: { action: 'remove', productId }
+          }));
+
+          onRemove?.();
+        } else {
+          // If no cartItemId, we need to fetch cart to find the item
+          const cartResponse = await cartApi.getCart();
+          if (cartResponse.data?.data?.cart?.items) {
+            const cartItem = cartResponse.data.data.cart.items.find(
+              (item: any) => item.productId === productId || item.product._id === productId
+            );
+            
+            if (cartItem) {
+              const response = await cartApi.removeFromCart(cartItem._id);
+              if (response.error) {
+                throw new Error(response.error);
+              }
+              
+              window.dispatchEvent(new CustomEvent('cartUpdated', {
+                detail: { action: 'remove', productId }
+              }));
+
+              onRemove?.();
+            }
+          }
+        }
+      } else {
+        // For guest users, update Redux state
+        dispatch(removeFromCartLocal(productId));
+        
+        // Trigger cart refresh event
+        window.dispatchEvent(new CustomEvent('cartUpdated', {
+          detail: { action: 'remove', productId }
+        }));
+
+        onRemove?.();
+      }
+    } catch (error: any) {
+      console.error('Error removing item:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove item from cart',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const updateQuantity = async (newQuantity: number) => {
     if (newQuantity < 1 || isUpdating) return;
@@ -102,7 +169,9 @@ export function CartQuantityControls({
   };
 
   const handleDecrease = () => {
-    if (quantity > 1) {
+    if (quantity === 1) {
+      removeItem();
+    } else if (quantity > 1) {
       updateQuantity(quantity - 1);
     }
   };
@@ -122,7 +191,7 @@ export function CartQuantityControls({
           e.stopPropagation();
           handleDecrease();
         }}
-        disabled={isUpdating || quantity <= 1}
+        disabled={isUpdating}
       >
         {isUpdating ? (
           <Loader2 className="h-3 w-3 animate-spin" />

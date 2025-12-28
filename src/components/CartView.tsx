@@ -416,8 +416,14 @@ export function CartView() {
                       variant="outline"
                       size="icon"
                       className="h-8 w-8 sm:h-10 sm:w-10"
-                      disabled={updatingItems.has(item._id) || item.quantity <= 1}
-                      onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                      disabled={updatingItems.has(item._id)}
+                      onClick={() => {
+                        if (item.quantity === 1) {
+                          removeFromCart(item._id);
+                        } else {
+                          updateQuantity(item._id, item.quantity - 1);
+                        }
+                      }}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>

@@ -29,7 +29,7 @@ interface ProductCardProps {
 export function ProductCard({ product, cartItems }: ProductCardProps) {
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { cartItems: reduxCartItems } = useCart();
+  const { cartItems: reduxCartItems, removeFromCart } = useCart();
   const [isInCart, setIsInCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | undefined>();
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -251,6 +251,14 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
                 setCartQuantity(qty);
                 window.dispatchEvent(new CustomEvent('cartUpdated', {
                   detail: { action: 'update', productId, quantity: qty }
+                }));
+              }}
+              onRemove={async () => {
+                await removeFromCart(productId);
+                setIsInCart(false);
+                setCartQuantity(1);
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: { action: 'remove', productId }
                 }));
               }}
             />

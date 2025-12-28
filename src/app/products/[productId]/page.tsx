@@ -27,7 +27,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { cartItems: reduxCartItems } = useCart();
+  const { cartItems: reduxCartItems, removeFromCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -577,6 +577,14 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                       setCartQuantity(qty);
                       window.dispatchEvent(new CustomEvent('cartUpdated', {
                         detail: { action: 'update', productId, quantity: qty }
+                      }));
+                    }}
+                    onRemove={async () => {
+                      await removeFromCart(productId);
+                      setIsInCart(false);
+                      setCartQuantity(1);
+                      window.dispatchEvent(new CustomEvent('cartUpdated', {
+                        detail: { action: 'remove', productId }
                       }));
                     }}
                   />
