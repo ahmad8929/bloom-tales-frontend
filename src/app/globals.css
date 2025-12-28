@@ -196,3 +196,22 @@ html {
 button, a, [role="button"] {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* WhatsApp Scrolling Banner Animation */
+@keyframes scroll-infinite {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-infinite {
+  animation: scroll-infinite 30s linear infinite;
+  display: flex;
+}
+
+.whatsapp-banner:hover .animate-scroll-infinite {
+  animation-play-state: paused;
+}

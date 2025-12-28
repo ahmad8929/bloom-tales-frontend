@@ -13,6 +13,7 @@ import { ShopByCategory } from '@/components/common/shopByCategory';
 import { HeroCarousel } from '@/components/common/heroCarousel';
 import { CustomerTestimonials } from '@/components/common/customerTestimonials';
 import InstagramReels from '@/components/common/instagramReels';
+import { WhatsAppScrollingBanner } from '@/components/common/whatsappScrollingBanner';
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
@@ -28,7 +29,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Top Banner */}
-      <ScrollingBanner />
+      <WhatsAppScrollingBanner />
 
 
       {/* Hero Carousel Section */}
@@ -37,6 +38,7 @@ export default function Home() {
         autoPlayInterval={4000}
         className="mb-0"
       /> */}
+
 
      {/* Shop by Category Component */}
       {/* <ShopByCategory 

@@ -18,7 +18,7 @@ export function ScrollingBanner() {
   return (
     <section className="bg-[#C4A082] text-[#5A3E2B] py-2.5 overflow-hidden relative">
       {/* Animated Background */}
-      <div className="absolute inset-0 bg-[#5A3E2B]/10 animate-pulse opacity-20"></div>
+      <div className="absolute inset-0 animate-pulse opacity-20"></div>
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center">
