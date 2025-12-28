@@ -91,6 +91,19 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-status-bar-style': 'default',
     'apple-mobile-web-app-title': 'Bloomtales',
   },
+  icons: {
+    icon: [
+      { url: '/image.png', type: 'image/png' },
+      { url: '/image.png', type: 'image/png', sizes: '32x32' },
+      { url: '/image.png', type: 'image/png', sizes: '16x16' },
+      { url: '/image.png', type: 'image/png', sizes: '192x192' },
+      { url: '/image.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [
+      { url: '/image.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/image.png',
+  },
 };
 
 export default function RootLayout({
@@ -114,10 +127,15 @@ export default function RootLayout({
         <meta name="distribution" content="global" />
         <meta name="rating" content="general" />
         <link rel="manifest" href="/manifest.json" />
+        {/* Primary favicon - Google looks for this first */}
         <link rel="icon" type="image/png" href="/image.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/image.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/image.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/image.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/image.png" />
+        {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" sizes="180x180" href="/image.png" />
+        {/* Shortcut icon */}
         <link rel="shortcut icon" href="/image.png" />
         <meta name="application-name" content="Bloomtales Boutique" />
         <meta name="apple-mobile-web-app-title" content="Bloomtales" />
@@ -127,6 +145,8 @@ export default function RootLayout({
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
         <meta property="og:image:secure_url" content="https://bloomtales.com/image.png" />
+        <meta property="og:image" content="https://bloomtales.com/image.png" />
+        <meta property="og:url" content="https://bloomtales.com" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         <meta name="googlebot" content="index, follow" />
         <meta name="bingbot" content="index, follow" />
