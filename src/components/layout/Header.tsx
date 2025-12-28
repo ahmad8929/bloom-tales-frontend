@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { productApi } from "@/lib/api";
-import { CartItem } from '@/types/cart';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import Link from 'next/link';
@@ -29,7 +28,7 @@ interface Category {
 }
 
 export function Header() {
-  const { cartItems } = useCart();
+  const { itemCount } = useCart();
   const { user, isAuthenticated, logoutUser } = useAuth();
   
   // State management
@@ -37,8 +36,6 @@ export function Header() {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  const itemCount = cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
 
   // Handle scroll effect
   useEffect(() => {

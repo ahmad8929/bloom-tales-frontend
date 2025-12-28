@@ -3,6 +3,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/components/Providers';
 import { AuthInitializer } from '@/components/AuthInitializer';
+import { CartInitializer } from '@/components/CartInitializer';
 import { Toaster } from '@/components/ui/toaster';
 import { ConditionalLayout } from '@/components/ConditionalLayout';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
@@ -183,6 +184,7 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
           <AuthInitializer />
+          <CartInitializer />
           <ConditionalLayout>
             {children}
           </ConditionalLayout>

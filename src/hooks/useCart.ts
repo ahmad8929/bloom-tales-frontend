@@ -80,7 +80,27 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
       
       // Fix: Use consistent path to access cart items
       if (response.data?.data?.cart?.items) {
-        dispatch(setCartItems(response.data.data.cart.items));
+        const itemsData = response.data.data.cart.items;
+        // Transform items to match CartItem type structure
+        const transformedItems = Array.isArray(itemsData) ? itemsData.map((item: any) => ({
+          ...item,
+          id: item._id,
+          product: {
+            ...item.product,
+            id: item.product._id,
+            description: item.product.description || '',
+            careInstructions: item.product.careInstructions || [],
+            isNewArrival: item.product.isNewArrival || false,
+          }
+        })) : [];
+        dispatch(setCartItems(transformedItems));
+        toast({
+          title: 'Added to cart',
+          description: 'Item has been added to your cart.',
+        });
+      } else {
+        // If response doesn't have expected structure, fetch cart to sync
+        await fetchCart();
         toast({
           title: 'Added to cart',
           description: 'Item has been added to your cart.',
