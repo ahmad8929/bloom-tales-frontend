@@ -323,11 +323,6 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
       
       // Clear local cart after successful merge
       dispatch(clearCartLocal());
-      
-      toast({
-        title: 'Cart merged',
-        description: 'Your cart items have been saved to your account.',
-      });
     } catch (error: any) {
       console.error('Error merging guest cart:', error);
       // Don't show error toast - just fetch the server cart
