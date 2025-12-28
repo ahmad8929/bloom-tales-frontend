@@ -143,11 +143,21 @@ export function LoginForm() {
         });
         
         // Merge guest cart with user cart after login
+        // Set flag to prevent CartInitializer from fetching immediately
+        if (typeof window !== 'undefined') {
+          (window as any).__cartMergeInProgress = true;
+        }
         try {
           await mergeGuestCart();
         } catch (error) {
           console.error('Error merging guest cart:', error);
           // Don't block login if cart merge fails
+        } finally {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              (window as any).__cartMergeInProgress = false;
+            }, 2000);
+          }
         }
         
         // Get returnUrl from state or query params

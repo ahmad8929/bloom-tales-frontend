@@ -2,6 +2,7 @@
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
+import { useCallback, useRef } from 'react';
 import { RootState } from '@/store';
 import {
   setLoading,
@@ -22,15 +23,22 @@ export const useCart = () => {
   const router = useRouter();
   const { items, loading, error } = useSelector((state: RootState) => state.cart);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const isFetchingRef = useRef(false);
 
   // Calculate totals
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const totalPrice = items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
 
-const fetchCart = async () => {
+const fetchCart = useCallback(async () => {
   if (!isAuthenticated) return;
   
+  // Prevent multiple simultaneous fetches
+  if (isFetchingRef.current) {
+    return;
+  }
+  
   try {
+    isFetchingRef.current = true;
     dispatch(setLoading(true));
     const response = await cartApi.getCart();
     
@@ -66,8 +74,9 @@ const fetchCart = async () => {
     console.error('Error fetching cart:', error);
   } finally {
     dispatch(setLoading(false));
+    isFetchingRef.current = false;
   }
-};
+}, [isAuthenticated, dispatch]);
 
   // Add item to cart
 const addToCart = async (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null) => {
@@ -274,13 +283,13 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
   };
 
   // Merge guest cart with user cart on login
-  const mergeGuestCart = async () => {
+  const mergeGuestCart = useCallback(async () => {
     if (!isAuthenticated) return;
     
     try {
       dispatch(setLoading(true));
       
-      // Get current local cart items (guest cart)
+      // Get current local cart items (guest cart) from Redux state
       const guestCartItems = items;
       
       if (guestCartItems.length === 0) {
@@ -289,12 +298,9 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
         return;
       }
 
-      // Fetch user's current cart from server
-      const serverCartResponse = await cartApi.getCart();
-      const serverCartItems = serverCartResponse.data?.data?.cart?.items || [];
-
       // Merge guest cart items with server cart
       // For each guest cart item, add it to the server cart
+      // Note: We don't fetch server cart first to avoid unnecessary API calls
       for (const guestItem of guestCartItems) {
         const productId = guestItem.product.id || guestItem.product._id;
         if (!productId) continue;
@@ -329,7 +335,7 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [isAuthenticated, items, dispatch, fetchCart]);
 
   return {
     cartItems: items,
