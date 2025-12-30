@@ -149,8 +149,8 @@ export function CartView() {
     try {
       if (isGuestCart) {
         // For guest cart, update Redux state
-        const cartItem = cart?.items.find(item => item._id === itemId);
-        if (cartItem) {
+        const cartItem = cart?.items.find(item => item && item._id === itemId);
+        if (cartItem && cartItem.productId) {
           const productId = cartItem.productId;
           dispatch(updateCartItemLocal({ productId, quantity: newQuantity }));
           
@@ -217,8 +217,8 @@ export function CartView() {
     try {
       if (isGuestCart) {
         // For guest cart, update Redux state
-        const cartItem = cart?.items.find(item => item._id === itemId);
-        if (cartItem) {
+        const cartItem = cart?.items.find(item => item && item._id === itemId);
+        if (cartItem && cartItem.productId) {
           const productId = cartItem.productId;
           dispatch(removeFromCartLocal(productId));
           

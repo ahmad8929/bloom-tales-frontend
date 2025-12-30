@@ -62,10 +62,10 @@ export function CartQuantityControls({
           const cartResponse = await cartApi.getCart();
           if (cartResponse.data?.data?.cart?.items) {
             const cartItem = cartResponse.data.data.cart.items.find(
-              (item: any) => item.productId === productId || item.product._id === productId
+              (item: any) => item && item.product && (item.productId === productId || item.product._id === productId)
             );
             
-            if (cartItem) {
+            if (cartItem && cartItem._id) {
               const response = await cartApi.removeFromCart(cartItem._id);
               if (response.error) {
                 throw new Error(response.error);
@@ -128,10 +128,10 @@ export function CartQuantityControls({
           const cartResponse = await cartApi.getCart();
           if (cartResponse.data?.data?.cart?.items) {
             const cartItem = cartResponse.data.data.cart.items.find(
-              (item: any) => item.productId === productId || item.product._id === productId
+              (item: any) => item && item.product && (item.productId === productId || item.product._id === productId)
             );
             
-            if (cartItem) {
+            if (cartItem && cartItem._id) {
               const response = await cartApi.updateCartItem(cartItem._id, newQuantity);
               if (response.error) {
                 throw new Error(response.error);

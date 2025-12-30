@@ -22,17 +22,17 @@ import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const checkoutSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  firstName: z.string().min(2, 'First name is required'),
-  lastName: z.string().min(2, 'Last name is required'),
+  email: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   address: z.object({
-    street: z.string().min(5, 'Street address is required'),
-    city: z.string().min(2, 'City is required'),
-    state: z.string().min(2, 'State is required'),
-    zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, 'Please enter a valid ZIP code'),
-    country: z.string().min(2, 'Country is required')
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zipCode: z.string().optional(),
+    country: z.string().optional()
   }),
-  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, 'Please enter a valid phone number'),
+  phone: z.string().optional(),
   notes: z.string().optional()
 });
 

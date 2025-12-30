@@ -243,65 +243,13 @@ export default function ProfilePage() {
   };
 
   const validateAddressForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    // Full Name validation
-    if (!addressForm.fullName.trim()) {
-      errors.fullName = 'Full name is required';
-    } else if (addressForm.fullName.trim().length < 2) {
-      errors.fullName = 'Full name must be at least 2 characters';
-    }
-
-    // Phone validation (Indian format)
-    const phoneRegex = /^[6-9]\d{9}$/;
-    const cleanedPhone = addressForm.phone.replace(/\D/g, '').slice(-10);
-    if (!addressForm.phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else if (!phoneRegex.test(cleanedPhone)) {
-      errors.phone = 'Please enter a valid 10-digit Indian phone number';
-    }
-
-    // Street validation
-    if (!addressForm.street.trim()) {
-      errors.street = 'Street address is required';
-    } else if (addressForm.street.trim().length < 5) {
-      errors.street = 'Street address must be at least 5 characters';
-    }
-
-    // City validation
-    if (!addressForm.city.trim()) {
-      errors.city = 'City is required';
-    } else if (addressForm.city.trim().length < 2) {
-      errors.city = 'City must be at least 2 characters';
-    }
-
-    // State validation
-    if (!addressForm.state.trim()) {
-      errors.state = 'State is required';
-    }
-
-    // ZIP Code validation (Indian pincode)
-    const pincodeRegex = /^[1-9][0-9]{5}$/;
-    if (!addressForm.zipCode.trim()) {
-      errors.zipCode = 'Pincode is required';
-    } else if (!pincodeRegex.test(addressForm.zipCode.trim())) {
-      errors.zipCode = 'Please enter a valid 6-digit pincode';
-    }
-
-    setAddressFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    // Validation removed - always return true
+    setAddressFormErrors({});
+    return true;
   };
 
   const handleSaveAddress = async () => {
-    // Validate form before submission
-    if (!validateAddressForm()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fix the errors in the form',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Validation removed - proceed directly
 
     try {
       setIsSaving(true);

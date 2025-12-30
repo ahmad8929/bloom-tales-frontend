@@ -129,6 +129,7 @@ export default function ProductDetailPage() {
               const cartItem = response.data.data.cart.items.find(
                 (item: any) => {
                   try {
+                    if (!item || !item.product) return false;
                     const sameProduct = item.productId === productId || item.product?._id === productId;
                     const sameSize = item.size === selectedSize || (!selectedSize && item.size === product?.size);
                     return sameProduct && sameSize;
@@ -138,7 +139,7 @@ export default function ProductDetailPage() {
                   }
                 }
               );
-              if (cartItem) {
+              if (cartItem && cartItem._id) {
                 setIsInCart(true);
                 setCartItemId(cartItem._id);
                 setCartQuantity(cartItem.quantity);

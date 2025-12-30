@@ -46,19 +46,21 @@ const fetchCart = useCallback(async () => {
       const itemsData = response.data.data.cart.items;
       // Ensure items is always an array
       if (Array.isArray(itemsData) && itemsData.length > 0) {
-        // Transform the API data to match your CartItem type
-        const transformedItems = itemsData.map((item: any) => ({
-          ...item,
-          id: item._id, // Convert _id to id if needed
-          product: {
-            ...item.product,
-            id: item.product._id, // Convert product._id to id
-            description: item.product.description || '', // Provide defaults for missing fields
-            careInstructions: item.product.careInstructions || [],
-            isNewArrival: item.product.isNewArrival || false,
-            // Add other missing fields with appropriate defaults
-          }
-        }));
+        // Filter out null items and items with null products, then transform
+        const transformedItems = itemsData
+          .filter((item: any) => item && item.product && (item._id || item.id))
+          .map((item: any) => ({
+            ...item,
+            id: item._id || item.id, // Convert _id to id if needed
+            product: {
+              ...item.product,
+              id: item.product._id || item.product.id, // Convert product._id to id
+              description: item.product.description || '', // Provide defaults for missing fields
+              careInstructions: item.product.careInstructions || [],
+              isNewArrival: item.product.isNewArrival || false,
+              // Add other missing fields with appropriate defaults
+            }
+          }));
         
         dispatch(setCartItems(transformedItems));
       } else {
@@ -90,18 +92,22 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
       // Fix: Use consistent path to access cart items
       if (response.data?.data?.cart?.items) {
         const itemsData = response.data.data.cart.items;
-        // Transform items to match CartItem type structure
-        const transformedItems = Array.isArray(itemsData) ? itemsData.map((item: any) => ({
-          ...item,
-          id: item._id,
-          product: {
-            ...item.product,
-            id: item.product._id,
-            description: item.product.description || '',
-            careInstructions: item.product.careInstructions || [],
-            isNewArrival: item.product.isNewArrival || false,
-          }
-        })) : [];
+        // Filter out null items and items with null products, then transform
+        const transformedItems = Array.isArray(itemsData) 
+          ? itemsData
+              .filter((item: any) => item && item.product && (item._id || item.id))
+              .map((item: any) => ({
+                ...item,
+                id: item._id || item.id,
+                product: {
+                  ...item.product,
+                  id: item.product._id || item.product.id,
+                  description: item.product.description || '',
+                  careInstructions: item.product.careInstructions || [],
+                  isNewArrival: item.product.isNewArrival || false,
+                }
+              }))
+          : [];
         dispatch(setCartItems(transformedItems));
         toast({
           title: 'Added to cart',

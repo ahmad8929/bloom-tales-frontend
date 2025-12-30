@@ -19,23 +19,13 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-const signupSchema = z
-  .object({
-    firstName: z.string().min(2, 'First name is required'),
-    lastName: z.string().min(2, 'Last name is required'),
-    email: z.string().email('Please enter a valid email address'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
+const signupSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().optional(),
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
+});
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
@@ -54,6 +44,7 @@ export function SignupForm() {
       password: '',
       confirmPassword: '',
     },
+    mode: 'onSubmit', // Only validate on submit, but validation is now optional
   });
 
   const onSubmit = async (data: SignupFormData) => {

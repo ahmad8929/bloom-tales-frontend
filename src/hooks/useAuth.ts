@@ -159,10 +159,17 @@ export function useAuth() {
     }
   };
 
-  const signup = async (signupData: { firstName: string; lastName: string; email: string; password: string }): Promise<AuthResult> => {
+  const signup = async (signupData: { firstName?: string; lastName?: string; email?: string; password?: string }): Promise<AuthResult> => {
     try {
       console.log('Making signup API call...');
-      const res = await authApi.register(signupData);
+      // Provide default empty strings for optional fields
+      const dataToSend = {
+        firstName: signupData.firstName || '',
+        lastName: signupData.lastName || '',
+        email: signupData.email || '',
+        password: signupData.password || '',
+      };
+      const res = await authApi.register(dataToSend);
       console.log('Signup API response:', res);
       
       if (res.data?.status === 'success') {

@@ -71,10 +71,10 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
       }
 
       const cartItem = cartItems.find(
-        (item: any) => item.productId === productId || item.product._id === productId
+        (item: any) => item && item.product && (item.productId === productId || item.product._id === productId)
       );
 
-      if (cartItem) {
+      if (cartItem && cartItem._id) {
         setIsInCart(true);
         setCartItemId(cartItem._id);
         setCartQuantity(cartItem.quantity);

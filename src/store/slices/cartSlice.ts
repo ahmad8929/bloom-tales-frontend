@@ -32,6 +32,7 @@ const cartSlice = createSlice({
       // Find existing item with same product, size, and color
       const existingItem = state.items.find(
         item => 
+          item && item.product && action.payload.product &&
           (item.product.id === action.payload.product.id || 
            item.product._id === action.payload.product._id ||
            item.product.id === action.payload.product._id ||
@@ -49,8 +50,9 @@ const cartSlice = createSlice({
     },
     updateCartItemLocal: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
       const item = state.items.find(item => 
-        item.product.id === action.payload.productId ||
-        item.product._id === action.payload.productId
+        item && item.product &&
+        (item.product.id === action.payload.productId ||
+         item.product._id === action.payload.productId)
       );
       if (item) {
         item.quantity = action.payload.quantity;
@@ -58,6 +60,7 @@ const cartSlice = createSlice({
     },
     removeFromCartLocal: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter(item => 
+        item && item.product &&
         item.product.id !== action.payload &&
         item.product._id !== action.payload
       );
