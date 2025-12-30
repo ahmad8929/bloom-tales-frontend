@@ -198,7 +198,7 @@ export default function AdminCustomersPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Customer Management</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-gray-100">Customer Management</CardTitle>
               <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input

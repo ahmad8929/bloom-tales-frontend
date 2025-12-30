@@ -19,13 +19,18 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-const signupSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().optional(),
-  password: z.string().optional(),
-  confirmPassword: z.string().optional(),
-});
+const signupSchema = z
+  .object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    email: z.string().optional(),
+    password: z.string().optional(),
+    confirmPassword: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
