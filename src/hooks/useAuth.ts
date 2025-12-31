@@ -160,6 +160,7 @@ export function useAuth() {
   };
 
   const signup = async (signupData: { firstName?: string; lastName?: string; email?: string; password?: string }): Promise<AuthResult> => {
+    dispatch(loginStart());
     try {
       console.log('Making signup API call...');
       // Provide default empty strings for optional fields
@@ -172,15 +173,72 @@ export function useAuth() {
       const res = await authApi.register(dataToSend);
       console.log('Signup API response:', res);
       
-      if (res.data?.status === 'success') {
-        return { 
-          success: true,
-          user: res.data.data?.user
-        };
+      // TEMPORARY: Auto-login after signup (email verification disabled)
+      // TODO: Re-enable email verification flow when email functionality is fixed
+      if (res.data?.status === 'success' && res.data.data) {
+        const { user: rawUser, accessToken, refreshToken } = res.data.data;
+        
+        // If tokens are provided, auto-login the user
+        if (accessToken && refreshToken) {
+          // Map user to ensure id field exists
+          const user = {
+            ...rawUser,
+            id: rawUser._id || rawUser.id,
+          };
+          
+          console.log('Signup successful - Auto-logging in user:', user);
+          
+          // Set cookies and token cache FIRST (before Redux) for middleware
+          if (typeof window !== 'undefined') {
+            console.log('Setting auth cookies and token cache...');
+            
+            // Set token cache immediately
+            setAuthTokenCache(accessToken);
+            
+            // Set cookies with proper settings
+            setCookie('auth-token', accessToken, 7);
+            setCookie('user-role', user.role, 7);
+            
+            // Wait and verify cookies are actually set before proceeding
+            await new Promise<void>((resolve) => {
+              let attempts = 0;
+              const maxAttempts = 10;
+              const checkCookie = () => {
+                const cookieToken = getCookie('auth-token');
+                if (cookieToken && cookieToken === accessToken) {
+                  console.log('Cookie verified successfully');
+                  resolve();
+                } else if (attempts < maxAttempts) {
+                  attempts++;
+                  setTimeout(checkCookie, 50);
+                } else {
+                  console.warn('Cookie verification timeout, but proceeding anyway');
+                  resolve();
+                }
+              };
+              checkCookie();
+            });
+            
+            console.log('Cookies and token cache set successfully');
+          }
+          
+          // Store tokens in Redux AFTER cookies are set
+          dispatch(loginSuccess({ user, accessToken, refreshToken }));
+          
+          return { success: true, user };
+        } else {
+          // Fallback: no tokens (shouldn't happen with current implementation)
+          return { 
+            success: true,
+            user: rawUser
+          };
+        }
       } else {
+        const errorMessage = res.data?.message || 'Signup failed';
+        dispatch(loginFailure(errorMessage));
         return {
           success: false,
-          error: res.data?.message || 'Signup failed'
+          error: errorMessage
         };
       }
     } catch (err: any) {
@@ -193,6 +251,7 @@ export function useAuth() {
         errorMessage = err.message;
       }
       
+      dispatch(loginFailure(errorMessage));
       return {
         success: false,
         error: errorMessage

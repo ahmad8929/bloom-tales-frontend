@@ -58,12 +58,18 @@ export function SignupForm() {
 
     try {
       const result = await signup(signupData);
-      if (result && !result.error) {
+      if (result && result.success) {
+        // TEMPORARY: Auto-login after signup (email verification disabled)
+        // TODO: Update message when email verification is re-enabled
         toast({
           title: 'Account created successfully!',
-          description: 'Please check your email to verify your account. If you don\'t see it, check your spam folder.',
+          description: 'You have been automatically logged in.',
         });
         form.reset();
+        // Redirect to home page after successful signup and auto-login
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
       } else {
         throw new Error(result?.error || 'Signup failed');
       }

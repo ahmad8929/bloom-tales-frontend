@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,6 +83,51 @@ export default function ProfilePage() {
   });
 
   const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+
+  // Function to fetch pincode details
+  const fetchPincodeDetails = useCallback(async (pincode: string) => {
+    // Only fetch if pincode is 6 digits
+    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+      return;
+    }
+
+    try {
+      setIsFetchingPincode(true);
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await response.json();
+
+      if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+        // Get the first post office with delivery status, or first one if none have delivery
+        const deliveryOffice = data[0].PostOffice.find((po: any) => po.DeliveryStatus === 'Delivery') || data[0].PostOffice[0];
+        
+        if (deliveryOffice) {
+          setAddressForm(prev => ({
+            ...prev,
+            city: deliveryOffice.District || prev.city,
+            state: deliveryOffice.State || prev.state,
+            country: deliveryOffice.Country || prev.country || 'India'
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching pincode details:', error);
+      // Silently fail - don't show error to user
+    } finally {
+      setIsFetchingPincode(false);
+    }
+  }, []);
+
+  // Debounce pincode lookup
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (addressForm.zipCode && addressForm.zipCode.length === 6) {
+        fetchPincodeDetails(addressForm.zipCode);
+      }
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [addressForm.zipCode, fetchPincodeDetails]);
 
   useEffect(() => {
     // Check authentication state - verify with cookies, not just Redux
@@ -733,18 +778,27 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="addressZipCode">Pincode *</Label>
-                <Input
-                  id="addressZipCode"
-                  value={addressForm.zipCode}
-                  onChange={(e) => {
-                    setAddressForm({ ...addressForm, zipCode: e.target.value });
-                    if (addressFormErrors.zipCode) {
-                      setAddressFormErrors({ ...addressFormErrors, zipCode: '' });
-                    }
-                  }}
-                  placeholder="000000"
-                  className={addressFormErrors.zipCode ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <Input
+                    id="addressZipCode"
+                    value={addressForm.zipCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only allow numbers, max 6 digits
+                      setAddressForm({ ...addressForm, zipCode: value });
+                      if (addressFormErrors.zipCode) {
+                        setAddressFormErrors({ ...addressFormErrors, zipCode: '' });
+                      }
+                    }}
+                    placeholder="000000"
+                    maxLength={6}
+                    className={addressFormErrors.zipCode ? 'border-destructive' : ''}
+                  />
+                  {isFetchingPincode && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                    </div>
+                  )}
+                </div>
                 {addressFormErrors.zipCode && (
                   <p className="text-sm text-destructive">{addressFormErrors.zipCode}</p>
                 )}
