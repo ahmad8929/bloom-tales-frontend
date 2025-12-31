@@ -398,7 +398,7 @@ export function LoginForm() {
         </div>
 
         {/* Help Section */}
-<div className="text-center pt-6 border-t border-border">
+{/* <div className="text-center pt-6 border-t border-border">
   <p className="text-sm text-text-muted mb-2">
     Need help with your account?
   </p>
@@ -412,7 +412,7 @@ export function LoginForm() {
       Resend verification email
     </Button>
   </div>
-</div>
+</div> */}
 
 
         {/* Additional Links */}
