@@ -109,17 +109,11 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
               }))
           : [];
         dispatch(setCartItems(transformedItems));
-        toast({
-          title: 'Added to cart',
-          description: 'Item has been added to your cart.',
-        });
+        // Toast removed - no popup notification
       } else {
         // If response doesn't have expected structure, fetch cart to sync
         await fetchCart();
-        toast({
-          title: 'Added to cart',
-          description: 'Item has been added to your cart.',
-        });
+        // Toast removed - no popup notification
       }
     } else {
       // For guest users, fetch product details and add to local cart
@@ -166,10 +160,7 @@ const addToCart = async (productId: string, quantity: number = 1, size?: string,
 
         dispatch(addToCartLocal(cartItem));
         
-        toast({
-          title: 'Added to cart',
-          description: 'Item has been added to your cart.',
-        });
+        // Toast removed - no popup notification
       } catch (productError: any) {
         console.error('Error fetching product for guest cart:', productError);
         throw new Error('Failed to add item to cart. Please try again.');

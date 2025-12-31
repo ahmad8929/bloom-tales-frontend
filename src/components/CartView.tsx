@@ -331,8 +331,8 @@ export function CartView() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-4 md:gap-8">
-      <div className="lg:col-span-2 space-y-4">
+    <div className="grid lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+      <div className="lg:col-span-2 space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <h2 className="text-lg sm:text-xl font-semibold">
             Cart Items ({cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'})
@@ -360,62 +360,78 @@ export function CartView() {
 
         {cart.items.map(item => (
           <Card key={item._id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <div className="flex flex-col sm:flex-row gap-4 p-4">
-              <div className="relative h-32 w-full sm:h-24 sm:w-24 flex-shrink-0 mx-auto sm:mx-0">
+            <div className="flex gap-3 sm:gap-4 p-3 sm:p-4">
+              {/* Product Image - Fixed size on mobile */}
+              <Link 
+                href={`/products/${item.product.slug || item.productId}`}
+                className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200"
+              >
                 <Image
                   src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
                   alt={item.product.images?.[0]?.alt || item.product.name}
                   fill
-                  className="object-cover rounded-md"
-                  sizes="(max-width: 640px) 100vw, 96px"
+                  className="object-cover"
+                  sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 128px"
+                  priority
                 />
-              </div>
+              </Link>
               
-              <div className="flex-grow min-w-0 flex flex-col sm:flex-row sm:justify-between gap-4">
+              {/* Product Details */}
+              <div className="flex-grow min-w-0 flex flex-col gap-2 sm:gap-3">
+                {/* Product Info Section */}
                 <div className="flex-1 min-w-0">
                   <Link 
                     href={`/products/${item.product.slug || item.productId}`}
-                    className="text-base sm:text-lg font-semibold hover:text-primary transition-colors block line-clamp-2"
+                    className="text-sm sm:text-base font-semibold hover:text-primary transition-colors block line-clamp-2 mb-1.5"
                   >
                     {item.product.name}
                   </Link>
                   
-                  <div className="text-xs sm:text-sm text-muted-foreground mt-1 space-y-1">
+                  <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {item.size && <p>Size: <span className="font-medium">{item.size}</span></p>}
+                      {item.size && (
+                        <span className="inline-flex items-center gap-1">
+                          <span>Size:</span>
+                          <span className="font-medium text-foreground">{item.size}</span>
+                        </span>
+                      )}
                       {item.color && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <span>Color:</span>
                           <div
-                            className="w-4 h-4 rounded-full border border-gray-300"
+                            className="w-3.5 h-3.5 rounded-full border border-gray-300 shadow-sm"
                             style={{ backgroundColor: item.color.hexCode }}
                             title={item.color.name}
                           />
-                          <span className="font-medium">{item.color.name}</span>
+                          <span className="font-medium text-foreground text-xs">{item.color.name}</span>
                         </div>
                       )}
                     </div>
-                    <p>Material: {item.product.material}</p>
+                    {item.product.material && (
+                      <p className="text-xs">Material: {item.product.material}</p>
+                    )}
                   </div>
                   
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="font-semibold text-base sm:text-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-semibold text-sm sm:text-base text-foreground">
                       ₹{item.product.price.toLocaleString('en-IN')}
                     </span>
                     {item.product.comparePrice && item.product.comparePrice > item.product.price && (
-                      <span className="text-xs sm:text-sm text-muted-foreground line-through">
+                      <span className="text-xs text-muted-foreground line-through">
                         ₹{item.product.comparePrice.toLocaleString('en-IN')}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4 sm:gap-4">
-                  <div className="flex items-center gap-2">
+                {/* Quantity and Actions Section */}
+                <div className="flex items-center justify-between gap-2 sm:gap-3 pt-2 border-t">
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 sm:h-10 sm:w-10"
+                      className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
                       disabled={updatingItems.has(item._id)}
                       onClick={() => {
                         if (item.quantity === 1) {
@@ -425,36 +441,40 @@ export function CartView() {
                         }
                       }}
                     >
-                      <Minus className="h-4 w-4" />
+                      <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
-                    <span className="w-10 sm:w-12 text-center font-medium text-sm sm:text-base">{item.quantity}</span>
+                    <span className="w-8 sm:w-10 text-center font-medium text-xs sm:text-sm">{item.quantity}</span>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 sm:h-10 sm:w-10"
+                      className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
                       disabled={updatingItems.has(item._id)}
                       onClick={() => updateQuantity(item._id, item.quantity + 1)}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                   
-                  <div className="text-right sm:text-right">
-                    <p className="text-xs sm:text-sm text-muted-foreground">Subtotal</p>
-                    <p className="font-semibold text-sm sm:text-base">
-                      ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
-                    </p>
+                  {/* Subtotal and Delete */}
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="text-right">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">Subtotal</p>
+                      <p className="font-semibold text-xs sm:text-sm text-foreground">
+                        ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-destructive shrink-0"
+                      disabled={updatingItems.has(item._id)}
+                      onClick={() => removeFromCart(item._id)}
+                      title="Remove item"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </Button>
                   </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-destructive"
-                    disabled={updatingItems.has(item._id)}
-                    onClick={() => removeFromCart(item._id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </div>

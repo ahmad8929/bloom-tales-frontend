@@ -27,7 +27,7 @@ interface Address {
   country: string;
   nearbyPlaces?: string;
   isDefault: boolean;
-  addressType: 'home' | 'work' | 'other';
+  addressType?: 'home' | 'work' | 'other'; // Optional - field removed from form
 }
 
 interface UserProfile {
@@ -78,8 +78,7 @@ export default function ProfilePage() {
     zipCode: '',
     country: 'India',
     nearbyPlaces: '',
-    isDefault: false,
-    addressType: 'home' as 'home' | 'work' | 'other'
+    isDefault: false
   });
 
   const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
@@ -262,8 +261,7 @@ export default function ProfilePage() {
       zipCode: '',
       country: 'India',
       nearbyPlaces: '',
-      isDefault: profile?.addresses.length === 0,
-      addressType: 'home'
+      isDefault: profile?.addresses.length === 0
     });
     setAddressFormErrors({});
     setShowAddressModal(true);
@@ -280,8 +278,7 @@ export default function ProfilePage() {
       zipCode: address.zipCode,
       country: address.country,
       nearbyPlaces: address.nearbyPlaces || '',
-      isDefault: address.isDefault,
-      addressType: address.addressType
+      isDefault: address.isDefault
     });
     setAddressFormErrors({});
     setShowAddressModal(true);
@@ -609,9 +606,6 @@ export default function ProfilePage() {
                           {address.isDefault && (
                             <Badge variant="default" className="text-xs">Default</Badge>
                           )}
-                          <Badge variant="outline" className="text-xs capitalize">
-                            {address.addressType}
-                          </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {address.street}, {address.city}, {address.state} - {address.zipCode}
@@ -669,180 +663,184 @@ export default function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="addressFullName">Full Name *</Label>
-              <Input
-                id="addressFullName"
-                value={addressForm.fullName}
-                onChange={(e) => {
-                  setAddressForm({ ...addressForm, fullName: e.target.value });
-                  if (addressFormErrors.fullName) {
-                    setAddressFormErrors({ ...addressFormErrors, fullName: '' });
-                  }
-                }}
-                placeholder="Enter full name"
-                className={addressFormErrors.fullName ? 'border-destructive' : ''}
-              />
-              {addressFormErrors.fullName && (
-                <p className="text-sm text-destructive">{addressFormErrors.fullName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="addressPhone">Phone Number *</Label>
-              <Input
-                id="addressPhone"
-                type="tel"
-                value={addressForm.phone}
-                onChange={(e) => {
-                  setAddressForm({ ...addressForm, phone: e.target.value });
-                  if (addressFormErrors.phone) {
-                    setAddressFormErrors({ ...addressFormErrors, phone: '' });
-                  }
-                }}
-                placeholder="+91 XXXXX XXXXX"
-                className={addressFormErrors.phone ? 'border-destructive' : ''}
-              />
-              {addressFormErrors.phone && (
-                <p className="text-sm text-destructive">{addressFormErrors.phone}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="addressStreet">Street Address *</Label>
-              <Input
-                id="addressStreet"
-                value={addressForm.street}
-                onChange={(e) => {
-                  setAddressForm({ ...addressForm, street: e.target.value });
-                  if (addressFormErrors.street) {
-                    setAddressFormErrors({ ...addressFormErrors, street: '' });
-                  }
-                }}
-                placeholder="House no, Street, Area"
-                className={addressFormErrors.street ? 'border-destructive' : ''}
-              />
-              {addressFormErrors.street && (
-                <p className="text-sm text-destructive">{addressFormErrors.street}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="addressCity">City *</Label>
-                <Input
-                  id="addressCity"
-                  value={addressForm.city}
-                  onChange={(e) => {
-                    setAddressForm({ ...addressForm, city: e.target.value });
-                    if (addressFormErrors.city) {
-                      setAddressFormErrors({ ...addressFormErrors, city: '' });
-                    }
-                  }}
-                  placeholder="Enter city"
-                  className={addressFormErrors.city ? 'border-destructive' : ''}
-                />
-                {addressFormErrors.city && (
-                  <p className="text-sm text-destructive">{addressFormErrors.city}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addressState">State *</Label>
-                <Select
-                  value={addressForm.state}
-                  onValueChange={(value) => {
-                    setAddressForm({ ...addressForm, state: value });
-                    if (addressFormErrors.state) {
-                      setAddressFormErrors({ ...addressFormErrors, state: '' });
-                    }
-                  }}
-                >
-                  <SelectTrigger className={addressFormErrors.state ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INDIAN_STATES.map((state) => (
-                      <SelectItem key={state} value={state}>
-                        {state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {addressFormErrors.state && (
-                  <p className="text-sm text-destructive">{addressFormErrors.state}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="addressZipCode">Pincode *</Label>
-                <div className="relative">
+          <div className="space-y-4 sm:space-y-5">
+            {/* Personal Information Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Personal Information</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="addressFullName" className="text-sm font-medium">Full Name *</Label>
                   <Input
-                    id="addressZipCode"
-                    value={addressForm.zipCode}
+                    id="addressFullName"
+                    value={addressForm.fullName}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only allow numbers, max 6 digits
-                      setAddressForm({ ...addressForm, zipCode: value });
-                      if (addressFormErrors.zipCode) {
-                        setAddressFormErrors({ ...addressFormErrors, zipCode: '' });
+                      setAddressForm({ ...addressForm, fullName: e.target.value });
+                      if (addressFormErrors.fullName) {
+                        setAddressFormErrors({ ...addressFormErrors, fullName: '' });
                       }
                     }}
-                    placeholder="000000"
-                    maxLength={6}
-                    className={addressFormErrors.zipCode ? 'border-destructive' : ''}
+                    placeholder="Enter full name"
+                    className={addressFormErrors.fullName ? 'border-destructive' : ''}
                   />
-                  {isFetchingPincode && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                    </div>
+                  {addressFormErrors.fullName && (
+                    <p className="text-sm text-destructive">{addressFormErrors.fullName}</p>
                   )}
                 </div>
-                {addressFormErrors.zipCode && (
-                  <p className="text-sm text-destructive">{addressFormErrors.zipCode}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addressType">Address Type</Label>
-                <Select
-                  value={addressForm.addressType}
-                  onValueChange={(value: any) => setAddressForm({ ...addressForm, addressType: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="home">Home</SelectItem>
-                    <SelectItem value="work">Work</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+
+                <div className="space-y-2">
+                  <Label htmlFor="addressPhone" className="text-sm font-medium">Phone Number *</Label>
+                  <Input
+                    id="addressPhone"
+                    type="tel"
+                    value={addressForm.phone}
+                    onChange={(e) => {
+                      setAddressForm({ ...addressForm, phone: e.target.value });
+                      if (addressFormErrors.phone) {
+                        setAddressFormErrors({ ...addressFormErrors, phone: '' });
+                      }
+                    }}
+                    placeholder="+91 XXXXX XXXXX"
+                    className={addressFormErrors.phone ? 'border-destructive' : ''}
+                  />
+                  {addressFormErrors.phone && (
+                    <p className="text-sm text-destructive">{addressFormErrors.phone}</p>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="addressNearbyPlaces">Nearby Places/Landmarks</Label>
-              <Input
-                id="addressNearbyPlaces"
-                value={addressForm.nearbyPlaces}
-                onChange={(e) => setAddressForm({ ...addressForm, nearbyPlaces: e.target.value })}
-                placeholder="Hospital, Mall, etc. (Optional)"
-              />
+            {/* Address Information Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Address Details</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="addressStreet" className="text-sm font-medium">Street Address *</Label>
+                  <Input
+                    id="addressStreet"
+                    value={addressForm.street}
+                    onChange={(e) => {
+                      setAddressForm({ ...addressForm, street: e.target.value });
+                      if (addressFormErrors.street) {
+                        setAddressFormErrors({ ...addressFormErrors, street: '' });
+                      }
+                    }}
+                    placeholder="House no, Street, Area"
+                    className={addressFormErrors.street ? 'border-destructive' : ''}
+                  />
+                  {addressFormErrors.street && (
+                    <p className="text-sm text-destructive">{addressFormErrors.street}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="addressCity" className="text-sm font-medium">City *</Label>
+                    <Input
+                      id="addressCity"
+                      value={addressForm.city}
+                      onChange={(e) => {
+                        setAddressForm({ ...addressForm, city: e.target.value });
+                        if (addressFormErrors.city) {
+                          setAddressFormErrors({ ...addressFormErrors, city: '' });
+                        }
+                      }}
+                      placeholder="Enter city"
+                      className={addressFormErrors.city ? 'border-destructive' : ''}
+                    />
+                    {addressFormErrors.city && (
+                      <p className="text-sm text-destructive">{addressFormErrors.city}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="addressState" className="text-sm font-medium">State *</Label>
+                    <Select
+                      value={addressForm.state}
+                      onValueChange={(value) => {
+                        setAddressForm({ ...addressForm, state: value });
+                        if (addressFormErrors.state) {
+                          setAddressFormErrors({ ...addressFormErrors, state: '' });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={`bg-[#F5F5F5] hover:bg-[#EEEEEE] ${addressFormErrors.state ? 'border-destructive' : 'border-gray-300'}`}>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INDIAN_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {addressFormErrors.state && (
+                      <p className="text-sm text-destructive">{addressFormErrors.state}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="addressZipCode" className="text-sm font-medium">Pincode *</Label>
+                  <div className="relative">
+                    <Input
+                      id="addressZipCode"
+                      value={addressForm.zipCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only allow numbers, max 6 digits
+                        setAddressForm({ ...addressForm, zipCode: value });
+                        if (addressFormErrors.zipCode) {
+                          setAddressFormErrors({ ...addressFormErrors, zipCode: '' });
+                        }
+                      }}
+                      placeholder="000000"
+                      maxLength={6}
+                      className={addressFormErrors.zipCode ? 'border-destructive' : ''}
+                    />
+                    {isFetchingPincode && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                      </div>
+                    )}
+                  </div>
+                  {addressFormErrors.zipCode && (
+                    <p className="text-sm text-destructive">{addressFormErrors.zipCode}</p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isDefault"
-                checked={addressForm.isDefault}
-                onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="isDefault" className="cursor-pointer">
-                Set as default address
-              </Label>
+            {/* Additional Information Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Additional Information</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="addressNearbyPlaces" className="text-sm font-medium">Nearby Places/Landmarks</Label>
+                  <Input
+                    id="addressNearbyPlaces"
+                    value={addressForm.nearbyPlaces}
+                    onChange={(e) => setAddressForm({ ...addressForm, nearbyPlaces: e.target.value })}
+                    placeholder="Hospital, Mall, etc. (Optional)"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="isDefault"
+                    checked={addressForm.isDefault}
+                    onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                    className="rounded border-gray-300 w-4 h-4 cursor-pointer"
+                  />
+                  <Label htmlFor="isDefault" className="cursor-pointer text-sm font-medium">
+                    Set as default address
+                  </Label>
+                </div>
+              </div>
             </div>
+
+          
+
+           
 
             <div className="flex gap-2 pt-4">
               <Button

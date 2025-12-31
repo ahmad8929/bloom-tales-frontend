@@ -20,11 +20,11 @@ export function CartButton({ itemCount }: CartButtonProps) {
         <Button asChild variant="outline" size="icon" className={headerIconButton}>
           <Link href="/cart" className="flex items-center justify-center w-full h-full relative">
             <ShoppingBag className="h-5 w-5 text-text-normal transition-colors duration-300" />
-            {itemCount > 0 && (
+            {/* {itemCount > 0 && (
               <span className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold shadow-md z-10">
                 {itemCount > 99 ? '99+' : itemCount}
               </span>
-            )}
+            )} */}
           </Link>
         </Button>
       </TooltipTrigger>

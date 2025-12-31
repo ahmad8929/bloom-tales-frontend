@@ -85,10 +85,7 @@ export function AddToCartButton({
         // Reset success state after 2 seconds
         setTimeout(() => setIsAdded(false), 2000);
 
-        toast({
-          title: 'Added to Cart',
-          description: `${product.name} has been added to your cart.`,
-        });
+        // Toast removed - no popup notification
 
         // Trigger cart refresh event for other components
         window.dispatchEvent(new CustomEvent('cartUpdated', {
@@ -117,10 +114,7 @@ export function AddToCartButton({
         // Reset success state after 2 seconds
         setTimeout(() => setIsAdded(false), 2000);
 
-        toast({
-          title: 'Added to Cart',
-          description: `${product.name} has been added to your cart.`,
-        });
+        // Toast removed - no popup notification
 
         // Trigger cart refresh event for other components
         window.dispatchEvent(new CustomEvent('cartUpdated', {
