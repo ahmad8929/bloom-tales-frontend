@@ -168,6 +168,16 @@ export default function CheckoutPage() {
     fetchAddresses();
   }, []);
 
+  // Update payment amount when payment method or cart changes
+  useEffect(() => {
+    if (cart) {
+      const totals = calculateTotals(cart);
+      const paymentAmount = paymentMethod === 'cod' ? totals.advancePayment : totals.total;
+      setPaymentData(prev => ({ ...prev, amount: paymentAmount }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentMethod, cart, appliedCoupon]);
+
   const fetchAddresses = async () => {
     try {
       const response = await profileApi.getAddresses();
@@ -207,7 +217,10 @@ export default function CheckoutPage() {
 
     setCart(cartData || null);
     if (cartData) {
-      setPaymentData(prev => ({ ...prev, amount: calculateTotal(cartData) }));
+      // Set payment amount based on payment method
+      const totals = calculateTotals(cartData);
+      const paymentAmount = paymentMethod === 'cod' ? totals.advancePayment : totals.total;
+      setPaymentData(prev => ({ ...prev, amount: paymentAmount }));
     }
   } catch (error: any) {
     console.error('Error fetching cart:', error);
@@ -224,19 +237,63 @@ export default function CheckoutPage() {
 
   const calculateTotals = (cartData: CartData) => {
     if (!cartData || !cartData.items.length) {
-      return { subtotal: 0, shipping: 0, platformFee: 0, otherFees: 0, handlingFee: 0, discount: 0, total: 0 };
+      return { 
+        subtotal: 0, 
+        automaticDiscount: 0, 
+        couponDiscount: 0, 
+        totalDiscount: 0,
+        subtotalAfterDiscount: 0,
+        shipping: 0, 
+        advancePayment: 0,
+        total: 0 
+      };
     }
 
     const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
-    const discount = appliedCoupon?.discountAmount || 0;
-    const subtotalAfterDiscount = Math.max(0, subtotal - discount);
-    const shipping = 149; // Always charge ₹149 for shipping
-    const platformFee = 49; // Original fee, but shown as Free
-    const otherFees = 0; // Free
-    const handlingFee = 49; // Original fee, but shown as Free
-    const total = subtotalAfterDiscount + shipping; // Shipping is always charged
+    
+    // Apply automatic discount based on subtotal
+    // If subtotal > ₹20,000: 10% discount
+    // If subtotal > ₹10,000: 4% discount
+    // Only highest eligible discount applies
+    let automaticDiscount = 0;
+    if (subtotal > 20000) {
+      automaticDiscount = Math.round(subtotal * 0.10);
+    } else if (subtotal > 10000) {
+      automaticDiscount = Math.round(subtotal * 0.04);
+    }
 
-    return { subtotal, shipping, platformFee, otherFees, handlingFee, discount, total };
+    // Coupon discount (applied after automatic discount)
+    const couponDiscount = appliedCoupon?.discountAmount || 0;
+    const totalDiscount = automaticDiscount + couponDiscount;
+    const subtotalAfterDiscount = Math.max(0, subtotal - totalDiscount);
+
+    // Calculate shipping and advance payment based on payment method
+    let shipping = 0;
+    let advancePayment = 0;
+
+    if (paymentMethod === 'cod') {
+      // COD: ₹199 shipping + ₹300 advance payment (advance payment NOT included in total)
+      shipping = 199;
+      advancePayment = 300;
+    } else {
+      // Online payment (upi, card): Free shipping
+      shipping = 0;
+      advancePayment = 0;
+    }
+
+    // Final total (advance payment is NOT included - it's paid separately)
+    const total = subtotalAfterDiscount + shipping;
+
+    return { 
+      subtotal, 
+      automaticDiscount,
+      couponDiscount,
+      totalDiscount,
+      subtotalAfterDiscount,
+      shipping, 
+      advancePayment,
+      total 
+    };
   };
 
   const handleValidateCoupon = async () => {
@@ -453,26 +510,30 @@ export default function CheckoutPage() {
   };
 
   const validatePaymentForm = () => {
-    const required = ['payerName', 'paymentDate', 'paymentTime'];
-    for (const field of required) {
-      if (!paymentData[field as keyof PaymentModalData]) {
+    // For UPI and COD, require payment proof
+    if (paymentMethod === 'upi' || paymentMethod === 'cod') {
+      const required = ['payerName', 'paymentDate', 'paymentTime'];
+      for (const field of required) {
+        if (!paymentData[field as keyof PaymentModalData]) {
+          toast({
+            title: 'Validation Error',
+            description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+            variant: 'destructive',
+          });
+          return false;
+        }
+      }
+
+      if (!paymentProof) {
         toast({
-          title: 'Validation Error',
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+          title: 'Payment Proof Required',
+          description: 'Please upload a screenshot of your payment',
           variant: 'destructive',
         });
         return false;
       }
     }
-
-    if (!paymentProof) {
-      toast({
-        title: 'Payment Proof Required',
-        description: 'Please upload a screenshot of your payment',
-        variant: 'destructive',
-      });
-      return false;
-    }
+    // For card payment, may have different requirements (can be extended later)
 
     return true;
   };
@@ -481,12 +542,30 @@ export default function CheckoutPage() {
     if (!validateForm()) return;
     if (!cart) return;
 
-    if (paymentMethod === 'upi') {
+    // Show No Returns Policy confirmation before proceeding
+    const confirmed = window.confirm(
+      'IMPORTANT: No Returns Policy\n\n' +
+      'All products are non-returnable. By proceeding, you acknowledge that you have read and agree to this policy.\n\n' +
+      'Do you want to continue with your order?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    // For online payment methods (upi, card), show payment modal for full amount
+    if (paymentMethod === 'upi' || paymentMethod === 'card') {
       setShowPaymentModal(true);
       return;
     }
 
-    // Handle other payment methods (COD, Card)
+    // For COD, show payment modal for advance payment (₹300)
+    if (paymentMethod === 'cod') {
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // Fallback (should not reach here)
     await processOrder();
   };
 
@@ -512,7 +591,7 @@ export default function CheckoutPage() {
           nearbyPlaces: selectedAddress.nearbyPlaces || ''
         },
         paymentMethod: paymentMethod,
-        ...(paymentMethod === 'upi' && { paymentDetails: paymentData }),
+        ...((paymentMethod === 'upi' || paymentMethod === 'card') && { paymentDetails: paymentData }),
         ...(appliedCoupon && { couponCode: appliedCoupon.code })
       };
 
@@ -527,8 +606,8 @@ export default function CheckoutPage() {
       setUploadProgress(50);
       setOrderCreated(true);
 
-      // If UPI payment with proof, upload the payment proof
-      if (paymentMethod === 'upi' && paymentProof && orderId) {
+      // If online payment (UPI/Card) with proof, upload the payment proof
+      if ((paymentMethod === 'upi' || paymentMethod === 'card') && paymentProof && orderId) {
         try {
           const formData = new FormData();
           formData.append('paymentProof', paymentProof);
@@ -615,7 +694,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const { subtotal, shipping, platformFee, otherFees, handlingFee, discount, total } = calculateTotals(cart);
+  const { subtotal, automaticDiscount, couponDiscount, totalDiscount, subtotalAfterDiscount, shipping, advancePayment, total } = calculateTotals(cart);
 
   return (
     <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
@@ -624,7 +703,25 @@ export default function CheckoutPage() {
         <p className="text-xs sm:text-sm md:text-base text-muted-foreground">Complete your order details below</p>
       </div>
 
-      {/* Order Flow Notice */}
+      {/* No Returns Policy Notice */}
+      <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-3 sm:p-4 md:p-6">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-red-600 mt-0.5 sm:mt-1 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-red-900 mb-1 sm:mb-2 text-xs sm:text-sm md:text-base">No Returns Policy</h3>
+                <p className="text-red-800 text-xs sm:text-sm leading-relaxed break-words">
+                  <strong>Important:</strong> All products are non-returnable. Please review your order carefully before placing it. 
+                  By proceeding with checkout, you acknowledge that you have read and agree to this policy.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Order Review Process Notice */}
       <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-3 sm:p-4 md:p-6">
@@ -740,6 +837,48 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
+          {/* Payment Method Selection */}
+          <Card className="mt-3 sm:mt-4 md:mt-6">
+            <CardHeader className="p-3 sm:p-4 md:p-6">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
+                <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
+                <span>Payment Method</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">Select your preferred payment method</CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-4 md:p-6">
+              <RadioGroup 
+                value={paymentMethod} 
+                onValueChange={(value) => setPaymentMethod(value)}
+                disabled={orderCreated}
+                className="space-y-3"
+              >
+                <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="cod" id="cod" className="mt-1" disabled={orderCreated} />
+                  <div className="flex-1">
+                    <Label htmlFor="cod" className="cursor-pointer font-medium text-sm sm:text-base">
+                      Cash on Delivery (COD)
+                    </Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Pay ₹300 advance to confirm your order. Remaining amount payable on delivery.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="upi" id="upi" className="mt-1" disabled={orderCreated} />
+                  <div className="flex-1">
+                    <Label htmlFor="upi" className="cursor-pointer font-medium text-sm sm:text-base">
+                      Online Payment (UPI/Card)
+                    </Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Free shipping. Pay the full amount online.
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Order Summary */}
@@ -850,39 +989,75 @@ export default function CheckoutPage() {
                   <span className="break-words">Subtotal ({cart.totalItems} items)</span>
                   <span className="flex-shrink-0 ml-2">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                {discount > 0 && (
+                
+                {/* Automatic Discount */}
+                {automaticDiscount > 0 && (
                   <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                    <span className="text-green-600 font-medium">Discount ({appliedCoupon?.code})</span>
-                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">-₹{discount.toLocaleString('en-IN')}</span>
+                    <span className="text-green-600 font-medium">
+                      Discount {subtotal > 20000 ? '(10%)' : '(4%)'}
+                    </span>
+                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">
+                      -₹{automaticDiscount.toLocaleString('en-IN')}
+                    </span>
                   </div>
                 )}
+                
+                {/* Coupon Discount */}
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span className="text-green-600 font-medium">
+                      Coupon Discount ({appliedCoupon?.code})
+                    </span>
+                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">
+                      -₹{couponDiscount.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Shipping */}
                 <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
                   <span>Shipping</span>
-                  <span className="flex-shrink-0 ml-2">₹{shipping.toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                  <span className="break-words">Handling Fee</span>
-                  <span className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
-                    <span className="line-through text-muted-foreground text-[10px] sm:text-xs">₹{handlingFee.toLocaleString('en-IN')}</span>
-                    <span className="text-green-600 font-medium text-[10px] sm:text-xs md:text-sm">Free</span>
+                  <span className="flex-shrink-0 ml-2">
+                    {shipping === 0 ? (
+                      <span className="text-green-600 font-medium">Free</span>
+                    ) : (
+                      `₹${shipping.toLocaleString('en-IN')}`
+                    )}
                   </span>
                 </div>
-                <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                  <span className="break-words">Platform Fee</span>
-                  <span className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
-                    <span className="line-through text-muted-foreground text-[10px] sm:text-xs">₹{platformFee.toLocaleString('en-IN')}</span>
-                    <span className="text-green-600 font-medium text-[10px] sm:text-xs md:text-sm">Free</span>
-                  </span>
-                </div>
-                <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                  <span className="break-words">Other Expense</span>
-                  <span className="text-green-600 font-medium flex-shrink-0 ml-2 text-[10px] sm:text-xs md:text-sm">Free</span>
-                </div>
+                
                 <Separator />
                 <div className="flex justify-between items-center gap-2 text-sm sm:text-base md:text-lg font-semibold pt-1">
-                  <span>Total</span>
+                  <span>Total Amount</span>
                   <span className="flex-shrink-0 ml-2">₹{total.toLocaleString('en-IN')}</span>
                 </div>
+                
+                {/* COD Payment Breakdown */}
+                {paymentMethod === 'cod' && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                        <span className="break-words font-medium">Total Order Amount</span>
+                        <span className="flex-shrink-0 ml-2 font-medium">₹{total.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                        <span className="break-words text-green-600 font-medium">Pay Now (Advance)</span>
+                        <span className="flex-shrink-0 ml-2 text-green-600 font-medium">₹{advancePayment.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                        <span className="break-words text-muted-foreground">Pay Later (On Delivery)</span>
+                        <span className="flex-shrink-0 ml-2 text-muted-foreground">₹{(total - advancePayment).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs sm:text-sm text-amber-800">
+                        <strong>Note:</strong> Pay ₹{advancePayment.toLocaleString('en-IN')} now to confirm your order. 
+                        Remaining ₹{(total - advancePayment).toLocaleString('en-IN')} will be collected on delivery.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               {orderCreated ? (
@@ -907,19 +1082,29 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <span className="break-words">
-                      Place Order - ₹{total.toLocaleString('en-IN')}
+                      {paymentMethod === 'cod' 
+                        ? `Pay Advance - ₹${advancePayment.toLocaleString('en-IN')}`
+                        : `Place Order - ₹${total.toLocaleString('en-IN')}`
+                      }
                     </span>
                   )}
                 </Button>
               )}
 
               {!orderCreated && (
-                <div className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-[10px] sm:text-xs text-blue-800 text-center leading-relaxed">
-                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 align-middle" />
-                    Order will be sent for admin approval after placement
-                  </p>
-                </div>
+                <>
+                  <div className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-[10px] sm:text-xs text-blue-800 text-center leading-relaxed">
+                      <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 align-middle" />
+                      Order will be sent for admin approval after placement
+                    </p>
+                  </div>
+                  <div className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-[10px] sm:text-xs text-red-800 text-center leading-relaxed">
+                      <strong>No Returns:</strong> All products are non-returnable
+                    </p>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -951,7 +1136,9 @@ export default function CheckoutPage() {
             <div className="flex items-center justify-between pr-6 sm:pr-8">
               <DialogTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
                 <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-green-600 flex-shrink-0" />
-                <span className="break-words">Payment Confirmation</span>
+                <span className="break-words">
+                  {paymentMethod === 'cod' ? 'Advance Payment Confirmation' : 'Payment Confirmation'}
+                </span>
               </DialogTitle>
               <Button
                 variant="ghost"
@@ -968,22 +1155,29 @@ export default function CheckoutPage() {
               </Button>
             </div>
             <DialogDescription className="text-xs sm:text-sm mt-1 sm:mt-2">
-              Complete your payment using the QR code or UPI ID below, then provide your payment details.
+              {paymentMethod === 'cod' 
+                ? 'Pay ₹300 advance payment using the QR code or UPI ID below, then provide your payment details. Remaining amount will be collected on delivery.'
+                : paymentMethod === 'upi' 
+                ? 'Complete your payment using the QR code or UPI ID below, then provide your payment details.'
+                : 'Complete your payment and provide the payment details below.'}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-3 sm:space-y-4 md:space-y-6">
-            {/* QR Code and UPI Section */}
-            <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
+            {/* QR Code and UPI Section - Show for UPI and COD */}
+            {(paymentMethod === 'upi' || paymentMethod === 'cod') && (
+              <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
               <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
                 <h3 className="font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-1.5 sm:gap-2">
                   <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
-                  <span className="break-words">Scan QR Code or Use UPI ID</span>
+                  <span className="break-words">
+                    {paymentMethod === 'cod' ? 'Pay Advance - Scan QR Code or Use UPI ID' : 'Scan QR Code or Use UPI ID'}
+                  </span>
                 </h3>
                 
                 <div className="bg-white p-1.5 sm:p-2 md:p-4 rounded-lg inline-block shadow-lg">
                   <img 
-                    src={`${QR_CODE_URL}${total}`} 
+                    src={`${QR_CODE_URL}${paymentMethod === 'cod' ? advancePayment : total}`} 
                     alt="UPI QR Code" 
                     className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 mx-auto"
                   />
@@ -1002,10 +1196,34 @@ export default function CheckoutPage() {
                 </div>
                 
                 <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-primary bg-white/70 rounded-lg p-1.5 sm:p-2 md:p-3 border-2 border-primary/30">
-                  Amount: ₹{total.toLocaleString('en-IN')}
+                  Amount: ₹{(paymentMethod === 'cod' ? advancePayment : total).toLocaleString('en-IN')}
                 </div>
+                {paymentMethod === 'cod' && (
+                  <div className="text-xs sm:text-sm text-muted-foreground bg-white/50 rounded-lg p-2">
+                    <p>This is your advance payment. Remaining ₹{(total - advancePayment).toLocaleString('en-IN')} will be collected on delivery.</p>
+                  </div>
+                )}
               </div>
             </div>
+            )}
+
+            {/* Card Payment Section - Can be extended later */}
+            {paymentMethod === 'card' && (
+              <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
+                <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
+                  <h3 className="font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-1.5 sm:gap-2">
+                    <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
+                    <span className="break-words">Card Payment</span>
+                  </h3>
+                  <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-primary bg-white/70 rounded-lg p-1.5 sm:p-2 md:p-3 border-2 border-primary/30">
+                    Amount: ₹{total.toLocaleString('en-IN')}
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Please complete your card payment and provide the transaction details below.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <Separator />
 
@@ -1064,9 +1282,11 @@ export default function CheckoutPage() {
             </div>
             </div>
 
-            {/* Payment Proof Upload */}
+            {/* Payment Proof Upload - Required for UPI and COD, optional for card */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="paymentProof" className="text-xs sm:text-sm">Payment Screenshot/Proof *</Label>
+              <Label htmlFor="paymentProof" className="text-xs sm:text-sm">
+                Payment Screenshot/Proof {(paymentMethod === 'upi' || paymentMethod === 'cod') ? '*' : '(Optional)'}
+              </Label>
               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 sm:p-4 text-center hover:border-primary/50 transition-colors">
                 {paymentProofPreview ? (
                   <div className="space-y-2 sm:space-y-3">
@@ -1137,8 +1357,17 @@ export default function CheckoutPage() {
             </div>
 
             <div className="p-2.5 sm:p-3 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="text-xs sm:text-sm text-muted-foreground">Amount Paid</div>
-              <div className="text-base sm:text-lg font-semibold text-primary">₹{total.toLocaleString('en-IN')}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                {paymentMethod === 'cod' ? 'Advance Payment Amount' : 'Amount Paid'}
+              </div>
+              <div className="text-base sm:text-lg font-semibold text-primary">
+                ₹{(paymentMethod === 'cod' ? advancePayment : total).toLocaleString('en-IN')}
+              </div>
+              {paymentMethod === 'cod' && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Remaining ₹{(total - advancePayment).toLocaleString('en-IN')} on delivery
+                </div>
+              )}
             </div>
 
             {/* Upload Progress */}

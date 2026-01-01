@@ -274,20 +274,16 @@ export function CartView() {
 
   const calculateTotals = () => {
     if (!cart || !cart.items.length) {
-      return { subtotal: 0, shipping: 0, platformFee: 0, otherFees: 0, handlingFee: 0, total: 0 };
+      return { subtotal: 0, total: 0 };
     }
 
     const subtotal = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
-    const shipping = 149; // Always charge ₹149 for shipping
-    const platformFee = 49; // Original fee, but shown as Free
-    const otherFees = 0; // Free
-    const handlingFee = 49; // Original fee, but shown as Free
-    const total = subtotal + shipping; // Shipping is always charged
+    const total = subtotal; // Total is just the subtotal
 
-    return { subtotal, shipping, platformFee, otherFees, handlingFee, total };
+    return { subtotal, total };
   };
 
-  const { subtotal, shipping, platformFee, otherFees, handlingFee, total } = calculateTotals();
+  const { subtotal, total } = calculateTotals();
 
   if (isLoading) {
     return <CartSkeleton />;
@@ -494,28 +490,6 @@ export function CartView() {
             <div className="flex justify-between text-sm sm:text-base">
               <span>Subtotal ({cart.totalItems} items)</span>
               <span>₹{subtotal.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="flex justify-between text-sm sm:text-base">
-              <span>Shipping</span>
-              <span>₹{shipping.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="flex justify-between text-sm sm:text-base">
-              <span>Handling Fee</span>
-              <span className="flex items-center gap-2">
-                <span className="line-through text-muted-foreground">₹{handlingFee.toLocaleString('en-IN')}</span>
-                <span className="text-green-600 font-medium">Free</span>
-              </span>
-            </div>
-            <div className="flex justify-between text-sm sm:text-base">
-              <span>Platform Fee</span>
-              <span className="flex items-center gap-2">
-                <span className="line-through text-muted-foreground">₹{platformFee.toLocaleString('en-IN')}</span>
-                <span className="text-green-600 font-medium">Free</span>
-              </span>
-            </div>
-            <div className="flex justify-between text-sm sm:text-base">
-              <span>Other Expense</span>
-              <span className="text-green-600 font-medium">Free</span>
             </div>
             <Separator />
             <div className="flex justify-between text-base sm:text-lg font-semibold">

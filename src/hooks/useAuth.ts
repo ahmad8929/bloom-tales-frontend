@@ -164,16 +164,13 @@ export function useAuth() {
     dispatch(loginStart());
     try {
       console.log('Making signup API call...');
-      // Prepare data to send - lastName is optional
-      const dataToSend: { firstName: string; lastName?: string; email: string; password: string } = {
+      // Prepare data to send - lastName is optional but API requires it, so use empty string if not provided
+      const dataToSend: { firstName: string; lastName: string; email: string; password: string } = {
         firstName: signupData.firstName || '',
+        lastName: (signupData.lastName && signupData.lastName.trim()) ? signupData.lastName.trim() : '',
         email: signupData.email || '',
         password: signupData.password || '',
       };
-      // Only include lastName if it's provided and not empty
-      if (signupData.lastName && signupData.lastName.trim()) {
-        dataToSend.lastName = signupData.lastName.trim();
-      }
       const res = await authApi.register(dataToSend);
       console.log('Signup API response:', res);
       
