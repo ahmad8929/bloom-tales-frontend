@@ -38,27 +38,23 @@ export function Footer() {
         <div className="absolute bottom-32 right-1/3 w-12 h-12 border border-white/20 rounded-full animate-bounce delay-200"></div>
       </div>
 
-      <div className="container mx-auto px-6 py-12 relative z-10">
+      <div className="container mx-auto px-6 py-8 relative z-10">
         {/* Top Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-8">
           {/* Brand Info */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <Heart className="w-4 h-4 text-primary-foreground" />
               </div>
-              <h2 className="text-2xl font-bold text-heading">
+              <h2 className="text-xl font-bold text-heading">
                 Bloomtales Boutique
               </h2>
             </div>
-            {/* <p className="text-card leading-relaxed">
-              At Bloomtales Boutique, we believe in blending timeless elegance with modern trends.
-              Discover curated collections crafted with love and attention to detail.
-            </p> */}
-            <div className="space-y-2 text-sm text-text-muted">
+            <div className="space-y-1.5 text-sm text-text-muted">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                <span>Bareli, Uttar Pardesh, India</span>
+                <span>Bareilly, Uttar Pradesh, India</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
@@ -98,12 +94,12 @@ export function Footer() {
           </div> */}
 
           {/* Customer Service */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-card mb-4 relative">
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-card mb-3 relative">
               Customer Service
               <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {customerService.map((link, index) => (
                 <li key={link.name}>
                   <Link 
@@ -151,20 +147,13 @@ export function Footer() {
           </div> */}
         </div>
 
-        {/* Divider with animation */}
-        <div className="relative mb-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
-          </div>
-          <div className="relative flex justify-center">
-            <div className="bg-text-normal px-4">
-              <div className="w-12 h-0.5 bg-primary animate-pulse"></div>
-            </div>
-          </div>
+        {/* Divider */}
+        <div className="relative mb-6">
+          <div className="w-full border-t border-border/30"></div>
         </div>
 
         {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Social Icons */}
           <div className="flex gap-4">
             {socialLinks.map((social, index) => (

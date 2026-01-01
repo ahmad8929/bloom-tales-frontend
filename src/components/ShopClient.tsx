@@ -71,24 +71,42 @@ const FilterSidebar = ({
 
         <div>
             <h3 className="font-headline text-lg mb-4">Color</h3>
-            <div className="grid grid-cols-2 gap-2">
-                {PRODUCT_COLORS.map((color) => (
-                    <div key={color.name} className="flex items-center gap-2">
-                        <Checkbox 
-                            id={`color-${color.name}`} 
-                            checked={selectedColors?.includes(color.name) ?? false}
-                            onCheckedChange={() => handleColorChange(color.name)} 
-                        />
-                        <Label htmlFor={`color-${color.name}`} className="text-sm flex items-center gap-2 cursor-pointer">
-                            <div
-                                className="w-4 h-4 rounded-full border border-gray-300"
-                                style={{ backgroundColor: color.hexCode }}
-                            />
-                            <span>{color.name}</span>
-                        </Label>
-                    </div>
-                ))}
+            <div className="max-h-64 overflow-y-auto">
+                <div className="space-y-1">
+                    {PRODUCT_COLORS.map((color) => {
+                        const isSelected = selectedColors?.includes(color.name) ?? false;
+                        return (
+                            <div 
+                                key={color.name} 
+                                className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
+                                    isSelected 
+                                        ? 'bg-primary text-primary-foreground' 
+                                        : 'hover:bg-accent'
+                                }`}
+                                onClick={() => handleColorChange(color.name)}
+                            >
+                                <Checkbox 
+                                    id={`color-${color.name}`} 
+                                    checked={isSelected}
+                                    onCheckedChange={() => handleColorChange(color.name)} 
+                                    className="flex-shrink-0"
+                                />
+                                <Label 
+                                    htmlFor={`color-${color.name}`} 
+                                    className="text-sm cursor-pointer flex-1"
+                                >
+                                    {color.name}
+                                </Label>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
+            {selectedColors.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                    {selectedColors.length} color{selectedColors.length > 1 ? 's' : ''} selected
+                </p>
+            )}
         </div>
 
         <div>
@@ -288,11 +306,18 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
       );
     }
 
-    // Color filter
+    // Color filter - check if any of the product's colors match selected colors
     if (selectedColors.length > 0) {
-      filtered = filtered.filter(product => 
-        product.color && selectedColors.includes(product.color.name)
-      );
+      filtered = filtered.filter(product => {
+        // Check if product has colors array
+        if (product.colors && Array.isArray(product.colors) && product.colors.length > 0) {
+          return product.colors.some((color: any) => 
+            selectedColors.includes(color.name)
+          );
+        }
+        // Fallback to single color field
+        return product.color && selectedColors.includes(product.color.name);
+      });
     }
 
     // Size filter - check variants if they exist, otherwise check legacy size

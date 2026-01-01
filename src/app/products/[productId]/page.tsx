@@ -458,16 +458,25 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
           {/* Product Details */}
           <div className="space-y-4">
-            {/* Product Color Display */}
-            {product.color && (
+            {/* Product Colors Display */}
+            {((product.colors && product.colors.length > 0) || product.color) && (
               <div className="space-y-2">
-                <Label className="font-semibold text-base">Color</Label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded-full border-2 border-gray-300"
-                    style={{ backgroundColor: product.color.hexCode }}
-                  />
-                  <span className="font-medium">{product.color.name}</span>
+                <Label className="font-semibold text-base">
+                  {product.colors && product.colors.length > 1 ? 'Colors' : 'Color'}
+                </Label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(product.colors && product.colors.length > 0 ? product.colors : product.color ? [product.color] : []).map((color: any, index: number) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-200 hover:border-primary transition-colors"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full border-2 border-gray-300"
+                        style={{ backgroundColor: color.hexCode }}
+                      />
+                      <span className="text-sm font-medium">{color.name}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -681,15 +690,22 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                       <dd className="font-medium">{product.size}</dd>
                     </div>
                   )}
-                  {product.color && (
+                  {((product.colors && product.colors.length > 0) || product.color) && (
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Color:</dt>
-                      <dd className="font-medium flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded-full border border-gray-300"
-                          style={{ backgroundColor: product.color.hexCode }}
-                        />
-                        {product.color.name}
+                      <dt className="text-muted-foreground">
+                        {product.colors && product.colors.length > 1 ? 'Colors:' : 'Color:'}
+                      </dt>
+                      <dd className="font-medium flex items-center gap-2 flex-wrap">
+                        {(product.colors && product.colors.length > 0 ? product.colors : product.color ? [product.color] : []).map((color: any, index: number) => (
+                          <div key={index} className="flex items-center gap-1.5">
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: color.hexCode }}
+                            />
+                            <span className="text-sm">{color.name}</span>
+                            {index < (product.colors?.length || 1) - 1 && <span className="text-muted-foreground">,</span>}
+                          </div>
+                        ))}
                       </dd>
                     </div>
                   )}

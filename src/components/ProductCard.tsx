@@ -227,7 +227,6 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
         
         {/* Pricing */}
         <div className="flex items-center gap-1.5 mb-1.5">
-
           <span className="font-bold text-base text-primary">
             {formatPrice(product.price)}
           </span>

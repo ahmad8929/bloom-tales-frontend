@@ -46,19 +46,26 @@ const PRODUCT_CATEGORIES = ['Cordset', 'Anarkali', 'Suite', 'Kurti', 'Saree', 'L
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  price: z.coerce.number().positive('Price must be positive'),
-  comparePrice: z.coerce.number().positive('Compare price must be positive').optional(),
-  material: z.string().min(2, 'Material is required'),
-  category: z.enum(PRODUCT_CATEGORIES, {
-    required_error: 'Please select a category',
-  }),
-  careInstructions: z.string().min(10, 'Care instructions are required'),
+  price: z.coerce.number().min(0, 'Price cannot be negative'),
+  comparePrice: z.coerce.number().min(0, 'Compare price cannot be negative').optional(),
+  material: z.string().optional(),
+  category: z.enum(PRODUCT_CATEGORIES).optional(),
+  careInstructions: z.string().optional(),
   isNewArrival: z.boolean().default(false),
   isSale: z.boolean().default(false),
   color: z.object({
     name: z.string(),
     hexCode: z.string()
   }).optional(),
+}).refine((data) => {
+  // Compare price should be greater than normal price when provided
+  if (data.comparePrice !== undefined && data.comparePrice !== null) {
+    return data.comparePrice > data.price;
+  }
+  return true;
+}, {
+  message: 'Compare price must be greater than normal price',
+  path: ['comparePrice'],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -82,7 +89,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
-  const [selectedColor, setSelectedColor] = useState<{ name: string; hexCode: string } | null>(null);
+  const [selectedColors, setSelectedColors] = useState<{ name: string; hexCode: string }[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -131,15 +138,26 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         setExistingImages(imageUrls);
       }
 
-      // Set color for editing
-      if (initialData.color) {
-        setSelectedColor(initialData.color);
-      } else if (initialData.colors && initialData.colors.length > 0) {
-        // Try to match with fixed color set
+      // Set colors for editing (support multiple colors)
+      if (initialData.colors && Array.isArray(initialData.colors) && initialData.colors.length > 0) {
+        // Match colors with the fixed color set
+        const matchedColors = initialData.colors
+          .map((color: any) => {
+            const matched = PRODUCT_COLORS.find(c => 
+              c.name === color.name || c.hexCode === color.hexCode
+            );
+            return matched || (color.name && color.hexCode ? color : null);
+          })
+          .filter((c: any) => c !== null);
+        setSelectedColors(matchedColors);
+      } else if (initialData.color) {
+        // Legacy: single color support
         const matchedColor = PRODUCT_COLORS.find(c => 
-          c.name === initialData.colors[0].name || c.hexCode === initialData.colors[0].hexCode
+          c.name === initialData.color.name || c.hexCode === initialData.color.hexCode
         );
-        setSelectedColor(matchedColor || null);
+        setSelectedColors(matchedColor ? [matchedColor] : []);
+      } else {
+        setSelectedColors([]);
       }
 
       // Set variants for editing (size + stock only)
@@ -201,6 +219,18 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
     try {
       setIsLoading(true);
       
+      // Validate that at least one image exists (existing or new)
+      const totalImages = existingImages.length + selectedImages.length;
+      if (totalImages === 0) {
+        toast({
+          title: 'Validation Error',
+          description: 'At least one product image is required.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       // Create FormData for file upload
       const formData = new FormData();
       
@@ -211,16 +241,14 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         }
       });
 
-      // Append color (product-level, fixed color set)
-      if (selectedColor) {
-        formData.append('color', JSON.stringify(selectedColor));
-      }
-
-      // Append default colors as JSON string (for backward compatibility)
-      if (selectedColor) {
-        formData.append('colors', JSON.stringify([selectedColor]));
+      // Append colors (multiple colors support)
+      if (selectedColors.length > 0) {
+        formData.append('colors', JSON.stringify(selectedColors));
+        // Also set the first color as the primary color for backward compatibility
+        formData.append('color', JSON.stringify(selectedColors[0]));
       } else {
-        formData.append('colors', JSON.stringify([{ name: 'Default', hexCode: '#000000' }]));
+        // No colors selected - optional field
+        formData.append('colors', JSON.stringify([]));
       }
 
       // Append variants (size + stock only)
@@ -301,7 +329,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
     setImagePreview([]);
     setExistingImages([]);
     setVariants([]);
-    setSelectedColor(null);
+    setSelectedColors([]);
   };
 
   const handleClose = (open: boolean) => {
@@ -367,7 +395,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <FormLabel>Product Images</FormLabel>
+              <FormLabel>Product Images <span className="text-red-500">*</span></FormLabel>
               
               {/* Existing Images */}
               {existingImages.length > 0 && (
@@ -456,7 +484,13 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                   <FormItem>
                     <FormLabel>Price (₹)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        placeholder="0.00" 
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -468,9 +502,19 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                 name="comparePrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Compare Price (₹)</FormLabel>
+                    <FormLabel>Compare Price (₹) <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        placeholder="0.00" 
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : Number(e.target.value);
+                          field.onChange(value);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -484,11 +528,11 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>Category</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
+                          <SelectValue placeholder="Select a category (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -504,35 +548,46 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                 )}
               />
 
-              {/* Color Selection - Product Level */}
+              {/* Color Selection - Multiple Colors */}
               <div className="space-y-2">
-                <FormLabel>Color <span className="text-red-500">*</span></FormLabel>
-                <Select
-                  value={selectedColor?.name || ''}
-                  onValueChange={(value) => {
-                    const color = PRODUCT_COLORS.find(c => c.name === value);
-                    setSelectedColor(color || null);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRODUCT_COLORS.map((color) => (
-                      <SelectItem key={color.name} value={color.name}>
-                        <div className="flex items-center gap-2">
+                <FormLabel>Colors <span className="text-gray-500 text-xs">(optional, select multiple)</span></FormLabel>
+                <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {PRODUCT_COLORS.map((color) => {
+                      const isSelected = selectedColors.some(c => c.name === color.name);
+                      return (
+                        <div
+                          key={color.name}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedColors(selectedColors.filter(c => c.name !== color.name));
+                            } else {
+                              setSelectedColors([...selectedColors, color]);
+                            }
+                          }}
+                          className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border transition-colors ${
+                            isSelected
+                              ? 'bg-primary/10 border-primary'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
                           <div
-                            className="w-4 h-4 rounded-full border border-gray-300"
+                            className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0"
                             style={{ backgroundColor: color.hexCode }}
                           />
-                          <span>{color.name}</span>
+                          <span className="text-sm truncate text-xs sm:text-sm">{color.name}</span>
+                          {isSelected && (
+                            <span className="ml-auto text-primary text-xs">✓</span>
+                          )}
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!selectedColor && (
-                  <p className="text-sm text-destructive">Please select a color</p>
+                      );
+                    })}
+                  </div>
+                </div>
+                {selectedColors.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedColors.length} color{selectedColors.length > 1 ? 's' : ''} selected
+                  </p>
                 )}
               </div>
             </div>
@@ -623,7 +678,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               name="material"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Material</FormLabel>
+                  <FormLabel>Material <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Cotton, Polyester, Silk" {...field} />
                   </FormControl>
@@ -637,7 +692,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               name="careInstructions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Care Instructions</FormLabel>
+                  <FormLabel>Care Instructions <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Enter care instructions (one per line)"
@@ -706,7 +761,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || !selectedColor || variants.length === 0}
+                disabled={isLoading || variants.length === 0}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Update Product' : 'Save Product'}

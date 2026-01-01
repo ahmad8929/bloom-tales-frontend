@@ -121,7 +121,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="geo.region" content="IN-UP" />
-        <meta name="geo.placename" content="Bareli, Uttar Pradesh" />
+        <meta name="geo.placename" content="Bareilly, Uttar Pradesh" />
         <meta name="language" content="English" />
         <meta name="revisit-after" content="7 days" />
         <meta name="distribution" content="global" />
@@ -165,7 +165,7 @@ export default function RootLayout({
               "priceRange": "₹₹",
               "address": {
                 "@type": "PostalAddress",
-                "addressLocality": "Bareli",
+                "addressLocality": "Bareilly",
                 "addressRegion": "Uttar Pradesh",
                 "addressCountry": "IN"
               },

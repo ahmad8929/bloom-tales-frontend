@@ -47,22 +47,16 @@ const NavigationLink = ({
     <Button 
       variant="ghost" 
       size={isMobile ? "default" : "sm"}
-      className={`relative group transition-all duration-300 hover:scale-105 ${
-        isMobile ? 'w-full justify-start px-4 py-3' : 'px-3 lg:px-4 py-2'
-      } rounded-lg font-medium ${
+      className={`transition-colors ${
+        isMobile ? 'w-full justify-start px-4 py-2.5' : 'px-4 py-2'
+      } rounded-md font-medium ${
         isActive 
-          ? 'text-primary-foreground bg-primary shadow-lg shadow-primary/25' 
-          : 'text-[#FAEEE8] hover:text-primary hover:bg-primary/20'
+          ? 'bg-primary text-primary-foreground' 
+          : 'text-foreground/70 hover:text-foreground hover:bg-accent'
       }`}
     >
-      {premium && <Crown className="w-3 h-3 mr-1 text-yellow-400" />}
+      {premium && <Crown className="w-3 h-3 mr-1.5 text-yellow-400" />}
       {children}
-      {!isActive && (
-        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary/10"></div>
-      )}
-      {isActive && !isMobile && (
-        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full blur-sm opacity-60"></div>
-      )}
     </Button>
   </Link>
 );
@@ -86,130 +80,119 @@ export function NavigationMenu({
 
 if (isMobile) {
   return (
-    <div className="flex flex-col justify-between h-full space-y-4">
+    <div className="flex flex-col justify-between h-full space-y-6">
       {/* Navigation Section */}
-      <div className="space-y-2 overflow-y-auto">
-        <div className="bg-[#5A3E2B]/30 rounded-lg p-4 border border-primary/20">
-          <NavigationLink 
-            href="/products" 
-            isActive={pathname === '/products'}
-            onClick={onItemClick}
-            isMobile
-          >
-            All Products
-          </NavigationLink>
-        </div>
+      <div className="space-y-1 overflow-y-auto">
+        <NavigationLink 
+          href="/products" 
+          isActive={pathname === '/products'}
+          onClick={onItemClick}
+          isMobile
+        >
+          All Products
+        </NavigationLink>
 
-        {(loadingCategories ? (
-          <div className="flex items-center gap-2 text-[#FAEEE8] px-4 py-3">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        {loadingCategories ? (
+          <div className="flex items-center gap-2 text-muted-foreground px-4 py-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm">Loading categories...</span>
           </div>
         ) : Array.isArray(categories) && categories.length > 0 ? (
-          <div className="space-y-1">
-            {categories.map((category) => (
-              <div key={category.slug} className="bg-[#5A3E2B]/30 rounded-lg">
-                <NavigationLink
-                  href={`/category/${category.slug}`}
-                  isActive={pathname === `/category/${category.slug}`}
-                  onClick={onItemClick}
-                  isMobile
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-sm font-medium">{category.name}</span>
-                    {category.count > 0 && (
-                      <span className="ml-2 text-xs text-primary bg-primary/20 px-2 py-0.5 rounded-full">
-                        {category.count}
-                      </span>
-                    )}
-                  </div>
-                </NavigationLink>
+          categories.map((category) => (
+            <NavigationLink
+              key={category.slug}
+              href={`/category/${category.slug}`}
+              isActive={pathname === `/category/${category.slug}`}
+              onClick={onItemClick}
+              isMobile
+            >
+              <div className="flex items-center justify-between w-full">
+                <span>{category.name}</span>
+                {category.count > 0 && (
+                  <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+                    {category.count}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+            </NavigationLink>
+          ))
         ) : (
-          <div className="text-center text-[#FAEEE8] px-4 py-3 text-sm">
+          <div className="text-center text-muted-foreground px-4 py-3 text-sm">
             No categories available
           </div>
-        ))}
+        )}
       </div>
 
       {/* User Section at Bottom */}
-      <div className="bg-[#5A3E2B]/30 rounded-lg p-4 border border-primary/20">
+      <div className="border-t pt-4 space-y-1">
         {isAuthenticated && user ? (
-          <div className="space-y-3">
+          <>
             {/* User Info */}
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+            <div className="flex items-center gap-3 px-4 py-2 mb-2">
+              <Avatar className="w-9 h-9">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {user.firstName?.[0] ?? 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <div className="font-semibold text-[#FAEEE8] truncate">
+                <div className="font-medium truncate">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-xs text-[#FAEEE8]/70 truncate">{user.email}</div>
-                {user.role === 'admin' && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Crown className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs text-yellow-600 font-medium">Administrator</span>
-                  </div>
-                )}
+                <div className="text-xs text-muted-foreground truncate">{user.email}</div>
               </div>
             </div>
 
+            <Separator className="my-2" />
+
             {/* User Actions */}
-            <div className="space-y-1 mt-2">
+            <NavigationLink
+              href="/orders"
+              onClick={onItemClick}
+              isMobile
+            >
+              <ShoppingCart className="h-4 w-4 mr-3" />
+              My Orders
+            </NavigationLink>
+
+            <NavigationLink
+              href="/profile"
+              onClick={onItemClick}
+              isMobile
+            >
+              <Settings className="h-4 w-4 mr-3" />
+              Profile Settings
+            </NavigationLink>
+
+            {user.role === 'admin' && (
               <NavigationLink
-                href="/orders"
+                href="/admin"
                 onClick={onItemClick}
                 isMobile
               >
-                <ShoppingCart className="h-4 w-4 mr-3 text-primary" />
-                My Orders
+                <Crown className="h-4 w-4 mr-3 text-yellow-500" />
+                Admin Panel
               </NavigationLink>
+            )}
 
-              <NavigationLink
-                href="/profile"
-                onClick={onItemClick}
-                isMobile
-              >
-                <Settings className="h-4 w-4 mr-3 text-primary" />
-                Profile Settings
-              </NavigationLink>
-
-              {user.role === 'admin' && (
-                <NavigationLink
-                  href="/admin"
-                  onClick={onItemClick}
-                  isMobile
-                >
-                  <Crown className="h-4 w-4 mr-3 text-yellow-600" />
-                  Admin Panel
-                </NavigationLink>
-              )}
-
-              <Button
-                onClick={() => {
-                  logoutUser?.();
-                  onItemClick?.();
-                }}
-                variant="ghost"
-                className="w-full justify-start px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
-              >
-                <User className="h-4 w-4 mr-3" />
-                Logout
-              </Button>
-            </div>
-          </div>
+            <Button
+              onClick={() => {
+                logoutUser?.();
+                onItemClick?.();
+              }}
+              variant="ghost"
+              className="w-full justify-start px-4 py-2.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <User className="h-4 w-4 mr-3" />
+              Logout
+            </Button>
+          </>
         ) : (
           <NavigationLink
             href="/login"
             onClick={onItemClick}
             isMobile
           >
-            <User className="h-4 w-4 mr-3 text-primary" />
+            <User className="h-4 w-4 mr-3" />
             Login / Sign Up
           </NavigationLink>
         )}
@@ -220,17 +203,16 @@ if (isMobile) {
 
 
   return (
-    <nav className="hidden lg:flex items-center gap-1 bg-[#5A3E2B]/30 backdrop-blur-sm rounded-full px-2 py-1 border border-primary/20">
+    <nav className="hidden lg:flex items-center gap-1">
       {loadingCategories ? (
         <div className="flex items-center gap-2 text-muted-foreground px-4 py-2">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-sm">Loading...</span>
         </div>
       ) : (
         <>
-          <NavigationLink href="/products" isActive={pathname === '/products'} >
-            <span className="hidden xl:inline">All Products</span>
-            <span className="xl:hidden">Products</span>
+          <NavigationLink href="/products" isActive={pathname === '/products'}>
+            All Products
           </NavigationLink>
           {Array.isArray(categories) && categories.length > 0 ? (
             categories.map((category) => (
@@ -240,11 +222,11 @@ if (isMobile) {
                     href={`/category/${category.slug}`} 
                     isActive={isActiveCategory(category.slug)}
                   >
-                    <span className="text-xs xl:text-sm font-medium">{category.name}</span>
+                    {category.name}
                   </NavigationLink>
                 </TooltipTrigger>
-                <TooltipContent className="bg-primary text-primary-foreground border-none">
-                  <p className="font-medium">
+                <TooltipContent>
+                  <p>
                     {category.count > 0 ? `${category.count} ${category.name} products` : `Explore ${category.name} collection`}
                   </p>
                 </TooltipContent>
