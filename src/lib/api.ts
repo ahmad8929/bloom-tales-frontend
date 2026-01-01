@@ -1,7 +1,7 @@
 import { getCookie, removeCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = "https://bloom-backend-rtch.onrender.com";
+const API_URL = " http://localhost:5000";
 
 interface ApiResponse<T> {
   data?: T;
@@ -282,7 +282,7 @@ export const authApi = {
     }
   },
 
-  register: async (signupData: { firstName: string; lastName: string; email: string; password: string }) => {
+  register: async (signupData: { firstName: string; lastName?: string; email: string; password: string }) => {
     try {
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',

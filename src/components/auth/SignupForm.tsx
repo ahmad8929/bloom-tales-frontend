@@ -73,19 +73,20 @@ export function SignupForm() {
       } else {
         // Handle validation errors from API
         if (result?.validationErrors) {
+          const validationErrors = result.validationErrors;
           // Set field-specific errors
-          Object.keys(result.validationErrors).forEach((field) => {
+          Object.keys(validationErrors).forEach((field) => {
             const fieldName = field as keyof SignupFormData;
             if (fieldName in form.getValues()) {
               form.setError(fieldName, {
                 type: 'server',
-                message: result.validationErrors[field],
+                message: validationErrors[field],
               });
             }
           });
           
           // Show toast with first error message
-          const firstError = Object.values(result.validationErrors)[0];
+          const firstError = Object.values(validationErrors)[0];
           toast({
             title: 'Validation Error',
             description: firstError || 'Please check the form for errors',
