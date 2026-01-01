@@ -201,7 +201,24 @@ export function LoginForm() {
             description: result.error,
             variant: 'destructive',
           });
+        } else if (result.code === 'EMAIL_NOT_FOUND') {
+          // Email doesn't exist - show friendly message with signup link
+          setError(result.error || 'This email is not registered. Please sign up first.');
+          toast({
+            title: 'Email Not Found',
+            description: result.error || 'This email is not registered. Please sign up first.',
+            variant: 'destructive',
+          });
+        } else if (result.code === 'INCORRECT_PASSWORD') {
+          // Password is incorrect - show specific message
+          setError(result.error || 'Incorrect password.');
+          toast({
+            title: 'Incorrect Password',
+            description: result.error || 'The password you entered is incorrect. Please try again.',
+            variant: 'destructive',
+          });
         } else {
+          // Generic error
           setError(result.error || 'Login failed');
           toast({
             title: 'Login Failed',
@@ -212,20 +229,39 @@ export function LoginForm() {
       }
     } catch (err: any) {
       const errorMessage = err.message || 'An unexpected error occurred. Please try again.';
+      const errorCode = err.code || err.response?.data?.code;
       
-      if (err.code === 'EMAIL_NOT_VERIFIED' || errorMessage.includes('verify your email')) {
+      if (errorCode === 'EMAIL_NOT_VERIFIED' || errorMessage.includes('verify your email')) {
         setNeedsEmailVerification(true);
         setUserEmail(data.email);
         setError(errorMessage);
+        toast({
+          title: 'Email Verification Required',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      } else if (errorCode === 'EMAIL_NOT_FOUND' || errorMessage.includes('not registered')) {
+        setError(errorMessage);
+        toast({
+          title: 'Email Not Found',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      } else if (errorCode === 'INCORRECT_PASSWORD' || errorMessage.includes('Incorrect password')) {
+        setError(errorMessage);
+        toast({
+          title: 'Incorrect Password',
+          description: errorMessage,
+          variant: 'destructive',
+        });
       } else {
         setError(errorMessage);
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
       }
-      
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
     }
   };
 
@@ -266,7 +302,7 @@ export function LoginForm() {
         </div>
 
         {/* Redirect Reason Alert */}
-        {redirectReason && !needsEmailVerification && !error && (
+        {/* {redirectReason && !needsEmailVerification && !error && (
           <Alert className="border-blue-200 bg-blue-50 text-blue-900 rounded-lg">
             <AlertCircle className="h-5 w-5 text-blue-600" />
             <AlertDescription className="text-blue-800">
@@ -279,10 +315,10 @@ export function LoginForm() {
               )}
             </AlertDescription>
           </Alert>
-        )}
+        )} */}
 
         {/* Email Verification Alert */}
-        {needsEmailVerification && (
+        {/* {needsEmailVerification && (
           <Alert className="border-primary/30 bg-primary/10 text-text-normal rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" />
@@ -299,15 +335,27 @@ export function LoginForm() {
               Resend Email
             </Button>
           </Alert>
-        )}
+        )} */}
 
         {/* General Error Alert */}
-        {error && !needsEmailVerification && (
-          <Alert variant="destructive" className="rounded-lg flex items-center gap-2">
+        {/* {error && !needsEmailVerification && (
+          <Alert variant="destructive" className="rounded-lg">
             <AlertCircle className="h-5 w-5" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              {error.includes('not registered') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="ml-4 border-primary text-primary hover:bg-secondary-hover"
+                >
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
+              )}
+            </AlertDescription>
           </Alert>
-        )}
+        )} */}
 
         {/* Login Form */}
         <Form {...form}>

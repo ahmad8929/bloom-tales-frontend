@@ -39,6 +39,7 @@ interface AuthResult {
   error?: string;
   code?: string;
   user?: User;
+  validationErrors?: Record<string, string>;
 }
 
 const mapUserResponse = (user: any): User => ({
@@ -163,13 +164,16 @@ export function useAuth() {
     dispatch(loginStart());
     try {
       console.log('Making signup API call...');
-      // Provide default empty strings for optional fields
-      const dataToSend = {
+      // Prepare data to send - lastName is optional
+      const dataToSend: { firstName: string; lastName?: string; email: string; password: string } = {
         firstName: signupData.firstName || '',
-        lastName: signupData.lastName || '',
         email: signupData.email || '',
         password: signupData.password || '',
       };
+      // Only include lastName if it's provided and not empty
+      if (signupData.lastName && signupData.lastName.trim()) {
+        dataToSend.lastName = signupData.lastName.trim();
+      }
       const res = await authApi.register(dataToSend);
       console.log('Signup API response:', res);
       
@@ -245,7 +249,24 @@ export function useAuth() {
       console.error('Signup error caught:', err);
       
       let errorMessage = 'An unexpected error occurred';
-      if (err.response?.data?.message) {
+      let validationErrors: Record<string, string> = {};
+      
+      // Extract detailed validation errors from API response
+      if (err.response?.data?.error?.errors) {
+        const errors = err.response.data.error.errors;
+        // Convert Mongoose validation errors to a simple object
+        Object.keys(errors).forEach((key) => {
+          if (errors[key]?.message) {
+            validationErrors[key] = errors[key].message;
+          }
+        });
+        
+        // Create a user-friendly error message from validation errors
+        const errorMessages = Object.values(validationErrors);
+        if (errorMessages.length > 0) {
+          errorMessage = errorMessages.join(', ');
+        }
+      } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.message) {
         errorMessage = err.message;
@@ -254,7 +275,8 @@ export function useAuth() {
       dispatch(loginFailure(errorMessage));
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        validationErrors: Object.keys(validationErrors).length > 0 ? validationErrors : undefined
       };
     }
   };

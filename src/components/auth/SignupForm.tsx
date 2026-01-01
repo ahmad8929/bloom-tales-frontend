@@ -21,11 +21,11 @@ import { toast } from '@/hooks/use-toast';
 
 const signupSchema = z
   .object({
-    firstName: z.string().optional(),
+    firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().optional(),
-    email: z.string().optional(),
-    password: z.string().optional(),
-    confirmPassword: z.string().optional(),
+    email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
+    password: z.string().min(1, 'Password is required'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -71,7 +71,34 @@ export function SignupForm() {
           window.location.href = '/';
         }, 1000);
       } else {
-        throw new Error(result?.error || 'Signup failed');
+        // Handle validation errors from API
+        if (result?.validationErrors) {
+          // Set field-specific errors
+          Object.keys(result.validationErrors).forEach((field) => {
+            const fieldName = field as keyof SignupFormData;
+            if (fieldName in form.getValues()) {
+              form.setError(fieldName, {
+                type: 'server',
+                message: result.validationErrors[field],
+              });
+            }
+          });
+          
+          // Show toast with first error message
+          const firstError = Object.values(result.validationErrors)[0];
+          toast({
+            title: 'Validation Error',
+            description: firstError || 'Please check the form for errors',
+            variant: 'destructive',
+          });
+        } else {
+          // Generic error
+          toast({
+            title: 'Signup failed',
+            description: result?.error || 'An unexpected error occurred',
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error: any) {
       console.error('Signup error:', error);

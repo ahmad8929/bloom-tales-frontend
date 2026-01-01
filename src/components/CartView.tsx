@@ -363,7 +363,7 @@ export function CartView() {
             <div className="flex gap-3 sm:gap-4 p-3 sm:p-4">
               {/* Product Image - Fixed size on mobile */}
               <Link 
-                href={`/products/${item.product.slug || item.productId}`}
+                href={`/products/${item.product._id || item.productId}`}
                 className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200"
               >
                 <Image
@@ -381,7 +381,7 @@ export function CartView() {
                 {/* Product Info Section */}
                 <div className="flex-1 min-w-0">
                   <Link 
-                    href={`/products/${item.product.slug || item.productId}`}
+                    href={`/products/${item.product._id || item.productId}`}
                     className="text-sm sm:text-base font-semibold hover:text-primary transition-colors block line-clamp-2 mb-1.5"
                   >
                     {item.product.name}
