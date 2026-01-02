@@ -58,8 +58,8 @@ const formSchema = z.object({
     hexCode: z.string()
   }).optional(),
 }).refine((data) => {
-  // Compare price should be greater than normal price when provided
-  if (data.comparePrice !== undefined && data.comparePrice !== null) {
+  // Compare price should be greater than normal price when provided (and greater than 0)
+  if (data.comparePrice !== undefined && data.comparePrice !== null && data.comparePrice > 0) {
     return data.comparePrice > data.price;
   }
   return true;
@@ -622,11 +622,17 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                     <FormLabel>Price (₹)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
+                        type="text" 
+                        inputMode="decimal"
                         placeholder="0.00" 
-                        {...field}
+                        value={field.value !== undefined && field.value !== null ? String(field.value) : ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow only numbers and decimal point
+                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            field.onChange(value === '' ? 0 : Number(value));
+                          }
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -642,14 +648,19 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                     <FormLabel>Compare Price (₹) <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
                     <FormControl>
                       <Input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
+                        type="text" 
+                        inputMode="decimal"
                         placeholder="0.00" 
-                        value={field.value ?? ''}
+                        value={field.value !== undefined && field.value !== null ? String(field.value) : ''}
                         onChange={(e) => {
-                          const value = e.target.value === '' ? undefined : Number(e.target.value);
-                          field.onChange(value);
+                          const value = e.target.value;
+                          // Allow only numbers and decimal point
+                          if (value === '') {
+                            field.onChange(undefined);
+                          } else if (/^\d*\.?\d*$/.test(value)) {
+                            const numValue = Number(value);
+                            field.onChange(numValue > 0 ? numValue : undefined);
+                          }
                         }}
                       />
                     </FormControl>
