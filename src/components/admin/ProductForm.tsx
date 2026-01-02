@@ -88,6 +88,9 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [existingVideo, setExistingVideo] = useState<string | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedColors, setSelectedColors] = useState<{ name: string; hexCode: string }[]>([]);
 
@@ -136,6 +139,11 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
           typeof img === 'string' ? img : img.url
         );
         setExistingImages(imageUrls);
+      }
+
+      // Set existing video for editing
+      if (initialData.video) {
+        setExistingVideo(initialData.video);
       }
 
       // Set colors for editing (support multiple colors)
@@ -215,6 +223,46 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate video file
+    if (!file.type.startsWith('video/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please select a video file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Video file must be less than 50MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
+  };
+
+  const removeExistingVideo = () => {
+    setExistingVideo(null);
+  };
+
   async function handleSubmit(data: FormValues) {
     try {
       setIsLoading(true);
@@ -265,6 +313,16 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       selectedImages.forEach((image, index) => {
         formData.append('images', image, `image-${index}.${image.name.split('.').pop()}`);
       });
+
+      // Append video if selected
+      if (selectedVideo) {
+        formData.append('video', selectedVideo, selectedVideo.name);
+      }
+
+      // Append existing video if not removed
+      if (existingVideo && !selectedVideo) {
+        formData.append('existingVideo', existingVideo);
+      }
 
       console.log('Submitting product with form data...');
       
@@ -328,6 +386,12 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
     imagePreview.forEach(url => URL.revokeObjectURL(url));
     setImagePreview([]);
     setExistingImages([]);
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
+    setExistingVideo(null);
     setVariants([]);
     setSelectedColors([]);
   };
@@ -471,6 +535,79 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Video Upload */}
+            <div className="space-y-2">
+              <FormLabel>Product Video <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
+              
+              {/* Existing Video */}
+              {existingVideo && !selectedVideo && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Current Video:</p>
+                  <div className="relative">
+                    <video
+                      src={existingVideo}
+                      controls
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeExistingVideo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload New Video */}
+              {(!existingVideo || selectedVideo) && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <div className="text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="mt-2">
+                      <label htmlFor="video" className="cursor-pointer">
+                        <span className="mt-2 block text-sm font-medium text-gray-900">
+                          {existingVideo ? 'Replace video' : 'Upload video'}
+                        </span>
+                        <span className="block text-sm text-gray-500">
+                          MP4, MOV, AVI up to 50MB
+                        </span>
+                      </label>
+                      <input
+                        id="video"
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoSelect}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* New Video Preview */}
+              {videoPreview && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">New Video Preview:</p>
+                  <div className="relative">
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeVideo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               )}

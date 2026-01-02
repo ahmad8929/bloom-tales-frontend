@@ -401,8 +401,12 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
       <div className="grid md:grid-cols-2 gap-8 items-start mb-16">
         {/* Product Images */}
-        <div className="md:sticky md:top-4 w-full md:max-w-md md:mx-auto">
-          <ProductImageGallery imageUrls={imageUrls} productName={product.name} />
+        <div className="md:sticky md:top-4 w-full">
+          <ProductImageGallery 
+            imageUrls={imageUrls} 
+            productName={product.name}
+            videoUrl={product.video}
+          />
         </div>
 
         {/* Product Details */}

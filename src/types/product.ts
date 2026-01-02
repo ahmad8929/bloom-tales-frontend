@@ -21,6 +21,7 @@ export interface Product {
   colors?: ProductColor[]; // Legacy, for backward compatibility
   variants?: ProductVariant[]; // Size + stock variants
   images: ProductImage[];
+  video?: string; // Optional video URL
   createdAt?: string;
   updatedAt?: string;
   status?: string; // Product status

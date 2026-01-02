@@ -284,7 +284,7 @@ export const authApi = {
 
   register: async (signupData: { firstName: string; lastName: string; email: string; password: string }) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/signup`, {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
