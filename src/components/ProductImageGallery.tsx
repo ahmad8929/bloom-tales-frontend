@@ -171,10 +171,10 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
   return (
     <>
       <div className="space-y-4 w-full">
-        <Card className="overflow-hidden w-full">
+        <Card className="overflow-hidden w-full bg-transparent border-0 shadow-none">
           <CardContent className="p-0 w-full">
             <div 
-              className="relative aspect-[4/5] w-full cursor-pointer"
+              className="relative w-full cursor-pointer flex items-center justify-center min-h-[400px]"
               onClick={() => {
                 const index = mediaItems.findIndex(item => item.url === selectedMedia.url);
                 openModal(index >= 0 ? index : 0);
@@ -184,7 +184,7 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                 <video
                   ref={mainVideoRef}
                   src={selectedMedia.url}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto max-h-[80vh] object-contain"
                   data-ai-hint="product video"
                   autoPlay
                   loop
@@ -194,10 +194,13 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                 <Image
                   src={selectedMedia.url}
                   alt={`Main image for ${productName}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 400px"
+                  width={1200}
+                  height={1500}
+                  className="w-full h-auto object-contain max-h-[80vh]"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   data-ai-hint="product image"
+                  priority
+                  unoptimized
                 />
               )}
             </div>
