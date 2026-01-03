@@ -7,7 +7,7 @@ import { RootState } from '@/store';
 import { updateCartItemLocal } from '@/store/slices/cartSlice';
 import { useCart } from '@/hooks/useCart';
 import { productApi, cartApi } from "@/lib/api";
-import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Heart } from "lucide-react";
+import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Share2 } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { CartQuantityControls } from "@/components/CartQuantityControls";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
@@ -32,7 +32,6 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | undefined>();
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -203,6 +202,37 @@ export default function ProductDetailPage() {
     window.dispatchEvent(new CustomEvent('cartUpdated', {
       detail: { action: 'add', productId }
     }));
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    
+    const productUrl = `${window.location.origin}/products/${productId}`;
+    const shareText = `Check out ${product.name} on Bloom Tales!`;
+    
+    try {
+      // Try Web Share API first (mobile devices)
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: shareText,
+          url: productUrl,
+        });
+      } else {
+        // Fallback: Copy to clipboard
+        await navigator.clipboard.writeText(productUrl);
+      }
+    } catch (error: any) {
+      // User cancelled or error occurred
+      if (error.name !== 'AbortError') {
+        // Try fallback to clipboard if Web Share failed
+        try {
+          await navigator.clipboard.writeText(productUrl);
+        } catch (clipboardError) {
+          // Silent fail - no toast notification
+        }
+      }
+    }
   };
 
   const handleBuyNow = async () => {
@@ -603,12 +633,22 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                     }}
                   />
                 </div>
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90"
-                  onClick={handleBuyNow}
-                >
-                  Buy Now
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                    onClick={handleBuyNow}
+                  >
+                    Buy Now
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleShare}
+                    title="Share product"
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex gap-4">
@@ -637,10 +677,11 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={handleShare}
                   className="shrink-0"
+                  title="Share product"
                 >
-                  <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Share2 className="h-5 w-5" />
                 </Button>
               </div>
             )}

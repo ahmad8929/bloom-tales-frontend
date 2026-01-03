@@ -12,7 +12,7 @@ import { AddToCartButton } from './AddToCartButton';
 import { CartQuantityControls } from './CartQuantityControls';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { Star, Tag } from 'lucide-react';
+import { Star, Tag, Share2 } from 'lucide-react';
 import { cartApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
@@ -173,6 +173,38 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const productUrl = `${window.location.origin}/products/${productId}`;
+    const shareText = `Check out ${product.name} on Bloom Tales!`;
+    
+    try {
+      // Try Web Share API first (mobile devices)
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: shareText,
+          url: productUrl,
+        });
+      } else {
+        // Fallback: Copy to clipboard
+        await navigator.clipboard.writeText(productUrl);
+      }
+    } catch (error: any) {
+      // User cancelled or error occurred
+      if (error.name !== 'AbortError') {
+        // Try fallback to clipboard if Web Share failed
+        try {
+          await navigator.clipboard.writeText(productUrl);
+        } catch (clipboardError) {
+          // Silent fail - no toast notification
+        }
+      }
+    }
+  };
+
   return (
 <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-md group border border-border/60">
 
@@ -212,6 +244,19 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
               </Badge>
             </div>
           )}
+
+          {/* Share Button */}
+          <div className="absolute bottom-2 right-2 z-10">
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md"
+              onClick={handleShare}
+              title="Share product"
+            >
+              <Share2 className="h-4 w-4 text-gray-700" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-2 md:p-3">
