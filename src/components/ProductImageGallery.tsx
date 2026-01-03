@@ -171,10 +171,10 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
   return (
     <>
       <div className="space-y-4 w-full">
-        <Card className="overflow-hidden w-full bg-transparent border-0 shadow-none">
+        <Card className="overflow-hidden w-full bg-transparent border-0 shadow-none rounded-lg">
           <CardContent className="p-0 w-full">
             <div 
-              className="relative w-full cursor-pointer flex items-center justify-center min-h-[400px]"
+              className="relative w-full cursor-pointer flex items-center justify-center min-h-[400px] rounded-lg overflow-hidden"
               onClick={() => {
                 const index = mediaItems.findIndex(item => item.url === selectedMedia.url);
                 openModal(index >= 0 ? index : 0);
@@ -184,7 +184,7 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                 <video
                   ref={mainVideoRef}
                   src={selectedMedia.url}
-                  className="w-full h-auto max-h-[80vh] object-contain"
+                  className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
                   data-ai-hint="product video"
                   autoPlay
                   loop
@@ -196,7 +196,7 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                   alt={`Main image for ${productName}`}
                   width={1200}
                   height={1500}
-                  className="w-full h-auto object-contain max-h-[80vh]"
+                  className="w-full h-auto object-contain max-h-[80vh] rounded-lg"
                   sizes="(max-width: 768px) 100vw, 50vw"
                   data-ai-hint="product image"
                   priority
@@ -215,7 +215,7 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                 setSelectedMedia(item);
               }}
               className={cn(
-                "relative aspect-square rounded-md overflow-hidden transition-all",
+                "relative aspect-square rounded-lg overflow-hidden transition-all",
                 "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 selectedMedia.url === item.url ? "ring-2 ring-primary" : "opacity-70 hover:opacity-100"
               )}
@@ -224,10 +224,10 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                 <>
                   <video
                     src={item.url}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-lg"
                     muted
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
                     <Play className="w-6 h-6 text-white" fill="white" />
                   </div>
                 </>
@@ -236,7 +236,7 @@ export function ProductImageGallery({ imageUrls, productName, videoUrl }: Produc
                   src={item.url}
                   alt={`Thumbnail ${index + 1} for ${productName}`}
                   fill
-                  className="object-cover"
+                  className="object-cover rounded-lg"
                   sizes="20vw"
                 />
               )}
