@@ -952,7 +952,7 @@ export const orderApi = {
     paymentMethod: string;
     paymentDetails?: {
       payerName: string;
-      transactionId: string;
+      transactionId?: string;
       paymentDate: string;
       paymentTime: string;
       amount: number;
@@ -991,7 +991,7 @@ export const orderApi = {
         };
         paymentDetails?: {
           payerName: string;
-          transactionId: string;
+          transactionId?: string;
           paymentDate: string;
           paymentTime: string;
           amount: number;
@@ -1045,7 +1045,7 @@ export const orderApi = {
           };
           paymentDetails?: {
             payerName: string;
-            transactionId: string;
+            transactionId?: string;
             paymentDate: string;
             paymentTime: string;
             amount: number;
@@ -1112,7 +1112,7 @@ export const orderApi = {
         };
         paymentDetails?: {
           payerName: string;
-          transactionId: string;
+          transactionId?: string;
           paymentDate: string;
           paymentTime: string;
           amount: number;

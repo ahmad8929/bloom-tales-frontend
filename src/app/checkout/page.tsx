@@ -43,6 +43,7 @@ interface CartData {
 
 interface PaymentModalData {
   payerName: string;
+  transactionId?: string;
   paymentDate: string;
   paymentTime: string;
   amount: number;
