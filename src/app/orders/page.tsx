@@ -686,7 +686,7 @@ interface Order {
   };
   paymentDetails?: {
     payerName: string;
-    transactionId: string;
+    transactionId?: string;
     paymentDate: string;
     paymentTime: string;
     amount: number;
