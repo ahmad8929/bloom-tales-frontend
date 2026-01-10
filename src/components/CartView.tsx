@@ -130,7 +130,21 @@ export function CartView() {
     setCart(cartData);
   } catch (error: any) {
     console.error('Error fetching cart:', error);
-    setError(error.message || 'Failed to load cart');
+    const errorMessage = error.message || 'Failed to load cart';
+    
+    // Handle authentication errors silently by falling back to guest cart
+    if (errorMessage.includes('Access denied') || 
+        errorMessage.includes('No token provided') ||
+        errorMessage.includes('token') ||
+        errorMessage.includes('Authentication failed') ||
+        errorMessage.includes('Unauthorized')) {
+      // Silently fall back to guest cart mode
+      loadGuestCart();
+      return;
+    }
+    
+    // For other errors, show error message
+    setError(errorMessage);
     toast({
       title: 'Error',
       description: 'Failed to load cart items',

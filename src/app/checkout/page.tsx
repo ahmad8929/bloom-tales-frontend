@@ -43,7 +43,6 @@ interface CartData {
 
 interface PaymentModalData {
   payerName: string;
-  transactionId: string;
   paymentDate: string;
   paymentTime: string;
   amount: number;
@@ -145,7 +144,6 @@ export default function CheckoutPage() {
 
   const [paymentData, setPaymentData] = useState<PaymentModalData>({
     payerName: '',
-    transactionId: '',
     paymentDate: new Date().toISOString().split('T')[0],
     paymentTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
     amount: 0
@@ -160,8 +158,8 @@ export default function CheckoutPage() {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  const UPI_ID = "bloompayments@paytm"; // Replace with your actual UPI ID
-  const QR_CODE_URL = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=" + UPI_ID + "&pn=Bloom%20Tales&am=";
+  const UPI_ID = "7457074450@axl";
+  const QR_CODE_URL = "/qr.png";
 
   useEffect(() => {
     fetchCart();
@@ -543,15 +541,15 @@ export default function CheckoutPage() {
     if (!cart) return;
 
     // Show No Returns Policy confirmation before proceeding
-    const confirmed = window.confirm(
-      'IMPORTANT: No Returns Policy\n\n' +
-      'All products are non-returnable. By proceeding, you acknowledge that you have read and agree to this policy.\n\n' +
-      'Do you want to continue with your order?'
-    );
+    // const confirmed = window.confirm(
+    //   'IMPORTANT: No Returns Policy\n\n' +
+    //   'All products are non-returnable. By proceeding, you acknowledge that you have read and agree to this policy.\n\n' +
+    //   'Do you want to continue with your order?'
+    // );
 
-    if (!confirmed) {
-      return;
-    }
+    // if (!confirmed) {
+    //   return;
+    // }
 
     // For online payment methods (upi, card), show payment modal for full amount
     if (paymentMethod === 'upi' || paymentMethod === 'card') {
@@ -704,7 +702,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* No Returns Policy Notice */}
-      <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
+   {/*    <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
         <Card className="border-red-200 bg-red-50">
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-start gap-2 sm:gap-3">
@@ -719,10 +717,10 @@ export default function CheckoutPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>  */}
 
       {/* Order Review Process Notice */}
-      <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
+    {/*  <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-start gap-2 sm:gap-3">
@@ -738,7 +736,7 @@ export default function CheckoutPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>  */}
 
       <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
         {/* Shipping Information */}
@@ -1177,7 +1175,7 @@ export default function CheckoutPage() {
                 
                 <div className="bg-white p-1.5 sm:p-2 md:p-4 rounded-lg inline-block shadow-lg">
                   <img 
-                    src={`${QR_CODE_URL}${paymentMethod === 'cod' ? advancePayment : total}`} 
+                    src={QR_CODE_URL} 
                     alt="UPI QR Code" 
                     className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 mx-auto"
                   />
@@ -1239,21 +1237,6 @@ export default function CheckoutPage() {
                   disabled={isSubmitting}
                   className="text-xs sm:text-sm md:text-base"
                 />
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label htmlFor="transactionId" className="text-xs sm:text-sm">Transaction ID/UTR Number</Label>
-                <Input 
-                  id="transactionId" 
-                  placeholder="12-digit transaction ID"
-                  value={paymentData.transactionId}
-                  onChange={(e) => handlePaymentInputChange('transactionId', e.target.value)}
-                  disabled={isSubmitting}
-                  className="text-xs sm:text-sm md:text-base"
-                />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  You can find this in your payment app after successful payment (Optional)
-                </p>
               </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
