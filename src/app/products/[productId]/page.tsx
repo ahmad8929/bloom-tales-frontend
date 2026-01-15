@@ -133,13 +133,22 @@ export default function ProductDetailPage() {
           try {
             const response = await cartApi.getCart();
             if (response.data?.data?.cart?.items) {
+              // Get the material to check - use selectedMaterial or default to first material
+              const materialToCheck = selectedMaterial && selectedMaterial.trim() 
+                ? selectedMaterial 
+                : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
+                  ? product.materials[0] 
+                  : '');
+              
               const cartItem = response.data.data.cart.items.find(
                 (item: any) => {
                   try {
                     if (!item || !item.product) return false;
                     const sameProduct = item.productId === productId || item.product?._id === productId;
                     const sameSize = item.size === selectedSize || (!selectedSize && item.size === product?.size);
-                    return sameProduct && sameSize;
+                    const itemMaterial = item.material || '';
+                    const sameMaterial = materialToCheck ? itemMaterial === materialToCheck : (!itemMaterial || itemMaterial === '');
+                    return sameProduct && sameSize && sameMaterial;
                   } catch (error) {
                     console.error('Error checking cart item:', error);
                     return false;
@@ -165,12 +174,21 @@ export default function ProductDetailPage() {
       } else {
         // For guest users, check Redux cart state
         if (reduxCartItems && reduxCartItems.length > 0) {
+          // Get the material to check - use selectedMaterial or default to first material
+          const materialToCheck = selectedMaterial && selectedMaterial.trim() 
+            ? selectedMaterial 
+            : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
+              ? product.materials[0] 
+              : '');
+          
           const cartItem = reduxCartItems.find(
             (item: any) => {
               try {
                 const sameProduct = item.product.id === productId || item.product._id === productId;
                 const sameSize = item.size === selectedSize || (!selectedSize && (item.size === product?.size || item.product.size === product?.size));
-                return sameProduct && sameSize;
+                const itemMaterial = item.material || '';
+                const sameMaterial = materialToCheck ? itemMaterial === materialToCheck : (!itemMaterial || itemMaterial === '');
+                return sameProduct && sameSize && sameMaterial;
               } catch (error) {
                 console.error('Error checking cart item:', error);
                 return false;
@@ -203,7 +221,7 @@ export default function ProductDetailPage() {
 
     window.addEventListener('cartUpdated', handleCartUpdate);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
-  }, [productId, isAuthenticated, product, selectedSize, reduxCartItems]);
+  }, [productId, isAuthenticated, product, selectedSize, selectedMaterial, reduxCartItems]);
 
   const handleAddToCartSuccess = () => {
     // Trigger cart update to refresh state
@@ -211,6 +229,16 @@ export default function ProductDetailPage() {
       detail: { action: 'add', productId }
     }));
   };
+
+  // Update cart check when material changes
+  useEffect(() => {
+    if (product && product.materials && Array.isArray(product.materials) && product.materials.length > 0) {
+      // Trigger cart check when material selection changes
+      window.dispatchEvent(new CustomEvent('cartUpdated', {
+        detail: { action: 'check', productId }
+      }));
+    }
+  }, [selectedMaterial, productId, product]);
 
   const handleShare = async () => {
     if (!product) return;
@@ -540,7 +568,7 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
             {/* Material Tags Selection - Only show if materials array exists and has items */}
             {product.materials && Array.isArray(product.materials) && product.materials.length > 0 && (
               <div className="space-y-2">
-                <Label className="font-semibold text-base">Select Material <span className="text-muted-foreground text-sm font-normal">(optional)</span></Label>
+                <Label className="font-semibold text-base">Select Material <span className="text-red-500 text-sm font-normal">*</span></Label>
                 <div className="flex flex-wrap gap-2">
                   {product.materials.map((material: string, index: number) => {
                     const isSelected = selectedMaterial === material;
@@ -558,7 +586,10 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                       <button
                         key={index}
                         type="button"
-                        onClick={() => setSelectedMaterial(isSelected ? '' : material)}
+                        onClick={() => {
+                          // Always set material - cannot deselect when materials exist
+                          setSelectedMaterial(material);
+                        }}
                         className={`relative px-4 py-2 rounded-md border-2 transition-all text-sm font-medium ${
                           isSelected
                             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
@@ -746,11 +777,14 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                   <AddToCartButton 
                     product={product} 
                     quantity={1}
-                    material={selectedMaterial && selectedMaterial.trim() 
-                      ? selectedMaterial 
-                      : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
-                        ? undefined 
-                        : undefined)}
+                    material={
+                      // Always use selected material, or default to first material if materials exist
+                      selectedMaterial && selectedMaterial.trim() 
+                        ? selectedMaterial 
+                        : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
+                          ? product.materials[0] 
+                          : undefined)
+                    }
                     size={selectedSize || product.size || 'L'}
                     color={product.color || undefined}
                     className="flex-1"
@@ -765,7 +799,15 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                   
                   <Button 
                     className="flex-1 bg-primary hover:bg-primary/90"
-                    onClick={() => handleBuyNow(selectedMaterial)}
+                    onClick={() => {
+                      // Use selected material or default to first material
+                      const materialToUse = selectedMaterial && selectedMaterial.trim() 
+                        ? selectedMaterial 
+                        : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
+                          ? product.materials[0] 
+                          : undefined);
+                      handleBuyNow(materialToUse);
+                    }}
                     disabled={currentStock !== null && currentStock === 0}
                   >
                     Buy Now
