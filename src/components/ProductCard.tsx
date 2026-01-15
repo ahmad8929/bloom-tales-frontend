@@ -12,7 +12,7 @@ import { AddToCartButton } from './AddToCartButton';
 import { CartQuantityControls } from './CartQuantityControls';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { Star, Tag, Share2 } from 'lucide-react';
+import { Star, Tag, Share2, Maximize2 } from 'lucide-react';
 import { cartApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
@@ -232,6 +232,12 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
               <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
                 <Tag className="w-2.5 h-2.5 mr-0.5" />
                 SALE
+              </Badge>
+            )}
+            {product.isStretched && (
+              <Badge className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
+                <Maximize2 className="w-2.5 h-2.5 mr-0.5" />
+                STRETCHED
               </Badge>
             )}
           </div>

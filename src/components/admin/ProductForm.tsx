@@ -53,6 +53,7 @@ const formSchema = z.object({
   careInstructions: z.string().optional(),
   isNewArrival: z.boolean().default(false),
   isSale: z.boolean().default(false),
+  isStretched: z.boolean().default(false),
   color: z.object({
     name: z.string(),
     hexCode: z.string()
@@ -106,6 +107,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       careInstructions: '',
       isNewArrival: false,
       isSale: false,
+      isStretched: false,
     }
   });
 
@@ -131,6 +133,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
           : initialData.careInstructions || '',
         isNewArrival: initialData.isNewArrival || false,
         isSale: initialData.isSale || false,
+        isStretched: initialData.isStretched || false,
       });
 
       // Set existing images for editing
@@ -169,7 +172,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       }
 
       // Set variants for editing (size + stock only)
-      if (initialData.variants && Array.isArray(initialData.variants)) {
+      if (initialData.variants && Array.isArray(initialData.variants) && initialData.variants.length > 0) {
         setVariants(initialData.variants.map((v: any) => ({
           size: v.size,
           stock: v.stock || 0,
@@ -182,6 +185,9 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
           stock: 0,
           sku: undefined
         }]);
+      } else {
+        // If no variants or size, set empty array (for editing, we allow empty variants)
+        setVariants([]);
       }
     }
   }, [initialData, isOpen, form]);
@@ -285,7 +291,12 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       // Append form fields
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          formData.append(key, value.toString());
+          // Handle boolean values properly
+          if (typeof value === 'boolean') {
+            formData.append(key, value ? 'true' : 'false');
+          } else {
+            formData.append(key, value.toString());
+          }
         }
       });
 
@@ -300,8 +311,12 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       }
 
       // Append variants (size + stock only)
+      // For editing, allow empty variants array; for new products, require at least one variant
       if (variants.length > 0) {
         formData.append('variants', JSON.stringify(variants));
+      } else if (isEditing) {
+        // When editing, send empty array if no variants
+        formData.append('variants', JSON.stringify([]));
       }
 
       // Append existing images that weren't removed
@@ -324,17 +339,27 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         formData.append('existingVideo', existingVideo);
       }
 
-      console.log('Submitting product with form data...');
+      console.log('Submitting product with form data...', {
+        isEditing,
+        productId: isEditing ? (initialData?.id || initialData?._id) : 'new',
+        variantsCount: variants.length,
+        imagesCount: totalImages
+      });
       
       let response;
       if (isEditing && (initialData?.id || initialData?._id)) {
         const productId = initialData.id || initialData._id;
+        console.log('Updating product:', productId);
         response = await productApi.updateProduct(productId, formData);
+        console.log('Update response:', response);
       } else {
+        console.log('Creating new product');
         response = await productApi.createProduct(formData);
+        console.log('Create response:', response);
       }
       
       if (response.error) {
+        console.error('API Error:', response.error);
         throw new Error(response.error);
       }
       
@@ -424,7 +449,14 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit, (errors) => {
+            console.error('Form validation errors:', errors);
+            toast({
+              title: 'Validation Error',
+              description: 'Please check the form for errors and try again.',
+              variant: 'destructive',
+            });
+          })} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -901,6 +933,29 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="isStretched"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Already Stretched
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Mark if this product is already stretched
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
             </div>
 
             <DialogFooter>
@@ -909,7 +964,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || variants.length === 0}
+                disabled={isLoading || (!isEditing && variants.length === 0)}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Update Product' : 'Save Product'}

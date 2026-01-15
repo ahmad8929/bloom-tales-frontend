@@ -7,7 +7,7 @@ import { RootState } from '@/store';
 import { updateCartItemLocal } from '@/store/slices/cartSlice';
 import { useCart } from '@/hooks/useCart';
 import { productApi, cartApi } from "@/lib/api";
-import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Share2 } from "lucide-react";
+import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Share2, Maximize2 } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { CartQuantityControls } from "@/components/CartQuantityControls";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
@@ -453,6 +453,12 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
               <Badge variant="destructive">
                 <Package className="w-3 h-3 mr-1" />
                 On Sale
+              </Badge>
+            )}
+            {product.isStretched && (
+              <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                <Maximize2 className="w-3 h-3 mr-1" />
+                Already Stretched
               </Badge>
             )}
             {hasDiscount && (
