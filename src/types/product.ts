@@ -13,6 +13,7 @@ export interface Product {
   comparePrice?: number;
   slug: string;
   material: string;
+  materials?: string[]; // Material tags array
   careInstructions: string | string[];
   size?: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // Legacy field, optional now
   isNewArrival: boolean;

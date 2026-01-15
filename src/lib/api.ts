@@ -880,20 +880,58 @@ export const cartApi = {
     }>('/cart'),
 
   // Add item to cart
-  addToCart: (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null) =>
-    api.post<{ 
+  addToCart: (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null, material?: string) => {
+    console.log('🔵 cartApi.addToCart called with:', { 
+      productId, 
+      quantity, 
+      size, 
+      color, 
+      material, 
+      materialType: typeof material,
+      materialIsUndefined: material === undefined,
+      materialIsNull: material === null,
+      materialValue: material,
+      materialLength: material?.length 
+    });
+    
+    const payload: any = {
+      productId,
+      quantity
+    };
+    
+    if (size) {
+      payload.size = size;
+    }
+    
+    if (color) {
+      payload.color = color;
+    }
+    
+    // Always include material if it's a non-empty string
+    // Check explicitly for string type and non-empty after trim
+    if (material !== undefined && material !== null && typeof material === 'string') {
+      const trimmedMaterial = material.trim();
+      if (trimmedMaterial.length > 0) {
+        payload.material = trimmedMaterial;
+        console.log('✅ Material added to payload:', trimmedMaterial);
+      } else {
+        console.log('⚠️ Material is empty string, not adding to payload');
+      }
+    } else {
+      console.log('⚠️ Material not included - undefined, null, or not a string:', { material, type: typeof material });
+    }
+    
+    console.log('📦 Final Cart API payload:', JSON.stringify(payload, null, 2));
+    
+    return api.post<{ 
       status: string;
       message: string;
       data: { 
         cart: any;
         item: any;
       } 
-    }>('/cart/add', { 
-      productId, 
-      quantity,
-      ...(size && { size }),
-      ...(color && { color })
-    }),
+    }>('/cart/add', payload);
+  },
 
   // Update cart item quantity
   updateCartItem: (itemId: string, quantity: number) =>

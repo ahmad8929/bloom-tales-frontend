@@ -17,6 +17,7 @@ interface AddToCartButtonProps {
   quantity?: number;
   size?: string;
   color?: { name: string; hexCode: string } | null;
+  material?: string;
   variant?: 'default' | 'outline' | 'secondary' | 'ghost';
   size_prop?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
@@ -30,6 +31,7 @@ export function AddToCartButton({
   quantity = 1, 
   size,
   color,
+  material,
   variant = 'default',
   size_prop = 'default',
   className,
@@ -63,7 +65,18 @@ export function AddToCartButton({
       // Default to "L" if no size is provided
       const finalSize = size || product.size || 'L';
       
-      console.log('Adding to cart:', { productId, quantity, size: finalSize, color, isAuthenticated });
+      // Default to first material tag if no material is provided and product has materials
+      // Handle both undefined and empty string cases
+      let finalMaterial = material;
+      if (!finalMaterial || finalMaterial.trim() === '') {
+        if (product.materials && Array.isArray(product.materials) && product.materials.length > 0) {
+          finalMaterial = product.materials[0];
+        } else {
+          finalMaterial = undefined;
+        }
+      }
+      
+      console.log('Adding to cart:', { productId, quantity, size: finalSize, color, material: finalMaterial, isAuthenticated, originalMaterial: material });
 
       if (isAuthenticated) {
         // User is logged in - add to server cart
@@ -71,7 +84,8 @@ export function AddToCartButton({
           productId, 
           quantity, 
           finalSize,
-          color
+          color,
+          finalMaterial
         );
         
         console.log('Add to cart response:', response);
@@ -105,6 +119,7 @@ export function AddToCartButton({
           quantity,
           size: finalSize,
           color: color || product.color || undefined,
+          material: finalMaterial || undefined,
         };
 
         dispatch(addToCartLocal(cartItem as any));

@@ -32,6 +32,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
   const [isInCart, setIsInCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | undefined>();
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -102,6 +103,13 @@ export default function ProductDetailPage() {
     } catch (error) {
       console.error('Error setting initial variant state:', error);
       setSelectedSize(productData.size || '');
+    }
+
+    // Set default material to first material tag if available
+    if (productData.materials && Array.isArray(productData.materials) && productData.materials.length > 0) {
+      setSelectedMaterial(productData.materials[0]);
+    } else {
+      setSelectedMaterial('');
     }
   } catch (error: any) {
     console.error('Error fetching product:', error);
@@ -235,7 +243,7 @@ export default function ProductDetailPage() {
     }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = async (material?: string) => {
     try {
       // Check if user is authenticated
       if (!isAuthenticated) {
@@ -273,11 +281,19 @@ export default function ProductDetailPage() {
         throw new Error('Product ID is required');
       }
 
+      // Get material - use provided material, or selectedMaterial, or first material tag
+      const materialToUse = material || (selectedMaterial && selectedMaterial.trim() 
+        ? selectedMaterial 
+        : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
+          ? product.materials[0] 
+          : undefined));
+
       const response = await cartApi.addToCart(
         productIdToAdd,
         cartQuantity || 1,
         sizeToUse,
-        product?.color || undefined
+        product?.color || undefined,
+        materialToUse
       );
 
       if (response.error) {
@@ -521,6 +537,52 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
               </div>
             )}
 
+            {/* Material Tags Selection - Only show if materials array exists and has items */}
+            {product.materials && Array.isArray(product.materials) && product.materials.length > 0 && (
+              <div className="space-y-2">
+                <Label className="font-semibold text-base">Select Material <span className="text-muted-foreground text-sm font-normal">(optional)</span></Label>
+                <div className="flex flex-wrap gap-2">
+                  {product.materials.map((material: string, index: number) => {
+                    const isSelected = selectedMaterial === material;
+                    // Check if this specific material+size combination is in cart
+                    const materialInCart = reduxCartItems?.find((item: any) => {
+                      const itemProductId = item.product?._id || item.product?.id || item.productId;
+                      const itemSize = item.size || product.size || 'L';
+                      const itemMaterial = item.material || '';
+                      return itemProductId === productId && 
+                             itemSize === (selectedSize || product.size || 'L') &&
+                             itemMaterial === material;
+                    });
+                    
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setSelectedMaterial(isSelected ? '' : material)}
+                        className={`relative px-4 py-2 rounded-md border-2 transition-all text-sm font-medium ${
+                          isSelected
+                            ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                            : 'border-gray-200 hover:border-primary/50 text-gray-700 bg-white'
+                        }`}
+                      >
+                        {material}
+                        {materialInCart && (
+                          <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                            {materialInCart.quantity || 1}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedMaterial && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: <span className="font-medium text-foreground">{selectedMaterial}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Size Selection */}
             {availableSizes.length > 0 && (
               <div className="space-y-2">
@@ -586,12 +648,6 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
               </div>
             )} */}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-semibold text-base">Material</Label>
-                <p className="text-muted-foreground capitalize">{product.material}</p>
-              </div>
-            </div>
 
 
             {/* Care Instructions */}
@@ -616,81 +672,117 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
 
           {/* Action Buttons */}
           <div className="space-y-4">
-            {isInCart ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center">
-                  <CartQuantityControls
-                    productId={productId}
-                    initialQuantity={cartQuantity}
-                    cartItemId={cartItemId}
-                    onQuantityChange={(qty) => {
-                      setCartQuantity(qty);
-                      window.dispatchEvent(new CustomEvent('cartUpdated', {
-                        detail: { action: 'update', productId, quantity: qty }
-                      }));
-                    }}
-                    onRemove={async () => {
-                      await removeFromCart(productId);
-                      setIsInCart(false);
-                      setCartQuantity(1);
-                      window.dispatchEvent(new CustomEvent('cartUpdated', {
-                        detail: { action: 'remove', productId }
-                      }));
-                    }}
-                  />
-                </div>
+            {/* Check if the selected material+size combination is in cart */}
+            {(() => {
+              const currentMaterialInCart = product.materials && Array.isArray(product.materials) && product.materials.length > 0
+                ? reduxCartItems?.find((item: any) => {
+                    const itemProductId = item.product?._id || item.product?.id || item.productId;
+                    const itemSize = item.size || product.size || 'L';
+                    const itemMaterial = item.material || '';
+                    return itemProductId === productId && 
+                           itemSize === (selectedSize || product.size || 'L') &&
+                           itemMaterial === (selectedMaterial || '');
+                  })
+                : isInCart ? { quantity: cartQuantity, _id: cartItemId } : null;
+
+              if (currentMaterialInCart) {
+                // Safely get cartItemId - check if _id exists on the object, otherwise use state variable
+                let itemId: string | undefined = undefined;
+                if ('_id' in currentMaterialInCart && typeof currentMaterialInCart._id === 'string') {
+                  itemId = currentMaterialInCart._id;
+                } else if ('id' in currentMaterialInCart && typeof currentMaterialInCart.id === 'string') {
+                  itemId = currentMaterialInCart.id;
+                } else {
+                  itemId = cartItemId;
+                }
+                
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center">
+                      <CartQuantityControls
+                        productId={productId}
+                        initialQuantity={currentMaterialInCart.quantity || 1}
+                        cartItemId={itemId}
+                        onQuantityChange={(qty) => {
+                          setCartQuantity(qty);
+                          window.dispatchEvent(new CustomEvent('cartUpdated', {
+                            detail: { action: 'update', productId, quantity: qty }
+                          }));
+                        }}
+                        onRemove={async () => {
+                          await removeFromCart(productId);
+                          setIsInCart(false);
+                          setCartQuantity(1);
+                          window.dispatchEvent(new CustomEvent('cartUpdated', {
+                            detail: { action: 'remove', productId }
+                          }));
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1 bg-primary hover:bg-primary/90"
+                        onClick={() => handleBuyNow(selectedMaterial)}
+                        disabled={currentStock !== null && currentStock === 0}
+                      >
+                        Buy Now
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleShare}
+                        className="shrink-0"
+                        title="Share product"
+                      >
+                        <Share2 className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
                 <div className="flex gap-2">
+                  <AddToCartButton 
+                    product={product} 
+                    quantity={1}
+                    material={selectedMaterial && selectedMaterial.trim() 
+                      ? selectedMaterial 
+                      : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
+                        ? undefined 
+                        : undefined)}
+                    size={selectedSize || product.size || 'L'}
+                    color={product.color || undefined}
+                    className="flex-1"
+                    onSuccess={handleAddToCartSuccess}
+                    disabled={
+                      (currentStock !== null && currentStock === 0)
+                    }
+                  >
+                    <ShoppingCart className="mr-2 h-5 w-5" /> 
+                    {currentStock !== null && currentStock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                  </AddToCartButton>
+                  
                   <Button 
                     className="flex-1 bg-primary hover:bg-primary/90"
-                    onClick={handleBuyNow}
+                    onClick={() => handleBuyNow(selectedMaterial)}
+                    disabled={currentStock !== null && currentStock === 0}
                   >
                     Buy Now
                   </Button>
+                  
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={handleShare}
+                    className="shrink-0"
                     title="Share product"
                   >
                     <Share2 className="h-5 w-5" />
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                <AddToCartButton 
-                  product={product} 
-                  quantity={1}
-                  size={selectedSize || product.size || 'L'}
-                  color={product.color || undefined}
-                  className="flex-1"
-                  onSuccess={handleAddToCartSuccess}
-                  disabled={
-                    (currentStock !== null && currentStock === 0)
-                  }
-                >
-                  <ShoppingCart className="mr-2 h-5 w-5" /> 
-                  {currentStock !== null && currentStock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                </AddToCartButton>
-                
-                <Button 
-                  className="flex-1 bg-primary hover:bg-primary/90"
-                  onClick={handleBuyNow}
-                >
-                  Buy Now
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleShare}
-                  className="shrink-0"
-                  title="Share product"
-                >
-                  <Share2 className="h-5 w-5" />
-                </Button>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Features */}

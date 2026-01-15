@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Upload, X, Pencil, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { productApi } from '@/lib/api';
@@ -48,7 +49,6 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   price: z.coerce.number().min(0, 'Price cannot be negative'),
   comparePrice: z.coerce.number().min(0, 'Compare price cannot be negative').optional(),
-  material: z.string().optional(),
   category: z.enum(PRODUCT_CATEGORIES).optional(),
   careInstructions: z.string().optional(),
   isNewArrival: z.boolean().default(false),
@@ -58,15 +58,6 @@ const formSchema = z.object({
     name: z.string(),
     hexCode: z.string()
   }).optional(),
-}).refine((data) => {
-  // Compare price should be greater than normal price when provided (and greater than 0)
-  if (data.comparePrice !== undefined && data.comparePrice !== null && data.comparePrice > 0) {
-    return data.comparePrice > data.price;
-  }
-  return true;
-}, {
-  message: 'Compare price must be greater than normal price',
-  path: ['comparePrice'],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -94,6 +85,8 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedColors, setSelectedColors] = useState<{ name: string; hexCode: string }[]>([]);
+  const [materialTags, setMaterialTags] = useState<string[]>([]);
+  const [newMaterialTag, setNewMaterialTag] = useState<string>('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -102,7 +95,6 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       description: '',
       price: 0,
       comparePrice: undefined,
-      material: '',
       category: undefined,
       careInstructions: '',
       isNewArrival: false,
@@ -126,7 +118,6 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         description: initialData.description || '',
         price: initialData.price || 0,
         comparePrice: initialData.comparePrice || undefined,
-        material: initialData.material || '',
         category: (initialData.category as typeof PRODUCT_CATEGORIES[number]) || undefined,
         careInstructions: Array.isArray(initialData.careInstructions) 
           ? initialData.careInstructions.join('\n') 
@@ -319,6 +310,13 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         formData.append('variants', JSON.stringify([]));
       }
 
+      // Append material tags
+      if (materialTags.length > 0) {
+        formData.append('materials', JSON.stringify(materialTags));
+      } else {
+        formData.append('materials', JSON.stringify([]));
+      }
+
       // Append existing images that weren't removed
       if (existingImages.length > 0) {
         formData.append('existingImages', JSON.stringify(existingImages));
@@ -419,6 +417,20 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
     setExistingVideo(null);
     setVariants([]);
     setSelectedColors([]);
+    setMaterialTags([]);
+    setNewMaterialTag('');
+  };
+
+  const addMaterialTag = () => {
+    const trimmed = newMaterialTag.trim();
+    if (trimmed && !materialTags.includes(trimmed)) {
+      setMaterialTags([...materialTags, trimmed]);
+      setNewMaterialTag('');
+    }
+  };
+
+  const removeMaterialTag = (index: number) => {
+    setMaterialTags(materialTags.filter((_, i) => i !== index));
   };
 
   const handleClose = (open: boolean) => {
@@ -853,19 +865,58 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               )}
             </div>
 
-            <FormField
-              control={form.control}
-              name="material"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Material <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Cotton, Polyester, Silk" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            {/* Material Tags */}
+            <div className="space-y-2">
+              <FormLabel>Material Tags <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
+              <p className="text-sm text-muted-foreground">
+                Add material tags that customers can select when adding to cart
+              </p>
+              
+              {/* Add Material Tag Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., Cotton, Polyester, Silk"
+                  value={newMaterialTag}
+                  onChange={(e) => setNewMaterialTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addMaterialTag();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addMaterialTag}
+                  disabled={!newMaterialTag.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Material Tags List */}
+              {materialTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {materialTags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="px-3 py-1 flex items-center gap-2"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeMaterialTag(index)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               )}
-            />
+            </div>
 
             <FormField
               control={form.control}
