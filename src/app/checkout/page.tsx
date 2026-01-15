@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { cartApi, orderApi, profileApi, couponApi } from '@/lib/api';
+import { cartApi, orderApi, profileApi, couponApi, paymentApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -275,7 +275,7 @@ export default function CheckoutPage() {
       shipping = 199;
       advancePayment = 300;
     } else {
-      // Online payment (upi, card): Free shipping
+      // Online payment (upi, card, cashfree): Free shipping
       shipping = 0;
       advancePayment = 0;
     }
@@ -340,6 +340,75 @@ export default function CheckoutPage() {
     setAppliedCoupon(null);
     setCouponCode('');
     setCouponError(null);
+  };
+
+  const handleCashfreePayment = async () => {
+    if (!validateForm()) return;
+    if (!cart) return;
+
+    setIsSubmitting(true);
+    try {
+      const selectedAddress = getSelectedAddress();
+      if (!selectedAddress) {
+        throw new Error('Please select a delivery address');
+      }
+
+      const response = await paymentApi.createCashfreeSession({
+        shippingAddress: {
+          fullName: selectedAddress.fullName,
+          email: userEmail,
+          phone: selectedAddress.phone,
+          address: selectedAddress.street,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          pincode: selectedAddress.zipCode,
+          nearbyPlaces: selectedAddress.nearbyPlaces || ''
+        },
+        ...(appliedCoupon && { couponCode: appliedCoupon.code })
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      const { paymentSessionId, orderId } = response.data?.data || {};
+      
+      if (!paymentSessionId) {
+        throw new Error('Failed to create payment session');
+      }
+
+      // Load Cashfree checkout
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.onload = () => {
+        if (!window.Cashfree) {
+          throw new Error('Cashfree SDK failed to load');
+        }
+        
+        const cashfree = window.Cashfree({
+          mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
+        });
+
+        cashfree.checkout({
+          paymentSessionId: paymentSessionId,
+          redirectTarget: '_self'
+        });
+      };
+      script.onerror = () => {
+        throw new Error('Failed to load Cashfree SDK');
+      };
+      document.body.appendChild(script);
+
+    } catch (error: any) {
+      console.error('Cashfree payment error:', error);
+      toast({
+        title: 'Payment Failed',
+        description: error.message || 'Failed to initiate payment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const calculateTotal = (cartData: CartData) => {
@@ -551,6 +620,12 @@ export default function CheckoutPage() {
     // if (!confirmed) {
     //   return;
     // }
+
+    // For Cashfree payment, create payment session
+    if (paymentMethod === 'cashfree') {
+      await handleCashfreePayment();
+      return;
+    }
 
     // For online payment methods (upi, card), show payment modal for full amount
     if (paymentMethod === 'upi' || paymentMethod === 'card') {
@@ -867,10 +942,21 @@ export default function CheckoutPage() {
                   <RadioGroupItem value="upi" id="upi" className="mt-1" disabled={orderCreated} />
                   <div className="flex-1">
                     <Label htmlFor="upi" className="cursor-pointer font-medium text-sm sm:text-base">
-                      Online Payment (UPI/Card)
+                      Online Payment (UPI/Card) - Manual
                     </Label>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Free shipping. Pay the full amount online.
+                      Free shipping. Pay the full amount online and upload payment proof.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors border-primary/50">
+                  <RadioGroupItem value="cashfree" id="cashfree" className="mt-1" disabled={orderCreated} />
+                  <div className="flex-1">
+                    <Label htmlFor="cashfree" className="cursor-pointer font-medium text-sm sm:text-base">
+                      Secure Online Payment (Cashfree)
+                    </Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Free shipping. Secure payment gateway with instant confirmation. Supports UPI, Cards, Net Banking, Wallets.
                     </p>
                   </div>
                 </div>
