@@ -14,10 +14,10 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   metadataBase: new URL('https://bloomtales.com'),
   title: {
-    default: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
+    default: 'Bloomtales Boutique - Under Maintenance',
     template: '%s | Bloomtales Boutique',
   },
-  description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop our curated collection of sarees, kurtis, ethnic wear, and modern clothing with premium quality and craftsmanship. Shipping across all of India.',
+  description: 'Bloomtales Boutique is currently under maintenance. You can still order from us on WhatsApp!',
   keywords: [
     'women fashion',
     'sarees',

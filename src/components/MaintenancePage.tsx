@@ -13,8 +13,15 @@ export function MaintenancePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f3d9c8] via-[#f5e6d3] to-[#f3d9c8] px-4">
-      <div className="max-w-2xl w-full text-center space-y-8 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f3d9c8] via-[#f5e6d3] to-[#f3d9c8] px-4 relative overflow-hidden">
+      {/* Decorative Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-[#C4A082]/10 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-[#5A3E2B]/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-[#25D366]/10 rounded-full blur-xl animate-bounce"></div>
+      </div>
+      
+      <div className="max-w-2xl w-full text-center space-y-8 py-12 relative z-10">
         {/* Logo/Brand */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-[#5A3E2B] mb-2">
@@ -69,13 +76,6 @@ export function MaintenancePage() {
           <p className="text-sm text-[#5A3E2B]/70 pt-2">
             Click the button above to message us directly on WhatsApp
           </p>
-        </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-[#C4A082]/10 rounded-full blur-2xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-40 h-40 bg-[#5A3E2B]/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-[#25D366]/10 rounded-full blur-xl animate-bounce"></div>
         </div>
       </div>
     </div>
