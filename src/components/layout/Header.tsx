@@ -131,7 +131,7 @@ export function Header() {
               </Link>
             </Button> */}
 
-            <Tooltip>
+            {/* <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild variant="outline" size="icon" className={headerIconButton}>
                   <Link href="/products" className="flex items-center justify-center w-full h-full">
@@ -142,21 +142,21 @@ export function Header() {
               <TooltipContent className="bg-primary text-primary-foreground border-none">
                 <p className="font-medium">Products</p>
               </TooltipContent>
-            </Tooltip>
+            </Tooltip> */}
 
 
-            <CartButton itemCount={itemCount} />
+            {/* <CartButton itemCount={itemCount} /> */}
 
-            <UserMenu 
+            {/* <UserMenu 
               user={user}
               isAuthenticated={isAuthenticated}
               logoutUser={logoutUser}
-            />
+            /> */}
           </div>
         </div>
 
         {/* Mobile Navigation Menu */}
-        {mobileMenuOpen && (
+        {/* {mobileMenuOpen && (
           <div className="lg:hidden border-t border-border bg-card/98 backdrop-blur-md">
             <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-h-[80vh] overflow-y-auto">
               <NavigationMenu 
@@ -171,7 +171,7 @@ export function Header() {
               />
             </div>
           </div>
-        )}
+        )} */}
       </header>
     </TooltipProvider>
   );
