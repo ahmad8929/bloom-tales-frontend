@@ -7,6 +7,7 @@ import { CartInitializer } from '@/components/CartInitializer';
 import { Toaster } from '@/components/ui/toaster';
 import { ConditionalLayout } from '@/components/ConditionalLayout';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { MaintenancePage } from '@/components/MaintenancePage';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -203,13 +204,8 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
-          <AuthInitializer />
-          <CartInitializer />
-          <ConditionalLayout>
-            {children}
-          </ConditionalLayout>
+          <MaintenancePage />
           <Toaster />
-          <OfflineIndicator />
         </Providers>
       </body>
     </html>
