@@ -4,7 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function MaintenancePage() {
-  const phoneNumber = '8076465961';
+  const phoneNumber = '918076465961'; // Added country code 91 for India
   const message = encodeURIComponent('Hello! I would like to place an order.');
   
   const handleWhatsAppClick = () => {
