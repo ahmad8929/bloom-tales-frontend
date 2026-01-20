@@ -3,7 +3,6 @@ import type { AuthResponse } from '@/types/auth';
 
 const API_URL = "https://bloom-backend-rtch.onrender.com";
 
-
 interface ApiResponse<T> {
   data?: T;
   error?: string;
