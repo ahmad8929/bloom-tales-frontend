@@ -13,10 +13,12 @@ export interface Product {
   comparePrice?: number;
   slug: string;
   material: string;
+  materials?: string[]; // Material tags array
   careInstructions: string | string[];
   size?: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // Legacy field, optional now
   isNewArrival: boolean;
   isSale: boolean;
+  isStretched?: boolean;
   color?: { name: string; hexCode: string }; // Product-level color (fixed set)
   colors?: ProductColor[]; // Legacy, for backward compatibility
   variants?: ProductVariant[]; // Size + stock variants
@@ -43,6 +45,7 @@ export interface ProductFormData {
   size?: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'; // Legacy field, optional now
   isNewArrival: boolean;
   isSale: boolean;
+  isStretched?: boolean;
   color?: { name: string; hexCode: string }; // Product-level color (fixed set)
   colors?: ProductColor[]; // Legacy, for backward compatibility
   variants?: ProductVariant[]; // Size + stock variants

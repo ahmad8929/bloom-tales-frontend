@@ -8,6 +8,10 @@ declare global {
         paymentSessionId: string;
         redirectTarget?: '_self' | '_blank';
       }) => void;
+      redirect: (options: {
+        paymentSessionId: string;
+        redirectTarget?: '_self' | '_blank';
+      }) => void;
     };
   }
 }

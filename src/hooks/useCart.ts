@@ -81,13 +81,13 @@ const fetchCart = useCallback(async () => {
 }, [isAuthenticated, dispatch]);
 
   // Add item to cart
-const addToCart = async (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null) => {
+const addToCart = async (productId: string, quantity: number = 1, size?: string, color?: { name: string; hexCode: string } | null, material?: string) => {
   try {
     dispatch(setLoading(true));
     
     if (isAuthenticated) {
       // Add to server cart
-      const response = await cartApi.addToCart(productId, quantity, size, color);
+      const response = await cartApi.addToCart(productId, quantity, size, color, material);
       
       // Fix: Use consistent path to access cart items
       if (response.data?.data?.cart?.items) {

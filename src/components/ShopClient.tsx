@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { ProductCard } from '@/components/ProductCard';
@@ -38,7 +38,9 @@ const FilterSidebar = ({
     isNewArrival,
     setIsNewArrival,
     isSale,
-    setIsSale
+    setIsSale,
+    isStretched,
+    setIsStretched
 }: any) => (
     <div className="space-y-6">
         <div>
@@ -64,6 +66,17 @@ const FilterSidebar = ({
                     <Label htmlFor="on-sale" className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                         On Sale
+                    </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Checkbox 
+                        id="is-stretched" 
+                        checked={isStretched} 
+                        onCheckedChange={setIsStretched} 
+                    />
+                    <Label htmlFor="is-stretched" className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Already Stretched
                     </Label>
                 </div>
             </div>
@@ -162,10 +175,12 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewArrival, setIsNewArrival] = useState(false);
   const [isSale, setIsSale] = useState(false);
+  const [isStretched, setIsStretched] = useState(false);
   const [cartItems, setCartItems] = useState<any[]>([]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isSyncingFromUrl = useRef(false);
 
   // Fetch cart once for all products
   useEffect(() => {
@@ -203,26 +218,45 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
 
   // Initialize filters from URL params
   useEffect(() => {
+    isSyncingFromUrl.current = true;
+    
     const sizeParams = searchParams.getAll('size');
     const colorParams = searchParams.getAll('color');
     const searchParam = searchParams.get('search');
     const priceParam = searchParams.get('maxPrice');
     const newArrivalParam = searchParams.get('isNewArrival');
     const saleParam = searchParams.get('isSale');
+    const stretchedParam = searchParams.get('isStretched');
     const sortParam = searchParams.get('sort') as SortOption | null;
 
-    if (sizeParams.length > 0) setSelectedSizes(sizeParams);
-    if (colorParams.length > 0) setSelectedColors(colorParams);
-    if (searchParam) setSearchQuery(searchParam);
+    // Update sizes - reset if empty
+    setSelectedSizes(sizeParams.length > 0 ? sizeParams : []);
+    // Update colors - reset if empty
+    setSelectedColors(colorParams.length > 0 ? colorParams : []);
+    // Update search - reset if empty
+    setSearchQuery(searchParam || '');
+    // Update price range
     if (priceParam) {
       const price = parseInt(priceParam);
       if (!isNaN(price)) setPriceRange(price);
+    } else {
+      setPriceRange(15000);
     }
-    if (newArrivalParam === 'true') setIsNewArrival(true);
-    if (saleParam === 'true') setIsSale(true);
+    // Update boolean flags - reset if not present
+    setIsNewArrival(newArrivalParam === 'true');
+    setIsSale(saleParam === 'true');
+    setIsStretched(stretchedParam === 'true');
+    // Update sort
     if (sortParam && ['newest', 'price-asc', 'price-desc', 'name-asc'].includes(sortParam)) {
       setSortOption(sortParam);
+    } else {
+      setSortOption('newest');
     }
+    
+    // Reset flag after a short delay to allow state updates to complete
+    setTimeout(() => {
+      isSyncingFromUrl.current = false;
+    }, 0);
   }, [searchParams]);
 
   // Update URL params when filters change (but skip initial mount to avoid conflicts)
@@ -235,6 +269,9 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
   useEffect(() => {
     // Skip URL update on initial mount (let URL params initialize state first)
     if (isInitialMount) return;
+    
+    // Skip if we're currently syncing from URL params to avoid infinite loop
+    if (isSyncingFromUrl.current) return;
     
     const params = new URLSearchParams();
     
@@ -257,6 +294,10 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
       params.set('isSale', 'true');
     }
     
+    if (isStretched) {
+      params.set('isStretched', 'true');
+    }
+    
     if (sortOption !== 'newest') {
       params.set('sort', sortOption);
     }
@@ -264,12 +305,14 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
     const queryString = params.toString();
     const newUrl = queryString ? `/products?${queryString}` : '/products';
     const currentUrl = window.location.pathname + window.location.search;
+    const currentQueryString = window.location.search;
+    const newQueryString = queryString ? `?${queryString}` : '';
     
-    // Only update URL if it's different to avoid infinite loops
-    if (currentUrl !== newUrl) {
+    // Only update URL if the query string is different to avoid infinite loops
+    if (currentQueryString !== newQueryString) {
       router.replace(newUrl, { scroll: false });
     }
-  }, [selectedSizes, selectedColors, searchQuery, priceRange, isNewArrival, isSale, sortOption, router, isInitialMount]);
+  }, [selectedSizes, selectedColors, searchQuery, priceRange, isNewArrival, isSale, isStretched, sortOption, router, isInitialMount]);
 
   const handleSizeChange = (size: string) => {
     setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
@@ -291,6 +334,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
     setSearchQuery('');
     setIsNewArrival(false);
     setIsSale(false);
+    setIsStretched(false);
     router.push('/products');
   };
 
@@ -346,6 +390,10 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
       filtered = filtered.filter(product => product.isSale === true);
     }
 
+    if (isStretched) {
+      filtered = filtered.filter(product => product.isStretched === true);
+    }
+
     // Sorting
     switch (sortOption) {
       case 'price-asc':
@@ -358,11 +406,11 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
       default:
         return filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
-  }, [products, selectedSizes, selectedColors, priceRange, sortOption, searchQuery, isNewArrival, isSale]);
+  }, [products, selectedSizes, selectedColors, priceRange, sortOption, searchQuery, isNewArrival, isSale, isStretched]);
 
   const activeFilterCount = selectedSizes.length + selectedColors.length + 
     (priceRange < 15000 ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSale ? 1 : 0) + 
-    (searchQuery.trim() ? 1 : 0);
+    (isStretched ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
 
   return (
     <div className="grid lg:grid-cols-4 gap-8">
@@ -380,6 +428,8 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
               setIsNewArrival={setIsNewArrival}
               isSale={isSale}
               setIsSale={setIsSale}
+              isStretched={isStretched}
+              setIsStretched={setIsStretched}
           />
         </div>
       </aside>
@@ -422,6 +472,8 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
                                     setIsNewArrival={setIsNewArrival}
                                     isSale={isSale}
                                     setIsSale={setIsSale}
+                                    isStretched={isStretched}
+                                    setIsStretched={setIsStretched}
                                 />
                             </div>
                         </SheetContent>

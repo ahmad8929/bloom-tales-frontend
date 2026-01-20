@@ -5,6 +5,7 @@ export interface CartItem {
   quantity: number;
   size?: string;
   color?: ProductColor;
+  material?: string; // Selected material tag
 }
 
 export interface CartResponse {

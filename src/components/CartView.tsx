@@ -26,6 +26,7 @@ interface ApiCartItem {
     name: string;
     hexCode: string;
   };
+  material?: string; // Selected material tag
   product: {
     _id: string;
     name: string;
@@ -73,6 +74,7 @@ export function CartView() {
           quantity: item.quantity,
           size: item.size,
           color: item.color,
+          material: item.material,
           product: {
             _id: item.product._id || item.product.id || '',
             name: item.product.name,
@@ -416,10 +418,13 @@ export function CartView() {
                           <span className="font-medium text-foreground text-xs">{item.color.name}</span>
                         </div>
                       )}
+                      {item.material && (
+                        <span className="inline-flex items-center gap-1">
+                          <span>Material:</span>
+                          <span className="font-medium text-foreground">{item.material}</span>
+                        </span>
+                      )}
                     </div>
-                    {item.product.material && (
-                      <p className="text-xs">Material: {item.product.material}</p>
-                    )}
                   </div>
                   
                   <div className="flex items-center gap-2 mb-2">

@@ -347,6 +347,8 @@ export default function CheckoutPage() {
     if (!cart) return;
 
     setIsSubmitting(true);
+    let scriptElement: HTMLScriptElement | null = null;
+    
     try {
       const selectedAddress = getSelectedAddress();
       if (!selectedAddress) {
@@ -377,14 +379,9 @@ export default function CheckoutPage() {
         throw new Error('Failed to create payment session');
       }
 
-      // Load Cashfree checkout
-      const script = document.createElement('script');
-      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-      script.onload = () => {
-        if (!window.Cashfree) {
-          throw new Error('Cashfree SDK failed to load');
-        }
-        
+      // Check if Cashfree SDK is already loaded
+      if (window.Cashfree) {
+        // SDK already loaded, use it directly
         const cashfree = window.Cashfree({
           mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
         });
@@ -393,21 +390,64 @@ export default function CheckoutPage() {
           paymentSessionId: paymentSessionId,
           redirectTarget: '_self'
         });
+        return; // Exit early since we're redirecting
+      }
+
+      // Load Cashfree checkout SDK
+      scriptElement = document.createElement('script');
+      scriptElement.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      scriptElement.async = true;
+      
+      scriptElement.onload = () => {
+        try {
+          if (!window.Cashfree) {
+            throw new Error('Cashfree SDK failed to initialize');
+          }
+          
+          const cashfree = window.Cashfree({
+            mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
+          });
+
+          cashfree.checkout({
+            paymentSessionId: paymentSessionId,
+            redirectTarget: '_self'
+          });
+        } catch (error: any) {
+          console.error('Cashfree checkout error:', error);
+          setIsSubmitting(false);
+          toast({
+            title: 'Payment Failed',
+            description: error.message || 'Failed to initialize payment. Please try again.',
+            variant: 'destructive',
+          });
+        }
       };
-      script.onerror = () => {
-        throw new Error('Failed to load Cashfree SDK');
+      
+      scriptElement.onerror = () => {
+        setIsSubmitting(false);
+        toast({
+          title: 'Payment Failed',
+          description: 'Failed to load payment gateway. Please check your internet connection and try again.',
+          variant: 'destructive',
+        });
       };
-      document.body.appendChild(script);
+      
+      document.body.appendChild(scriptElement);
 
     } catch (error: any) {
       console.error('Cashfree payment error:', error);
+      setIsSubmitting(false);
+      
+      // Clean up script if it was added
+      if (scriptElement && scriptElement.parentNode) {
+        scriptElement.parentNode.removeChild(scriptElement);
+      }
+      
       toast({
         title: 'Payment Failed',
         description: error.message || 'Failed to initiate payment. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

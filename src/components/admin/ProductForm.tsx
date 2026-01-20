@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Upload, X, Pencil, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { productApi } from '@/lib/api';
@@ -48,24 +49,15 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   price: z.coerce.number().min(0, 'Price cannot be negative'),
   comparePrice: z.coerce.number().min(0, 'Compare price cannot be negative').optional(),
-  material: z.string().optional(),
   category: z.enum(PRODUCT_CATEGORIES).optional(),
   careInstructions: z.string().optional(),
   isNewArrival: z.boolean().default(false),
   isSale: z.boolean().default(false),
+  isStretched: z.boolean().default(false),
   color: z.object({
     name: z.string(),
     hexCode: z.string()
   }).optional(),
-}).refine((data) => {
-  // Compare price should be greater than normal price when provided (and greater than 0)
-  if (data.comparePrice !== undefined && data.comparePrice !== null && data.comparePrice > 0) {
-    return data.comparePrice > data.price;
-  }
-  return true;
-}, {
-  message: 'Compare price must be greater than normal price',
-  path: ['comparePrice'],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -93,6 +85,8 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedColors, setSelectedColors] = useState<{ name: string; hexCode: string }[]>([]);
+  const [materialTags, setMaterialTags] = useState<string[]>([]);
+  const [newMaterialTag, setNewMaterialTag] = useState<string>('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -101,11 +95,11 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       description: '',
       price: 0,
       comparePrice: undefined,
-      material: '',
       category: undefined,
       careInstructions: '',
       isNewArrival: false,
       isSale: false,
+      isStretched: false,
     }
   });
 
@@ -124,13 +118,13 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         description: initialData.description || '',
         price: initialData.price || 0,
         comparePrice: initialData.comparePrice || undefined,
-        material: initialData.material || '',
         category: (initialData.category as typeof PRODUCT_CATEGORIES[number]) || undefined,
         careInstructions: Array.isArray(initialData.careInstructions) 
           ? initialData.careInstructions.join('\n') 
           : initialData.careInstructions || '',
         isNewArrival: initialData.isNewArrival || false,
         isSale: initialData.isSale || false,
+        isStretched: initialData.isStretched || false,
       });
 
       // Set existing images for editing
@@ -169,7 +163,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       }
 
       // Set variants for editing (size + stock only)
-      if (initialData.variants && Array.isArray(initialData.variants)) {
+      if (initialData.variants && Array.isArray(initialData.variants) && initialData.variants.length > 0) {
         setVariants(initialData.variants.map((v: any) => ({
           size: v.size,
           stock: v.stock || 0,
@@ -182,6 +176,9 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
           stock: 0,
           sku: undefined
         }]);
+      } else {
+        // If no variants or size, set empty array (for editing, we allow empty variants)
+        setVariants([]);
       }
     }
   }, [initialData, isOpen, form]);
@@ -285,7 +282,12 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       // Append form fields
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          formData.append(key, value.toString());
+          // Handle boolean values properly
+          if (typeof value === 'boolean') {
+            formData.append(key, value ? 'true' : 'false');
+          } else {
+            formData.append(key, value.toString());
+          }
         }
       });
 
@@ -300,8 +302,19 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
       }
 
       // Append variants (size + stock only)
+      // For editing, allow empty variants array; for new products, require at least one variant
       if (variants.length > 0) {
         formData.append('variants', JSON.stringify(variants));
+      } else if (isEditing) {
+        // When editing, send empty array if no variants
+        formData.append('variants', JSON.stringify([]));
+      }
+
+      // Append material tags
+      if (materialTags.length > 0) {
+        formData.append('materials', JSON.stringify(materialTags));
+      } else {
+        formData.append('materials', JSON.stringify([]));
       }
 
       // Append existing images that weren't removed
@@ -324,17 +337,27 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
         formData.append('existingVideo', existingVideo);
       }
 
-      console.log('Submitting product with form data...');
+      console.log('Submitting product with form data...', {
+        isEditing,
+        productId: isEditing ? (initialData?.id || initialData?._id) : 'new',
+        variantsCount: variants.length,
+        imagesCount: totalImages
+      });
       
       let response;
       if (isEditing && (initialData?.id || initialData?._id)) {
         const productId = initialData.id || initialData._id;
+        console.log('Updating product:', productId);
         response = await productApi.updateProduct(productId, formData);
+        console.log('Update response:', response);
       } else {
+        console.log('Creating new product');
         response = await productApi.createProduct(formData);
+        console.log('Create response:', response);
       }
       
       if (response.error) {
+        console.error('API Error:', response.error);
         throw new Error(response.error);
       }
       
@@ -394,6 +417,20 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
     setExistingVideo(null);
     setVariants([]);
     setSelectedColors([]);
+    setMaterialTags([]);
+    setNewMaterialTag('');
+  };
+
+  const addMaterialTag = () => {
+    const trimmed = newMaterialTag.trim();
+    if (trimmed && !materialTags.includes(trimmed)) {
+      setMaterialTags([...materialTags, trimmed]);
+      setNewMaterialTag('');
+    }
+  };
+
+  const removeMaterialTag = (index: number) => {
+    setMaterialTags(materialTags.filter((_, i) => i !== index));
   };
 
   const handleClose = (open: boolean) => {
@@ -424,7 +461,14 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit, (errors) => {
+            console.error('Form validation errors:', errors);
+            toast({
+              title: 'Validation Error',
+              description: 'Please check the form for errors and try again.',
+              variant: 'destructive',
+            });
+          })} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -821,19 +865,58 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               )}
             </div>
 
-            <FormField
-              control={form.control}
-              name="material"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Material <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Cotton, Polyester, Silk" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            {/* Material Tags */}
+            <div className="space-y-2">
+              <FormLabel>Material Tags <span className="text-gray-500 text-xs">(optional)</span></FormLabel>
+              <p className="text-sm text-muted-foreground">
+                Add material tags that customers can select when adding to cart
+              </p>
+              
+              {/* Add Material Tag Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., Cotton, Polyester, Silk"
+                  value={newMaterialTag}
+                  onChange={(e) => setNewMaterialTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addMaterialTag();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addMaterialTag}
+                  disabled={!newMaterialTag.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Material Tags List */}
+              {materialTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {materialTags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="px-3 py-1 flex items-center gap-2"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeMaterialTag(index)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               )}
-            />
+            </div>
 
             <FormField
               control={form.control}
@@ -901,6 +984,29 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="isStretched"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Already Stretched
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Mark if this product is already stretched
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
             </div>
 
             <DialogFooter>
@@ -909,7 +1015,7 @@ export function ProductForm({ initialData, onSubmit, isEditing = false }: Produc
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoading || variants.length === 0}
+                disabled={isLoading || (!isEditing && variants.length === 0)}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Update Product' : 'Save Product'}

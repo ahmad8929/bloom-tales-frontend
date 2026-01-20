@@ -16,6 +16,8 @@ export default function PaymentSuccessPage() {
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending'>('pending');
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 5;
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -24,6 +26,11 @@ export default function PaymentSuccessPage() {
         if (!orderIdParam) {
           setPaymentStatus('failed');
           setIsVerifying(false);
+          toast({
+            title: 'Invalid Payment Response',
+            description: 'Order ID not found in payment response.',
+            variant: 'destructive',
+          });
           return;
         }
 
@@ -38,12 +45,24 @@ export default function PaymentSuccessPage() {
         );
 
         if (!order) {
-          // Try to verify payment directly if order not found
-          // This might happen if webhook hasn't processed yet
-          setTimeout(() => {
-            verifyPayment();
-          }, 2000);
-          return;
+          // Order not found - might be webhook delay
+          if (retryCount < MAX_RETRIES) {
+            setRetryCount(prev => prev + 1);
+            setTimeout(() => {
+              verifyPayment();
+            }, 2000);
+            return;
+          } else {
+            // Max retries reached, try direct verification
+            setPaymentStatus('pending');
+            setIsVerifying(false);
+            toast({
+              title: 'Order Processing',
+              description: 'Your payment is being processed. Please check your orders page in a few minutes.',
+              variant: 'default',
+            });
+            return;
+          }
         }
 
         setOrderId(order._id);
@@ -59,33 +78,45 @@ export default function PaymentSuccessPage() {
         const status = verifyResponse.data?.data?.paymentStatus;
         if (status === 'completed') {
           setPaymentStatus('success');
+          setIsVerifying(false);
           toast({
             title: 'Payment Successful! 🎉',
             description: 'Your order has been placed successfully.',
           });
         } else if (status === 'failed') {
           setPaymentStatus('failed');
+          setIsVerifying(false);
         } else {
-          // Payment still pending, check again
-          setTimeout(() => {
-            verifyPayment();
-          }, 2000);
+          // Payment still pending, check again with retry limit
+          if (retryCount < MAX_RETRIES) {
+            setRetryCount(prev => prev + 1);
+            setTimeout(() => {
+              verifyPayment();
+            }, 2000);
+          } else {
+            setPaymentStatus('pending');
+            setIsVerifying(false);
+            toast({
+              title: 'Payment Processing',
+              description: 'Your payment is being processed. Please check your orders page shortly.',
+              variant: 'default',
+            });
+          }
         }
       } catch (error: any) {
         console.error('Payment verification error:', error);
         setPaymentStatus('failed');
+        setIsVerifying(false);
         toast({
           title: 'Verification Error',
-          description: error.message || 'Failed to verify payment status.',
+          description: error.message || 'Failed to verify payment status. Please check your orders page.',
           variant: 'destructive',
         });
-      } finally {
-        setIsVerifying(false);
       }
     };
 
     verifyPayment();
-  }, [searchParams]);
+  }, [searchParams, retryCount]);
 
   if (isVerifying) {
     return (
