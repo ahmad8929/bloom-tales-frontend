@@ -22,7 +22,7 @@ export function getAuthToken(): string | null {
     return cookieToken;
   }
   
-  // Fallback to cache if cookie not available yet
+  // cache if cookie not available yet
   if (tokenCache) {
     return tokenCache;
   }
