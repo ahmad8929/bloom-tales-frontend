@@ -7,17 +7,16 @@ import { CartInitializer } from '@/components/CartInitializer';
 import { Toaster } from '@/components/ui/toaster';
 import { ConditionalLayout } from '@/components/ConditionalLayout';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { MaintenancePage } from '@/components/MaintenancePage';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bloomtales.com'),
   title: {
-    default: 'Bloomtales Boutique - Under Maintenance',
+    default: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     template: '%s | Bloomtales Boutique',
   },
-  description: 'Bloomtales Boutique is currently under maintenance. You can still order from us on WhatsApp!',
+  description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop our curated collection of sarees, kurtis, ethnic wear, and modern clothing with premium quality and craftsmanship. Shipping across all of India.',
   keywords: [
     'women fashion',
     'sarees',
@@ -204,8 +203,13 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
-          <MaintenancePage />
+          <AuthInitializer />
+          <CartInitializer />
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
           <Toaster />
+          <OfflineIndicator />
         </Providers>
       </body>
     </html>

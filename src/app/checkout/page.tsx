@@ -248,7 +248,7 @@ export default function CheckoutPage() {
       };
     }
 
-    const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+    const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * (item.product?.price || 0), 0);
     
     // Apply automatic discount based on subtotal
     // If subtotal > ₹20,000: 10% discount
@@ -1022,21 +1022,21 @@ export default function CheckoutPage() {
                   <div key={item._id} className="flex gap-1.5 sm:gap-2 md:gap-3 p-1.5 sm:p-2 md:p-3 border rounded-lg bg-muted/20">
                     <div className="relative h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 flex-shrink-0">
                       <Image
-                        src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
-                        alt={item.product.name}
+                        src={item.product?.images?.[0]?.url || '/placeholder-product.jpg'}
+                        alt={item.product?.name || 'Product'}
                         fill
                         className="object-cover rounded"
                         sizes="(max-width: 640px) 36px, (max-width: 768px) 40px, 48px"
                       />
                     </div>
                     <div className="flex-1 min-w-0 pr-1">
-                      <p className="text-xs sm:text-sm font-medium line-clamp-2 break-words">{item.product.name}</p>
+                      <p className="text-xs sm:text-sm font-medium line-clamp-2 break-words">{item.product?.name || 'Product'}</p>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                        Qty: {item.quantity} • Size: {item.size || item.product.size}
+                        Qty: {item.quantity} • Size: {item.size || item.product?.size || 'N/A'}
                       </p>
                     </div>
                     <p className="text-xs sm:text-sm font-medium flex-shrink-0 self-start">
-                      ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
+                      ₹{((item.quantity * (item.product?.price || 0))).toLocaleString('en-IN')}
                     </p>
                   </div>
                 ))}
