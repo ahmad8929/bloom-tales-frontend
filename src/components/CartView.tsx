@@ -70,24 +70,24 @@ export function CartView() {
         userId: 'guest',
         items: reduxCartItems.map((item: CartItem, index: number) => ({
           _id: `guest-item-${index}`,
-          productId: item.product.id || item.product._id || '',
+          productId: item.product?.id || item.product?._id || '',
           quantity: item.quantity,
           size: item.size,
           color: item.color,
           material: item.material,
           product: {
-            _id: item.product._id || item.product.id || '',
-            name: item.product.name,
-            price: item.product.price,
-            comparePrice: item.product.comparePrice,
-            images: item.product.images || [],
-            size: item.product.size || item.size || 'L',
-            material: item.product.material || '',
-            slug: item.product.slug || '',
+            _id: item.product?._id || item.product?.id || '',
+            name: item.product?.name || 'Product',
+            price: item.product?.price || 0,
+            comparePrice: item.product?.comparePrice,
+            images: item.product?.images || [],
+            size: item.product?.size || item.size || 'L',
+            material: item.product?.material || '',
+            slug: item.product?.slug || '',
           },
         })),
         totalItems: reduxCartItems.reduce((sum, item) => sum + item.quantity, 0),
-        totalAmount: reduxCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+        totalAmount: reduxCartItems.reduce((sum, item) => sum + ((item.product?.price || 0) * item.quantity), 0),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -201,7 +201,7 @@ export function CartView() {
               sum + (item._id === itemId ? newQuantity : item.quantity), 0
             ),
             totalAmount: prevCart.items.reduce((sum, item) => 
-              sum + (item._id === itemId ? newQuantity : item.quantity) * item.product.price, 0
+              sum + (item._id === itemId ? newQuantity : item.quantity) * (item.product?.price || 0), 0
             )
           };
         });
@@ -263,7 +263,7 @@ export function CartView() {
             ...prevCart,
             items: updatedItems,
             totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-            totalAmount: updatedItems.reduce((sum, item) => sum + item.quantity * item.product.price, 0)
+            totalAmount: updatedItems.reduce((sum, item) => sum + item.quantity * (item.product?.price || 0), 0)
           };
         });
 
@@ -293,7 +293,7 @@ export function CartView() {
       return { subtotal: 0, total: 0 };
     }
 
-    const subtotal = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+    const subtotal = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * (item.product?.price || 0), 0);
     const total = subtotal; // Total is just the subtotal
 
     return { subtotal, total };
@@ -370,17 +370,19 @@ export function CartView() {
           )}
         </div>
 
-        {cart.items.map(item => (
+        {cart.items
+          .filter(item => item && item.product) // Filter out items with null product
+          .map(item => (
           <Card key={item._id} className="overflow-hidden hover:shadow-md transition-shadow">
             <div className="flex gap-3 sm:gap-4 p-3 sm:p-4">
               {/* Product Image - Fixed size on mobile */}
               <Link 
-                href={`/products/${item.product._id || item.productId}`}
+                href={`/products/${item.product?._id || item.productId || ''}`}
                 className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200"
               >
                 <Image
-                  src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
-                  alt={item.product.images?.[0]?.alt || item.product.name}
+                  src={item.product?.images?.[0]?.url || '/placeholder-product.jpg'}
+                  alt={item.product?.images?.[0]?.alt || item.product?.name || 'Product'}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 128px"
@@ -393,10 +395,10 @@ export function CartView() {
                 {/* Product Info Section */}
                 <div className="flex-1 min-w-0">
                   <Link 
-                    href={`/products/${item.product._id || item.productId}`}
+                    href={`/products/${item.product?._id || item.productId || ''}`}
                     className="text-sm sm:text-base font-semibold hover:text-primary transition-colors block line-clamp-2 mb-1.5"
                   >
-                    {item.product.name}
+                    {item.product?.name || 'Product'}
                   </Link>
                   
                   <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
@@ -429,9 +431,9 @@ export function CartView() {
                   
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-sm sm:text-base text-foreground">
-                      ₹{item.product.price.toLocaleString('en-IN')}
+                      ₹{(item.product?.price || 0).toLocaleString('en-IN')}
                     </span>
-                    {item.product.comparePrice && item.product.comparePrice > item.product.price && (
+                    {item.product?.comparePrice && item.product.comparePrice > (item.product?.price || 0) && (
                       <span className="text-xs text-muted-foreground line-through">
                         ₹{item.product.comparePrice.toLocaleString('en-IN')}
                       </span>
@@ -475,7 +477,7 @@ export function CartView() {
                     <div className="text-right">
                       <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">Subtotal</p>
                       <p className="font-semibold text-xs sm:text-sm text-foreground">
-                        ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
+                        ₹{(item.quantity * (item.product?.price || 0)).toLocaleString('en-IN')}
                       </p>
                     </div>
                     

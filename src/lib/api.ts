@@ -1260,6 +1260,41 @@ export const orderApi = {
     }>(`/orders/${orderId}/invoice`),
 };
 
+// Payment APIs
+export const paymentApi = {
+  // Create Cashfree payment session
+  createCashfreeSession: (data: {
+    shippingAddress: {
+      fullName: string;
+      email: string;
+      phone: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+      nearbyPlaces?: string;
+    };
+    couponCode?: string;
+  }) => api.post<{
+    status: string;
+    data: {
+      paymentSessionId: string;
+      orderId: string;
+      orderNumber: string;
+      amount: number;
+    };
+  }>('/payments/cashfree/create-session', data),
+
+  // Verify payment status
+  verifyPayment: (orderId: string) => api.get<{
+    status: string;
+    data: {
+      order: any;
+      paymentStatus: string;
+    };
+  }>(`/payments/cashfree/verify/${orderId}`),
+};
+
 // Profile APIs
 export const profileApi = {
   // Get user profile
