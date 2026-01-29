@@ -234,12 +234,12 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
                 SALE
               </Badge>
             )}
-            {product.isStretched && (
+            {/* {product.isStretched && (
               <Badge className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
                 <Maximize2 className="w-2.5 h-2.5 mr-0.5" />
                 STRETCHED
               </Badge>
-            )}
+            )} */}
           </div>
 
           {/* Discount Badge */}
