@@ -19,104 +19,61 @@ export default function PaymentSuccessPage() {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 5;
 
-  useEffect(() => {
-    const verifyPayment = async () => {
-      try {
-        const orderIdParam = searchParams.get('order_id');
-        if (!orderIdParam) {
-          setPaymentStatus('failed');
-          setIsVerifying(false);
-          toast({
-            title: 'Invalid Payment Response',
-            description: 'Order ID not found in payment response.',
-            variant: 'destructive',
-          });
-          return;
-        }
+useEffect(() => {
+  const orderNumber = searchParams.get('order_id');
 
-        // Find order by order number
-        const ordersResponse = await orderApi.getOrders();
-        if (ordersResponse.error || !ordersResponse.data?.data?.orders) {
-          throw new Error('Failed to fetch orders');
-        }
+  if (!orderNumber) {
+    setPaymentStatus('failed');
+    setIsVerifying(false);
+    return;
+  }
 
-        const order = ordersResponse.data.data.orders.find(
-          (o: any) => o.orderNumber === orderIdParam
-        );
+  let attempts = 0;
+  const MAX_ATTEMPTS = 6;
 
-        if (!order) {
-          // Order not found - might be webhook delay
-          if (retryCount < MAX_RETRIES) {
-            setRetryCount(prev => prev + 1);
-            setTimeout(() => {
-              verifyPayment();
-            }, 2000);
-            return;
-          } else {
-            // Max retries reached, try direct verification
-            setPaymentStatus('pending');
-            setIsVerifying(false);
-            toast({
-              title: 'Order Processing',
-              description: 'Your payment is being processed. Please check your orders page in a few minutes.',
-              variant: 'default',
-            });
-            return;
-          }
-        }
+  const interval = setInterval(async () => {
+    try {
+      attempts++;
 
+      const res = await paymentApi.verifyPaymentByOrderNumber(orderNumber);
+
+      if (res.error) {
+        throw new Error(res.error);
+      }
+
+      const status = res.data?.data?.paymentStatus;
+      const order = res.data?.data?.order;
+
+      if (status === 'completed') {
         setOrderId(order._id);
         setOrderNumber(order.orderNumber);
+        setPaymentStatus('success');
+        setIsVerifying(false);
+        clearInterval(interval);
+      }
 
-        // Verify payment status
-        const verifyResponse = await paymentApi.verifyPayment(order._id);
-        
-        if (verifyResponse.error) {
-          throw new Error(verifyResponse.error);
-        }
-
-        const status = verifyResponse.data?.data?.paymentStatus;
-        if (status === 'completed') {
-          setPaymentStatus('success');
-          setIsVerifying(false);
-          toast({
-            title: 'Payment Successful! 🎉',
-            description: 'Your order has been placed successfully.',
-          });
-        } else if (status === 'failed') {
-          setPaymentStatus('failed');
-          setIsVerifying(false);
-        } else {
-          // Payment still pending, check again with retry limit
-          if (retryCount < MAX_RETRIES) {
-            setRetryCount(prev => prev + 1);
-            setTimeout(() => {
-              verifyPayment();
-            }, 2000);
-          } else {
-            setPaymentStatus('pending');
-            setIsVerifying(false);
-            toast({
-              title: 'Payment Processing',
-              description: 'Your payment is being processed. Please check your orders page shortly.',
-              variant: 'default',
-            });
-          }
-        }
-      } catch (error: any) {
-        console.error('Payment verification error:', error);
+      if (status === 'failed') {
         setPaymentStatus('failed');
         setIsVerifying(false);
-        toast({
-          title: 'Verification Error',
-          description: error.message || 'Failed to verify payment status. Please check your orders page.',
-          variant: 'destructive',
-        });
+        clearInterval(interval);
       }
-    };
 
-    verifyPayment();
-  }, [searchParams, retryCount]);
+      if (attempts >= MAX_ATTEMPTS) {
+        setPaymentStatus('pending');
+        setIsVerifying(false);
+        clearInterval(interval);
+      }
+    } catch (err) {
+      console.error(err);
+      setPaymentStatus('pending');
+      setIsVerifying(false);
+      clearInterval(interval);
+    }
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, []);
+
 
   if (isVerifying) {
     return (

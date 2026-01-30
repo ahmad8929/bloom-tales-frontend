@@ -1293,7 +1293,18 @@ export const paymentApi = {
       paymentStatus: string;
     };
   }>(`/payments/cashfree/verify/${orderId}`),
+
+  verifyPaymentByOrderNumber: (orderNumber: string) =>
+  api.get<{
+    status: string;
+    data: {
+      order: any;
+      paymentStatus: 'pending' | 'completed' | 'failed';
+    };
+  }>(`/payments/cashfree/verify-by-number/${orderNumber}`),
+
 };
+
 
 // Profile APIs
 export const profileApi = {

@@ -412,6 +412,7 @@ export default function CheckoutPage() {
             paymentSessionId: paymentSessionId,
             redirectTarget: '_self'
           });
+          return;
         } catch (error: any) {
           console.error('Cashfree checkout error:', error);
           setIsSubmitting(false);
