@@ -408,11 +408,9 @@ const handleCashfreePayment = async () => {
 
     // 3️⃣ Init Cashfree
     const cashfree = window.Cashfree({
-      mode:
-        process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION'
-          ? 'production'
-          : 'sandbox'
-    });
+  mode: 'production'
+});
+
 
     // 4️⃣ OPEN CHECKOUT (THIS is critical)
     cashfree.checkout({
