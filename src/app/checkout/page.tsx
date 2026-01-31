@@ -342,115 +342,96 @@ export default function CheckoutPage() {
     setCouponError(null);
   };
 
-  const handleCashfreePayment = async () => {
-    if (!validateForm()) return;
-    if (!cart) return;
-
-    setIsSubmitting(true);
-    let scriptElement: HTMLScriptElement | null = null;
-    
-    try {
-      const selectedAddress = getSelectedAddress();
-      if (!selectedAddress) {
-        throw new Error('Please select a delivery address');
-      }
-
-      const response = await paymentApi.createCashfreeSession({
-        shippingAddress: {
-          fullName: selectedAddress.fullName,
-          email: userEmail,
-          phone: selectedAddress.phone,
-          address: selectedAddress.street,
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          pincode: selectedAddress.zipCode,
-          nearbyPlaces: selectedAddress.nearbyPlaces || ''
-        },
-        ...(appliedCoupon && { couponCode: appliedCoupon.code })
-      });
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      const { paymentSessionId, orderNumber  } = response.data?.data || {};
-      
-      if (!paymentSessionId || !orderNumber) {
-  throw new Error('Invalid payment session response');
-}
-
-      // Check if Cashfree SDK is already loaded
-      if (window.Cashfree) {
-        // SDK already loaded, use it directly
-        const cashfree = window.Cashfree({
-          mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
-        });
-
-        cashfree.checkout({
-          paymentSessionId: paymentSessionId,
-          redirectTarget: '_self'
-        });
-        return; // Exit early since we're redirecting
-      }
-
-      // Load Cashfree checkout SDK
-      scriptElement = document.createElement('script');
-      scriptElement.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-      scriptElement.async = true;
-      
-      scriptElement.onload = () => {
-        try {
-          if (!window.Cashfree) {
-            throw new Error('Cashfree SDK failed to initialize');
-          }
-          
-          const cashfree = window.Cashfree({
-            mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
-          });
-
-          cashfree.checkout({
-            paymentSessionId: paymentSessionId,
-            redirectTarget: '_self'
-          });
-          return;
-        } catch (error: any) {
-          console.error('Cashfree checkout error:', error);
-          setIsSubmitting(false);
-          toast({
-            title: 'Payment Failed',
-            description: error.message || 'Failed to initialize payment. Please try again.',
-            variant: 'destructive',
-          });
-        }
-      };
-      
-      scriptElement.onerror = () => {
-        setIsSubmitting(false);
-        toast({
-          title: 'Payment Failed',
-          description: 'Failed to load payment gateway. Please check your internet connection and try again.',
-          variant: 'destructive',
-        });
-      };
-      
-      document.body.appendChild(scriptElement);
-
-    } catch (error: any) {
-      console.error('Cashfree payment error:', error);
-      setIsSubmitting(false);
-      
-      // Clean up script if it was added
-      if (scriptElement && scriptElement.parentNode) {
-        scriptElement.parentNode.removeChild(scriptElement);
-      }
-      
-      toast({
-        title: 'Payment Failed',
-        description: error.message || 'Failed to initiate payment. Please try again.',
-        variant: 'destructive',
-      });
+ const loadCashfreeSDK = () => {
+  return new Promise<void>((resolve, reject) => {
+    if (window.Cashfree) {
+      resolve();
+      return;
     }
-  };
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+    script.async = true;
+
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Cashfree SDK failed to load'));
+
+    document.body.appendChild(script);
+  });
+};
+
+const handleCashfreePayment = async () => {
+  if (!validateForm()) return;
+  if (!cart) return;
+
+  setIsSubmitting(true);
+
+  try {
+    const selectedAddress = getSelectedAddress();
+    if (!selectedAddress) {
+      throw new Error('Please select a delivery address');
+    }
+
+    // 1️⃣ Create session from backend
+    const response = await paymentApi.createCashfreeSession({
+      shippingAddress: {
+        fullName: selectedAddress.fullName,
+        email: userEmail,
+        phone: selectedAddress.phone,
+        address: selectedAddress.street,
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+        pincode: selectedAddress.zipCode,
+        nearbyPlaces: selectedAddress.nearbyPlaces || ''
+      },
+      ...(appliedCoupon && { couponCode: appliedCoupon.code })
+    });
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    const paymentSessionId = response.data?.data?.paymentSessionId;
+
+    console.log('🧪 Cashfree paymentSessionId:', paymentSessionId);
+
+    if (!paymentSessionId) {
+      throw new Error('Payment session ID missing');
+    }
+
+    // 2️⃣ Load SDK (guaranteed)
+    await loadCashfreeSDK();
+
+    if (!window.Cashfree) {
+      throw new Error('Cashfree SDK not available');
+    }
+
+    // 3️⃣ Init Cashfree
+    const cashfree = window.Cashfree({
+      mode:
+        process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION'
+          ? 'production'
+          : 'sandbox'
+    });
+
+    // 4️⃣ OPEN CHECKOUT (THIS is critical)
+    cashfree.checkout({
+      paymentSessionId,
+      redirectTarget: '_self'
+    });
+
+  } catch (error: any) {
+    console.error('❌ Cashfree payment error:', error);
+    setIsSubmitting(false);
+
+    toast({
+      title: 'Payment Failed',
+      description: error.message || 'Unable to start payment',
+      variant: 'destructive'
+    });
+  }
+};
+
 
   const calculateTotal = (cartData: CartData) => {
     return calculateTotals(cartData).total;
