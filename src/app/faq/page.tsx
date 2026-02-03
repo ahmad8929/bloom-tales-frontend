@@ -1,7 +1,7 @@
 export default function FAQPage() {
   const faqs = [
     { q: "Do you offer delivery outside Delhi?", a: "Currently, we offer delivery within Delhi NCR. Stay tuned for updates." },
-    { q: "What payment methods do you accept?", a: "We accept UPI, debit/credit cards, and COD for selected areas." },
+    { q: "What payment methods do you accept?", a: "We accept secure online payments via our payment gateway and Cash on Delivery (COD) for selected areas." },
     { q: "Can I exchange an item?", a: "Yes, exchanges are allowed within 7 days for unworn and unused products." },
   ];
 

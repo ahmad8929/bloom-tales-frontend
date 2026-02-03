@@ -121,8 +121,7 @@ export default function TermsPage() {
               <h3 className="text-xl font-semibold mb-2 text-subheading">Payment Terms</h3>
               <ul className="list-disc ml-6 space-y-2">
                 <li>Payment must be made at the time of order placement</li>
-                <li>We accept payments through authorized payment gateways including PhonePe, Razorpay, UPI, 
-                credit/debit cards, net banking, and wallets</li>
+                <li>We accept payments through authorized payment gateways (Cashfree) including UPI, credit/debit cards, net banking, and wallets</li>
                 <li>All payments are processed securely through PCI-DSS compliant payment processors</li>
                 <li>Payment gateway KYC requirements may apply as per RBI guidelines</li>
                 <li>We do not store your complete payment card details on our servers</li>

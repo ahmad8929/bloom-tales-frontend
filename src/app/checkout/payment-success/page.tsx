@@ -51,8 +51,26 @@ export default function PaymentSuccessPage() {
         const res =
           await paymentApi.verifyPaymentByOrderNumber(orderNumber);
 
+        if (res.error) {
+          console.error('Payment verification API error:', res.error);
+          // Continue polling if it's a temporary error
+          if (attempts >= MAX_ATTEMPTS) {
+            setPaymentStatus('pending');
+            setIsVerifying(false);
+            clearInterval(interval);
+          }
+          return;
+        }
+
         const rawStatus = res.data?.data?.paymentStatus;
         const order = res.data?.data?.order;
+
+        console.log('Payment verification response:', {
+          orderNumber,
+          rawStatus,
+          hasOrder: !!order,
+          orderId: order?._id
+        });
 
         // ✅ TYPE GUARD (this fixes the TS error)
         if (

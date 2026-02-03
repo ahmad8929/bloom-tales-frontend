@@ -41,14 +41,6 @@ interface CartData {
   totalAmount: number;
 }
 
-interface PaymentModalData {
-  payerName: string;
-  transactionId?: string;
-  paymentDate: string;
-  paymentTime: string;
-  amount: number;
-}
-
 interface Address {
   _id: string;
   fullName: string;
@@ -76,8 +68,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('upi');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cashfree');
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -143,39 +134,16 @@ export default function CheckoutPage() {
     return () => clearTimeout(timer);
   }, [addressForm.zipCode, fetchPincodeDetails]);
 
-  const [paymentData, setPaymentData] = useState<PaymentModalData>({
-    payerName: '',
-    paymentDate: new Date().toISOString().split('T')[0],
-    paymentTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
-    amount: 0
-  });
-
-  const [paymentProof, setPaymentProof] = useState<File | null>(null);
-  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [orderCreated, setOrderCreated] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  const UPI_ID = "7457074450@axl";
-  const QR_CODE_URL = "/qr.png";
-
   useEffect(() => {
     fetchCart();
     fetchAddresses();
   }, []);
-
-  // Update payment amount when payment method or cart changes
-  useEffect(() => {
-    if (cart) {
-      const totals = calculateTotals(cart);
-      const paymentAmount = paymentMethod === 'cod' ? totals.advancePayment : totals.total;
-      setPaymentData(prev => ({ ...prev, amount: paymentAmount }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentMethod, cart, appliedCoupon]);
 
   const fetchAddresses = async () => {
     try {
@@ -216,10 +184,7 @@ export default function CheckoutPage() {
 
     setCart(cartData || null);
     if (cartData) {
-      // Set payment amount based on payment method
-      const totals = calculateTotals(cartData);
-      const paymentAmount = paymentMethod === 'cod' ? totals.advancePayment : totals.total;
-      setPaymentData(prev => ({ ...prev, amount: paymentAmount }));
+      // Totals are derived on render; no manual payment amount tracking needed.
     }
   } catch (error: any) {
     console.error('Error fetching cart:', error);
@@ -248,7 +213,7 @@ export default function CheckoutPage() {
       };
     }
 
-    const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * (item.product?.price || 0), 0);
+    const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
     
     // Apply automatic discount based on subtotal
     // If subtotal > ₹20,000: 10% discount
@@ -266,16 +231,16 @@ export default function CheckoutPage() {
     const totalDiscount = automaticDiscount + couponDiscount;
     const subtotalAfterDiscount = Math.max(0, subtotal - totalDiscount);
 
-    // Calculate shipping and advance payment based on payment method
+    // Calculate shipping (COD shipping charge; online payment has free shipping)
     let shipping = 0;
     let advancePayment = 0;
 
     if (paymentMethod === 'cod') {
-      // COD: ₹199 shipping + ₹300 advance payment (advance payment NOT included in total)
+      // COD: ₹199 shipping (no advance payment)
       shipping = 199;
-      advancePayment = 300;
+      advancePayment = 0;
     } else {
-      // Online payment (upi, card, cashfree): Free shipping
+      // Online payment (Cashfree): Free shipping
       shipping = 0;
       advancePayment = 0;
     }
@@ -342,105 +307,77 @@ export default function CheckoutPage() {
     setCouponError(null);
   };
 
- const loadCashfreeSDK = () => {
-  return new Promise<void>((resolve, reject) => {
-    if (window.Cashfree) {
-      resolve();
-      return;
+  const handleCashfreePayment = async () => {
+    if (!validateForm()) return;
+    if (!cart) return;
+
+    setIsSubmitting(true);
+    try {
+      const selectedAddress = getSelectedAddress();
+      if (!selectedAddress) {
+        throw new Error('Please select a delivery address');
+      }
+
+      const response = await paymentApi.createCashfreeSession({
+        shippingAddress: {
+          fullName: selectedAddress.fullName,
+          email: userEmail,
+          phone: selectedAddress.phone,
+          address: selectedAddress.street,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          pincode: selectedAddress.zipCode,
+          nearbyPlaces: selectedAddress.nearbyPlaces || ''
+        },
+        ...(appliedCoupon && { couponCode: appliedCoupon.code })
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      const { paymentSessionId, orderId } = response.data?.data || {};
+      
+      if (!paymentSessionId) {
+        throw new Error('Failed to create payment session');
+      }
+
+      // Load Cashfree checkout
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.onload = () => {
+        if (!window.Cashfree) {
+          throw new Error('Cashfree SDK failed to load');
+        }
+        
+        const cashfree = window.Cashfree({
+          mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
+        });
+
+        cashfree.checkout({
+          paymentSessionId: paymentSessionId,
+          redirectTarget: '_self'
+        });
+      };
+      script.onerror = () => {
+        throw new Error('Failed to load Cashfree SDK');
+      };
+      document.body.appendChild(script);
+
+    } catch (error: any) {
+      console.error('Cashfree payment error:', error);
+      toast({
+        title: 'Payment Failed',
+        description: error.message || 'Failed to initiate payment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const script = document.createElement('script');
-    script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-    script.async = true;
-
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Cashfree SDK failed to load'));
-
-    document.body.appendChild(script);
-  });
-};
-
-const handleCashfreePayment = async () => {
-  if (!validateForm()) return;
-  if (!cart) return;
-
-  setIsSubmitting(true);
-
-  try {
-    const selectedAddress = getSelectedAddress();
-    if (!selectedAddress) {
-      throw new Error('Please select a delivery address');
-    }
-
-    // 1️⃣ Create session from backend
-    const response = await paymentApi.createCashfreeSession({
-      shippingAddress: {
-        fullName: selectedAddress.fullName,
-        email: userEmail,
-        phone: selectedAddress.phone,
-        address: selectedAddress.street,
-        city: selectedAddress.city,
-        state: selectedAddress.state,
-        pincode: selectedAddress.zipCode,
-        nearbyPlaces: selectedAddress.nearbyPlaces || ''
-      },
-      ...(appliedCoupon && { couponCode: appliedCoupon.code })
-    });
-
-    if (response.error) {
-      throw new Error(response.error);
-    }
-
-    const paymentSessionId = response.data?.data?.paymentSessionId;
-
-    console.log('🧪 Cashfree paymentSessionId:', paymentSessionId);
-
-    if (!paymentSessionId) {
-      throw new Error('Payment session ID missing');
-    }
-
-    // 2️⃣ Load SDK (guaranteed)
-    await loadCashfreeSDK();
-
-    if (!window.Cashfree) {
-      throw new Error('Cashfree SDK not available');
-    }
-
-    // 3️⃣ Init Cashfree
-    const cashfree = window.Cashfree({
-  mode: 'production'
-});
-
-
-    // 4️⃣ OPEN CHECKOUT (THIS is critical)
-    cashfree.checkout({
-      paymentSessionId,
-      redirectTarget: '_self'
-    });
-
-  } catch (error: any) {
-    console.error('❌ Cashfree payment error:', error);
-    setIsSubmitting(false);
-
-    toast({
-      title: 'Payment Failed',
-      description: error.message || 'Unable to start payment',
-      variant: 'destructive'
-    });
-  }
-};
-
+  };
 
   const calculateTotal = (cartData: CartData) => {
     return calculateTotals(cartData).total;
-  };
-
-  const copyUpiId = () => {
-    navigator.clipboard.writeText(UPI_ID);
-    toast({
-      title: 'Copied!',
-      description: 'UPI ID copied to clipboard',
-    });
   };
 
   const handleAddAddress = () => {
@@ -526,50 +463,6 @@ const handleCashfreePayment = async () => {
     }
   };
 
-  const handlePaymentInputChange = (field: string, value: string) => {
-    setPaymentData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handlePaymentProofChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          title: 'File too large',
-          description: 'Please select an image smaller than 5MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Please select an image file (PNG, JPG, JPEG)',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setPaymentProof(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPaymentProofPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removePaymentProof = () => {
-    setPaymentProof(null);
-    setPaymentProofPreview(null);
-    // Reset file input
-    const fileInput = document.getElementById('paymentProof') as HTMLInputElement;
-    if (fileInput) fileInput.value = '';
-  };
-
   const validateForm = () => {
     if (!selectedAddressId) {
       toast({
@@ -597,35 +490,6 @@ const handleCashfreePayment = async () => {
     return addresses.find(addr => addr._id === selectedAddressId) || null;
   };
 
-  const validatePaymentForm = () => {
-    // For UPI and COD, require payment proof
-    if (paymentMethod === 'upi' || paymentMethod === 'cod') {
-      const required = ['payerName', 'paymentDate', 'paymentTime'];
-      for (const field of required) {
-        if (!paymentData[field as keyof PaymentModalData]) {
-          toast({
-            title: 'Validation Error',
-            description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-            variant: 'destructive',
-          });
-          return false;
-        }
-      }
-
-      if (!paymentProof) {
-        toast({
-          title: 'Payment Proof Required',
-          description: 'Please upload a screenshot of your payment',
-          variant: 'destructive',
-        });
-        return false;
-      }
-    }
-    // For card payment, may have different requirements (can be extended later)
-
-    return true;
-  };
-
   const handleSubmitOrder = async () => {
     if (!validateForm()) return;
     if (!cart) return;
@@ -647,25 +511,12 @@ const handleCashfreePayment = async () => {
       return;
     }
 
-    // For online payment methods (upi, card), show payment modal for full amount
-    if (paymentMethod === 'upi' || paymentMethod === 'card') {
-      setShowPaymentModal(true);
-      return;
-    }
-
-    // For COD, show payment modal for advance payment (₹300)
-    if (paymentMethod === 'cod') {
-      setShowPaymentModal(true);
-      return;
-    }
-
-    // Fallback (should not reach here)
+    // COD: place order directly
     await processOrder();
   };
 
   const processOrder = async () => {
     setIsSubmitting(true);
-    setUploadProgress(0);
     
     try {
       const selectedAddress = getSelectedAddress();
@@ -685,59 +536,21 @@ const handleCashfreePayment = async () => {
           nearbyPlaces: selectedAddress.nearbyPlaces || ''
         },
         paymentMethod: paymentMethod,
-        ...((paymentMethod === 'upi' || paymentMethod === 'card') && { paymentDetails: paymentData }),
         ...(appliedCoupon && { couponCode: appliedCoupon.code })
       };
 
-      setUploadProgress(25);
       const response = await orderApi.createOrder(orderData);
       
       if (response.error) {
         throw new Error(response.error);
       }
 
-      const orderId = response.data?.data?.order?._id;
-      setUploadProgress(50);
       setOrderCreated(true);
 
-      // If online payment (UPI/Card) with proof, upload the payment proof
-      if ((paymentMethod === 'upi' || paymentMethod === 'card') && paymentProof && orderId) {
-        try {
-          const formData = new FormData();
-          formData.append('paymentProof', paymentProof);
-          
-          setUploadProgress(75);
-          const proofResponse = await orderApi.uploadPaymentProof(orderId, formData);
-          
-          if (proofResponse.error) {
-            console.error('Payment proof upload failed:', proofResponse.error);
-            toast({
-              title: 'Order Placed Successfully! 🎉',
-              description: 'Order created and sent for admin approval. Payment proof upload failed - you can upload it later.',
-              variant: 'default',
-            });
-          } else {
-            toast({
-              title: 'Order Placed Successfully! 🎉',
-              description: 'Order created with payment proof and sent for admin approval.',
-            });
-          }
-        } catch (proofError) {
-          console.error('Payment proof upload error:', proofError);
-          toast({
-            title: 'Order Placed Successfully! 🎉',
-            description: 'Order created and sent for admin approval. You can upload payment proof from your orders page.',
-            variant: 'default',
-          });
-        }
-      } else {
-        toast({
-          title: 'Order Placed Successfully! 🎉',
-          description: 'Order created and sent for admin approval. You will be notified once approved.',
-        });
-      }
-
-      setUploadProgress(100);
+      toast({
+        title: 'Order Placed Successfully! 🎉',
+        description: 'Order created and sent for admin approval. You will be notified once approved.',
+      });
 
       // Clear cart after successful order
       await cartApi.clearCart();
@@ -756,14 +569,7 @@ const handleCashfreePayment = async () => {
       });
     } finally {
       setIsSubmitting(false);
-      setShowPaymentModal(false);
-      setUploadProgress(0);
     }
-  };
-
-  const handlePaymentSubmit = async () => {
-    if (!validatePaymentForm()) return;
-    await processOrder();
   };
 
   if (isLoading) {
@@ -954,18 +760,7 @@ const handleCashfreePayment = async () => {
                       Cash on Delivery (COD)
                     </Label>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Pay ₹300 advance to confirm your order. Remaining amount payable on delivery.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <RadioGroupItem value="upi" id="upi" className="mt-1" disabled={orderCreated} />
-                  <div className="flex-1">
-                    <Label htmlFor="upi" className="cursor-pointer font-medium text-sm sm:text-base">
-                      Online Payment (UPI/Card) - Manual
-                    </Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Free shipping. Pay the full amount online and upload payment proof.
+                      Pay on delivery. (₹199 shipping charge applies)
                     </p>
                   </div>
                 </div>
@@ -1002,21 +797,21 @@ const handleCashfreePayment = async () => {
                   <div key={item._id} className="flex gap-1.5 sm:gap-2 md:gap-3 p-1.5 sm:p-2 md:p-3 border rounded-lg bg-muted/20">
                     <div className="relative h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 flex-shrink-0">
                       <Image
-                        src={item.product?.images?.[0]?.url || '/placeholder-product.jpg'}
-                        alt={item.product?.name || 'Product'}
+                        src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
+                        alt={item.product.name}
                         fill
                         className="object-cover rounded"
                         sizes="(max-width: 640px) 36px, (max-width: 768px) 40px, 48px"
                       />
                     </div>
                     <div className="flex-1 min-w-0 pr-1">
-                      <p className="text-xs sm:text-sm font-medium line-clamp-2 break-words">{item.product?.name || 'Product'}</p>
+                      <p className="text-xs sm:text-sm font-medium line-clamp-2 break-words">{item.product.name}</p>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                        Qty: {item.quantity} • Size: {item.size || item.product?.size || 'N/A'}
+                        Qty: {item.quantity} • Size: {item.size || item.product.size}
                       </p>
                     </div>
                     <p className="text-xs sm:text-sm font-medium flex-shrink-0 self-start">
-                      ₹{((item.quantity * (item.product?.price || 0))).toLocaleString('en-IN')}
+                      ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
                     </p>
                   </div>
                 ))}
@@ -1137,32 +932,7 @@ const handleCashfreePayment = async () => {
                   <span className="flex-shrink-0 ml-2">₹{total.toLocaleString('en-IN')}</span>
                 </div>
                 
-                {/* COD Payment Breakdown */}
-                {paymentMethod === 'cod' && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                        <span className="break-words font-medium">Total Order Amount</span>
-                        <span className="flex-shrink-0 ml-2 font-medium">₹{total.toLocaleString('en-IN')}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                        <span className="break-words text-green-600 font-medium">Pay Now (Advance)</span>
-                        <span className="flex-shrink-0 ml-2 text-green-600 font-medium">₹{advancePayment.toLocaleString('en-IN')}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                        <span className="break-words text-muted-foreground">Pay Later (On Delivery)</span>
-                        <span className="flex-shrink-0 ml-2 text-muted-foreground">₹{(total - advancePayment).toLocaleString('en-IN')}</span>
-                      </div>
-                    </div>
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs sm:text-sm text-amber-800">
-                        <strong>Note:</strong> Pay ₹{advancePayment.toLocaleString('en-IN')} now to confirm your order. 
-                        Remaining ₹{(total - advancePayment).toLocaleString('en-IN')} will be collected on delivery.
-                      </p>
-                    </div>
-                  </>
-                )}
+                {/* COD breakdown removed (no advance payment) */}
               </div>
 
               {orderCreated ? (
@@ -1187,10 +957,7 @@ const handleCashfreePayment = async () => {
                     </div>
                   ) : (
                     <span className="break-words">
-                      {paymentMethod === 'cod' 
-                        ? `Pay Advance - ₹${advancePayment.toLocaleString('en-IN')}`
-                        : `Place Order - ₹${total.toLocaleString('en-IN')}`
-                      }
+                      {`Place Order - ₹${total.toLocaleString('en-IN')}`}
                     </span>
                   )}
                 </Button>
@@ -1215,298 +982,6 @@ const handleCashfreePayment = async () => {
           </Card>
         </div>
       </div>
-
-      {/* Payment Confirmation Modal */}
-      <Dialog 
-        open={showPaymentModal} 
-        onOpenChange={(open) => {
-          // Prevent closing by clicking outside or pressing ESC - only allow via close button
-          // Don't update state if trying to close (unless from our button)
-          if (!open) {
-            // Prevent closing - keep modal open
-            return;
-          }
-        }}
-      >
-        <DialogContent 
-          className="w-[95vw] max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto [&>button]:hidden p-3 sm:p-4 md:p-6"
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-          }}
-        >
-          <DialogHeader className="pb-2 sm:pb-4">
-            <div className="flex items-center justify-between pr-6 sm:pr-8">
-              <DialogTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
-                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-green-600 flex-shrink-0" />
-                <span className="break-words">
-                  {paymentMethod === 'cod' ? 'Advance Payment Confirmation' : 'Payment Confirmation'}
-                </span>
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-full hover:bg-muted absolute right-2 sm:right-3 md:right-4 top-2 sm:top-3 md:top-4 flex-shrink-0"
-                onClick={() => {
-                  if (!isSubmitting) {
-                    setShowPaymentModal(false);
-                  }
-                }}
-                disabled={isSubmitting}
-              >
-                <X className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-              </Button>
-            </div>
-            <DialogDescription className="text-xs sm:text-sm mt-1 sm:mt-2">
-              {paymentMethod === 'cod' 
-                ? 'Pay ₹300 advance payment using the QR code or UPI ID below, then provide your payment details. Remaining amount will be collected on delivery.'
-                : paymentMethod === 'upi' 
-                ? 'Complete your payment using the QR code or UPI ID below, then provide your payment details.'
-                : 'Complete your payment and provide the payment details below.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 sm:space-y-4 md:space-y-6">
-            {/* QR Code and UPI Section - Show for UPI and COD */}
-            {(paymentMethod === 'upi' || paymentMethod === 'cod') && (
-              <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
-              <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
-                <h3 className="font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-1.5 sm:gap-2">
-                  <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
-                  <span className="break-words">
-                    {paymentMethod === 'cod' ? 'Pay Advance - Scan QR Code or Use UPI ID' : 'Scan QR Code or Use UPI ID'}
-                  </span>
-                </h3>
-                
-                <div className="bg-white p-1.5 sm:p-2 md:p-4 rounded-lg inline-block shadow-lg">
-                  <img 
-                    src={QR_CODE_URL} 
-                    alt="UPI QR Code" 
-                    className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 mx-auto"
-                  />
-                </div>
-                
-                <div className="space-y-1.5 sm:space-y-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Or send payment to UPI ID:</p>
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 px-1 sm:px-2">
-                    <code className="bg-white px-1.5 sm:px-2 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg font-mono text-[10px] sm:text-xs md:text-base font-semibold flex items-center gap-1 sm:gap-2 border-2 border-primary/30 break-all w-full justify-center">
-                      <span className="break-all text-center">{UPI_ID}</span>
-                      <Button size="sm" variant="ghost" onClick={copyUpiId} className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 p-0 hover:bg-primary/10 flex-shrink-0">
-                        <Copy className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
-                      </Button>
-                    </code>
-                  </div>
-                </div>
-                
-                <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-primary bg-white/70 rounded-lg p-1.5 sm:p-2 md:p-3 border-2 border-primary/30">
-                  Amount: ₹{(paymentMethod === 'cod' ? advancePayment : total).toLocaleString('en-IN')}
-                </div>
-                {paymentMethod === 'cod' && (
-                  <div className="text-xs sm:text-sm text-muted-foreground bg-white/50 rounded-lg p-2">
-                    <p>This is your advance payment. Remaining ₹{(total - advancePayment).toLocaleString('en-IN')} will be collected on delivery.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            )}
-
-            {/* Card Payment Section - Can be extended later */}
-            {paymentMethod === 'card' && (
-              <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg border-2 border-primary/20">
-                <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
-                  <h3 className="font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-1.5 sm:gap-2">
-                    <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
-                    <span className="break-words">Card Payment</span>
-                  </h3>
-                  <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-primary bg-white/70 rounded-lg p-1.5 sm:p-2 md:p-3 border-2 border-primary/30">
-                    Amount: ₹{total.toLocaleString('en-IN')}
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Please complete your card payment and provide the transaction details below.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <Separator />
-
-            {/* Payment Details Form */}
-            <div className="space-y-3 sm:space-y-4">
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label htmlFor="payerName" className="text-xs sm:text-sm">Payer Name *</Label>
-                <Input 
-                  id="payerName" 
-                  placeholder="Name on UPI account"
-                  value={paymentData.payerName}
-                  onChange={(e) => handlePaymentInputChange('payerName', e.target.value)}
-                  disabled={isSubmitting}
-                  className="text-xs sm:text-sm md:text-base"
-                />
-              </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label htmlFor="paymentDate" className="text-xs sm:text-sm">Payment Date *</Label>
-                <Input 
-                  id="paymentDate" 
-                  type="date"
-                  value={paymentData.paymentDate}
-                  onChange={(e) => handlePaymentInputChange('paymentDate', e.target.value)}
-                  disabled={isSubmitting}
-                  className="text-xs sm:text-sm md:text-base"
-                />
-              </div>
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label htmlFor="paymentTime" className="text-xs sm:text-sm">Payment Time *</Label>
-                <Input 
-                  id="paymentTime" 
-                  type="time"
-                  value={paymentData.paymentTime}
-                  onChange={(e) => handlePaymentInputChange('paymentTime', e.target.value)}
-                  disabled={isSubmitting}
-                  className="text-xs sm:text-sm md:text-base"
-                />
-              </div>
-            </div>
-            </div>
-
-            {/* Payment Proof Upload - Required for UPI and COD, optional for card */}
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="paymentProof" className="text-xs sm:text-sm">
-                Payment Screenshot/Proof {(paymentMethod === 'upi' || paymentMethod === 'cod') ? '*' : '(Optional)'}
-              </Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 sm:p-4 text-center hover:border-primary/50 transition-colors">
-                {paymentProofPreview ? (
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="relative max-w-xs mx-auto">
-                      <img 
-                        src={paymentProofPreview} 
-                        alt="Payment proof preview" 
-                        className="w-full h-24 sm:h-32 object-cover rounded-lg border"
-                      />
-                      {!isSubmitting && (
-                        <button
-                          type="button"
-                          onClick={removePaymentProof}
-                          className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[10px] sm:text-xs hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs sm:text-sm text-green-600 font-medium">Payment proof uploaded ✓</p>
-                    {!isSubmitting && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('paymentProof')?.click()}
-                        className="text-xs sm:text-sm"
-                      >
-                        <span className="hidden sm:inline">Change Image</span>
-                        <span className="sm:hidden">Change</span>
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium">Upload Payment Screenshot</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">PNG, JPG, JPEG up to 5MB</p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('paymentProof')?.click()}
-                      disabled={isSubmitting}
-                      className="text-xs sm:text-sm"
-                    >
-                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                      Choose Image
-                    </Button>
-                  </div>
-                )}
-                <input
-                  id="paymentProof"
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePaymentProofChange}
-                  className="hidden"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                Please upload a clear screenshot of your payment confirmation from your UPI app
-              </p>
-            </div>
-
-            <div className="p-2.5 sm:p-3 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                {paymentMethod === 'cod' ? 'Advance Payment Amount' : 'Amount Paid'}
-              </div>
-              <div className="text-base sm:text-lg font-semibold text-primary">
-                ₹{(paymentMethod === 'cod' ? advancePayment : total).toLocaleString('en-IN')}
-              </div>
-              {paymentMethod === 'cod' && (
-                <div className="text-xs text-muted-foreground mt-1">
-                  Remaining ₹{(total - advancePayment).toLocaleString('en-IN')} on delivery
-                </div>
-              )}
-            </div>
-
-            {/* Upload Progress */}
-            {isSubmitting && uploadProgress > 0 && (
-              <div className="space-y-1.5 sm:space-y-2">
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <span>Processing order...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
-                  <div 
-                    className="bg-primary h-1.5 sm:h-2 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  if (!isSubmitting) {
-                    setShowPaymentModal(false);
-                  }
-                }} 
-                className="flex-1 w-full sm:w-auto text-xs sm:text-sm"
-                disabled={isSubmitting}
-              >
-                Close
-              </Button>
-              <Button 
-                onClick={handlePaymentSubmit} 
-                disabled={isSubmitting} 
-                className="flex-1 w-full sm:w-auto text-xs sm:text-sm"
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Confirming...</span>
-                  </div>
-                ) : (
-                  'Confirm Payment'
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Address Modal */}
       <Dialog open={showAddressModal} onOpenChange={setShowAddressModal}>

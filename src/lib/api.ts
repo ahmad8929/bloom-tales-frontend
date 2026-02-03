@@ -1215,31 +1215,6 @@ export const orderApi = {
     };
   }>('/orders/stats'),
 
-  // Upload payment proof
-  uploadPaymentProof: (orderId: string, formData: FormData) =>
-    api.post<{
-      status: string;
-      message: string;
-      data: {
-        order: any;
-        paymentProof: {
-          url: string;
-          publicId: string;
-          uploadedAt: string;
-        };
-      };
-    }>(`/orders/${orderId}/payment-proof`, formData),
-
-  // Update payment details
-  updatePaymentDetails: (orderId: string, paymentDetails: any) =>
-    api.patch<{
-      status: string;
-      message: string;
-      data: {
-        order: any;
-      };
-    }>(`/orders/${orderId}/payment-details`, { paymentDetails }),
-
   // Get order invoice
   getOrderInvoice: (orderId: string) =>
     api.get<{
