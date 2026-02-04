@@ -351,8 +351,9 @@ export default function CheckoutPage() {
         }
         
         const cashfree = window.Cashfree({
-          mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox'
-        });
+  mode: 'production'
+});
+
 
         cashfree.checkout({
           paymentSessionId: paymentSessionId,
