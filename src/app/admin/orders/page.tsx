@@ -65,24 +65,8 @@ interface Order {
     lastName: string;
     email: string;
   };
-  status: 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected';
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected';
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
-  adminApproval: {
-    status: 'pending' | 'approved' | 'rejected';
-    approvedBy?: {
-      _id: string;
-      firstName: string;
-      lastName: string;
-    };
-    rejectedBy?: {
-      _id: string;
-      firstName: string;
-      lastName: string;
-    };
-    approvedAt?: string;
-    rejectedAt?: string;
-    remarks?: string;
-  };
   totalAmount: number;
   items: Array<{
     _id: string;
@@ -123,40 +107,22 @@ interface OrderDetailsModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
-  onApprove: (orderId: string, remarks: string) => void;
-  onReject: (orderId: string, remarks: string) => void;
   onUpdateStatus: (orderId: string, status: string) => void;
 }
 
-function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpdateStatus }: OrderDetailsModalProps) {
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'status' | null>(null);
+function OrderDetailsModal({ order, isOpen, onClose, onUpdateStatus }: OrderDetailsModalProps) {
+  const [actionType, setActionType] = useState<'status' | null>(null);
   const [remarks, setRemarks] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAction = async () => {
-    if (!order || !actionType) return;
+    if (!order || !actionType || !newStatus) return;
     
     setIsSubmitting(true);
     try {
-      if (actionType === 'approve') {
-        await onApprove(order._id, remarks);
-      } else if (actionType === 'reject') {
-        if (!remarks.trim()) {
-          toast({
-            title: 'Error',
-            description: 'Rejection reason is required',
-            variant: 'destructive',
-          });
-          return;
-        }
-        await onReject(order._id, remarks);
-      } else if (actionType === 'status' && newStatus) {
-        await onUpdateStatus(order._id, newStatus);
-      }
-      
+      await onUpdateStatus(order._id, newStatus);
       setActionType(null);
-      setRemarks('');
       setNewStatus('');
     } finally {
       setIsSubmitting(false);
@@ -187,23 +153,8 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
                   <Clock className="w-4 h-4 text-primary" />
                   <span className="font-medium">Order Status</span>
                 </div>
-                <Badge variant={order.status === 'awaiting_approval' ? 'secondary' : 'default'}>
+                <Badge variant={order.status === 'pending' ? 'secondary' : 'default'}>
                   {order.status.replace('_', ' ').toUpperCase()}
-                </Badge>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  <span className="font-medium">Approval Status</span>
-                </div>
-                <Badge variant={
-                  order.adminApproval.status === 'pending' ? 'outline' :
-                  order.adminApproval.status === 'approved' ? 'default' : 'destructive'
-                }>
-                  {order.adminApproval.status.toUpperCase()}
                 </Badge>
               </CardContent>
             </Card>
@@ -382,60 +333,14 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
             </CardContent>
           </Card>
 
-          {/* Approval History */}
-          {order.adminApproval.remarks && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Approval History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    {order.adminApproval.status === 'approved' ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className="font-medium">
-                      {order.adminApproval.status === 'approved' ? 'Approved' : 'Rejected'} by{' '}
-                      {order.adminApproval.approvedBy 
-                        ? `${order.adminApproval.approvedBy.firstName} ${order.adminApproval.approvedBy.lastName}`
-                        : order.adminApproval.rejectedBy 
-                        ? `${order.adminApproval.rejectedBy.firstName} ${order.adminApproval.rejectedBy.lastName}`
-                        : 'Admin'
-                      }
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground pl-6">
-                    {order.adminApproval.remarks}
-                  </p>
-                  <p className="text-xs text-muted-foreground pl-6">
-                    {order.adminApproval.approvedAt 
-                      ? new Date(order.adminApproval.approvedAt).toLocaleString()
-                      : order.adminApproval.rejectedAt
-                      ? new Date(order.adminApproval.rejectedAt).toLocaleString()
-                      : ''
-                    }
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Action Dialog */}
           {actionType && (
             <Card className="border-primary">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {actionType === 'approve' ? (
-                    <ThumbsUp className="w-5 h-5 text-green-500" />
-                  ) : actionType === 'reject' ? (
-                    <ThumbsDown className="w-5 h-5 text-red-500" />
-                  ) : (
-                    <Truck className="w-5 h-5 text-blue-500" />
-                  )}
-                  {actionType === 'approve' ? 'Approve Order' :
-                   actionType === 'reject' ? 'Reject Order' : 'Update Order Status'}
+                  <Truck className="w-5 h-5 text-blue-500" />
+                  Update Order Status
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -479,27 +384,6 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
                   </div>
                 )}
                 
-                {actionType !== 'status' && (
-                  <div>
-                    <label className="text-sm font-medium">
-                      {actionType === 'reject' ? 'Rejection Reason *' : 
-                       actionType === 'approve' && order.adminApproval.status === 'approved' ? 'Update Remarks' :
-                       'Remarks (Optional)'}
-                    </label>
-                    <Textarea
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      placeholder={
-                        actionType === 'approve' && order.adminApproval.status === 'approved' ? 'Update approval remarks...' :
-                        actionType === 'approve' ? 'Optional approval notes...' :
-                        actionType === 'reject' ? 'Please provide a reason for rejection...' :
-                        'Optional status update notes...'
-                      }
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                )}
                 
                 <div className="flex gap-2 pt-2">
                   <Button
@@ -518,7 +402,7 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
                     onClick={handleAction}
                     disabled={isSubmitting || (actionType === 'status' && !newStatus)}
                     className="flex-1"
-                    variant={actionType === 'reject' ? 'destructive' : 'default'}
+                    variant="default"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center gap-2">
@@ -526,9 +410,6 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
                         Processing...
                       </div>
                     ) : (
-                      actionType === 'approve' && order.adminApproval.status === 'approved' ? 'Update Remarks' :
-                      actionType === 'approve' ? 'Approve Order' :
-                      actionType === 'reject' ? 'Reject Order' :
                       'Update Status'
                     )}
                   </Button>
@@ -543,48 +424,14 @@ function OrderDetailsModal({ order, isOpen, onClose, onApprove, onReject, onUpda
             Close
           </Button>
           
-          {order.adminApproval.status === 'pending' && (
-            <>
-              <Button
-                variant="destructive"
-                onClick={() => setActionType('reject')}
-                className="flex items-center gap-2"
-              >
-                <ThumbsDown className="w-4 h-4" />
-                Reject Order
-              </Button>
-              <Button
-                onClick={() => setActionType('approve')}
-                className="flex items-center gap-2"
-              >
-                <ThumbsUp className="w-4 h-4" />
-                Approve Order
-              </Button>
-            </>
-          )}
-          
-          {order.adminApproval.status === 'approved' && order.status !== 'delivered' && (
-            <>
-              <Button
-                onClick={() => {
-                  setActionType('approve');
-                  setRemarks(order.adminApproval.remarks || '');
-                }}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <ThumbsUp className="w-4 h-4" />
-                Update Remarks
-              </Button>
-              <Button
-                onClick={() => setActionType('status')}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Truck className="w-4 h-4" />
-                Update Status
-              </Button>
-            </>
+          {order.status !== 'delivered' && order.status !== 'cancelled' && (
+            <Button
+              onClick={() => setActionType('status')}
+              className="flex items-center gap-2"
+            >
+              <Truck className="w-4 h-4" />
+              Update Status
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>
@@ -597,7 +444,6 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [approvalFilter, setApprovalFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
 
@@ -625,12 +471,8 @@ export default function AdminOrdersPage() {
         
         return {
           ...order,
-          status: order.status as 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected',
+          status: order.status as 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected',
           paymentStatus: order.paymentStatus as 'pending' | 'completed' | 'failed' | 'refunded',
-          adminApproval: {
-            ...order.adminApproval,
-            status: order.adminApproval.status as 'pending' | 'approved' | 'rejected'
-          },
           // Explicitly preserve paymentDetails including paymentProof
           // Keep paymentProof even if url is missing (for debugging)
           paymentDetails: order.paymentDetails ? {
@@ -721,7 +563,7 @@ export default function AdminOrdersPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'awaiting_approval':
+      case 'pending':
         return <AlertTriangle className="h-4 w-4 text-orange-500" />;
       case 'confirmed':
         return <CheckCircle className="h-4 w-4 text-blue-500" />;
@@ -741,7 +583,7 @@ export default function AdminOrdersPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'awaiting_approval':
+      case 'pending':
         return 'bg-orange-100 text-orange-800';
       case 'confirmed':
         return 'bg-blue-100 text-blue-800';
@@ -759,18 +601,6 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const getApprovalStatusBadge = (adminApproval: Order['adminApproval']) => {
-    switch (adminApproval.status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
@@ -779,12 +609,10 @@ export default function AdminOrdersPage() {
       order.user.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesApproval = approvalFilter === 'all' || order.adminApproval.status === approvalFilter;
     
-    return matchesSearch && matchesStatus && matchesApproval;
+    return matchesSearch && matchesStatus;
   });
 
-  const pendingApprovals = orders.filter(order => order.adminApproval.status === 'pending').length;
 
   if (loading) {
     return (
@@ -805,11 +633,6 @@ export default function AdminOrdersPage() {
             <h1 className="text-3xl font-bold">Orders Management</h1>
             <p className="text-gray-600 mt-1">Manage customer orders, approvals, and shipping</p>
           </div>
-          {pendingApprovals > 0 && (
-            <Badge variant="destructive" className="text-sm">
-              {pendingApprovals} Pending Approval{pendingApprovals !== 1 ? 's' : ''}
-            </Badge>
-          )}
         </div>
 
         {/* Stats Cards */}
@@ -819,9 +642,9 @@ export default function AdminOrdersPage() {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-orange-500" />
                 <div>
-                  <p className="text-sm text-gray-600">Awaiting Approval</p>
+                  <p className="text-sm text-gray-600">Pending</p>
                   <p className="text-xl font-semibold">
-                    {orders.filter(o => o.adminApproval.status === 'pending').length}
+                    {orders.filter(o => o.status === 'pending').length}
                   </p>
                 </div>
               </div>
@@ -908,7 +731,7 @@ export default function AdminOrdersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="awaiting_approval">Awaiting Approval</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
@@ -918,17 +741,6 @@ export default function AdminOrdersPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={approvalFilter} onValueChange={setApprovalFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by approval" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Approvals</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="rounded-md border">
@@ -938,7 +750,6 @@ export default function AdminOrdersPage() {
                     <TableHead>Order</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Approval</TableHead>
                     <TableHead>Items</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Date</TableHead>
@@ -972,9 +783,6 @@ export default function AdminOrdersPage() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {getApprovalStatusBadge(order.adminApproval)}
-                        </TableCell>
                         <TableCell>{order.items.length}</TableCell>
                         <TableCell>₹{order.totalAmount.toLocaleString('en-IN')}</TableCell>
                         <TableCell>
@@ -995,7 +803,7 @@ export default function AdminOrdersPage() {
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
                               
-                              {order.adminApproval.status === 'pending' && (
+                              {order.status === 'pending' && (
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
@@ -1019,7 +827,7 @@ export default function AdminOrdersPage() {
                                 </>
                               )}
                               
-                              {order.adminApproval.status === 'approved' && order.status !== 'delivered' && (
+                              {order.status !== 'delivered' && order.status !== 'cancelled' && (
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => {
@@ -1051,8 +859,6 @@ export default function AdminOrdersPage() {
           setShowOrderDetails(false);
           setSelectedOrder(null);
         }}
-        onApprove={handleApproveOrder}
-        onReject={handleRejectOrder}
         onUpdateStatus={handleUpdateStatus}
       />
     </AdminLayout>

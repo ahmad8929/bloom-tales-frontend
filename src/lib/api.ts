@@ -1024,9 +1024,6 @@ export const orderApi = {
         status: string;
         paymentMethod: string;
         paymentStatus: string;
-        adminApproval: {
-          status: 'pending' | 'approved' | 'rejected';
-        };
         paymentDetails?: {
           payerName: string;
           transactionId?: string;

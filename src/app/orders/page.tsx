@@ -53,25 +53,9 @@ interface Order {
     };
   }>;
   totalAmount: number;
-  status: 'awaiting_approval' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected';
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected';
   paymentMethod: string;
   paymentStatus: 'pending' | 'completed' | 'failed';
-  adminApproval: {
-    status: 'pending' | 'approved' | 'rejected';
-    remarks?: string;
-    approvedAt?: string;
-    rejectedAt?: string;
-    approvedBy?: {
-      _id: string;
-      firstName: string;
-      lastName: string;
-    };
-    rejectedBy?: {
-      _id: string;
-      firstName: string;
-      lastName: string;
-    };
-  };
   paymentDetails?: {
     payerName: string;
     transactionId?: string;
@@ -141,12 +125,12 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
 
   if (!order) return null;
 
-  const getStatusInfo = (status: string, adminApproval: Order['adminApproval']) => {
-    if (status === 'awaiting_approval') {
+  const getStatusInfo = (status: string) => {
+    if (status === 'pending') {
       return {
         color: 'bg-orange-100 text-orange-800',
         icon: <AlertTriangle className="w-4 h-4" />,
-        text: 'Awaiting Admin Approval'
+        text: 'Pending'
       };
     }
     
@@ -198,8 +182,8 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
     }
   };
 
-  const canBeCancelled = order.status === 'awaiting_approval' || order.status === 'confirmed';
-  const statusInfo = getStatusInfo(order.status, order.adminApproval);
+  const canBeCancelled = order.status === 'pending' || order.status === 'confirmed';
+  const statusInfo = getStatusInfo(order.status);
 
   return (
     <>
@@ -259,43 +243,8 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
               </Card>
             </div>
 
-            {/* Admin Approval Status */}
-            {order.status === 'awaiting_approval' && (
-              <Card className="border-orange-200 bg-orange-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-5 h-5 text-orange-600" />
-                    <span className="font-medium text-orange-800">Awaiting Admin Approval</span>
-                  </div>
-                  <p className="text-sm text-orange-700">
-                    Your order is currently being reviewed by our team. You will be notified once it's approved or if any additional information is needed.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Approval Remarks */}
-            {order.adminApproval.status === 'approved' && order.adminApproval.remarks && (
-              <Card className="border-green-200 bg-green-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="font-medium text-green-800">Admin Remarks</span>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    {order.adminApproval.remarks}
-                  </p>
-                  {order.adminApproval.approvedAt && (
-                    <p className="text-xs text-green-600 mt-2">
-                      Approved on {new Date(order.adminApproval.approvedAt).toLocaleString()}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
             {/* Rejection Notice */}
-            {order.status === 'rejected' && order.adminApproval.remarks && (
+            {order.status === 'rejected' && (
               <Card className="border-red-200 bg-red-50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -303,7 +252,7 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
                     <span className="font-medium text-red-800">Order Rejected</span>
                   </div>
                   <p className="text-sm text-red-700">
-                    <strong>Reason:</strong> {order.adminApproval.remarks}
+                    This order has been rejected. Please contact support for more information.
                   </p>
                 </CardContent>
               </Card>
@@ -330,7 +279,7 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
                         const isLast = index === filteredArray.length - 1;
                         const getStatusIcon = (status: string) => {
                           switch (status) {
-                            case 'awaiting_approval':
+                            case 'pending':
                               return <AlertTriangle className="w-4 h-4 text-orange-500" />;
                             case 'confirmed':
                               return <CheckCircle className="w-4 h-4 text-blue-500" />;
@@ -350,7 +299,7 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
 
                         const getStatusLabel = (status: string) => {
                           const labels: Record<string, string> = {
-                            'awaiting_approval': 'Awaiting Approval',
+                            'pending': 'Pending',
                             'confirmed': 'Order Confirmed',
                             'processing': 'Processing',
                             'shipped': 'Shipped',
@@ -582,12 +531,12 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
 }
 
 function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (order: Order) => void }) {
-  const getStatusInfo = (status: string, adminApproval: Order['adminApproval']) => {
-    if (status === 'awaiting_approval') {
+  const getStatusInfo = (status: string) => {
+    if (status === 'pending') {
       return {
         color: 'bg-orange-100 text-orange-800',
         icon: <AlertTriangle className="w-4 h-4" />,
-        text: 'Awaiting Approval'
+        text: 'Pending'
       };
     }
     
@@ -639,7 +588,7 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
     }
   };
 
-  const statusInfo = getStatusInfo(order.status, order.adminApproval);
+  const statusInfo = getStatusInfo(order.status);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -712,20 +661,11 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
         </div>
 
         {/* Special notices */}
-        {order.status === 'awaiting_approval' && (
-          <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-800">
-              <AlertTriangle className="w-4 h-4 inline mr-1" />
-              Your order is awaiting admin approval
-            </p>
-          </div>
-        )}
-
-        {order.status === 'rejected' && order.adminApproval.remarks && (
+        {order.status === 'rejected' && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800">
               <XCircle className="w-4 h-4 inline mr-1" />
-              Rejected: {order.adminApproval.remarks}
+              This order has been rejected. Please contact support for more information.
             </p>
           </div>
         )}
@@ -773,10 +713,16 @@ export default function UserOrdersPage() {
         orderApi.getOrders('cancelled')
       ]);
 
+      // Map awaiting_approval to pending for compatibility
+      const mapOrderStatus = (order: any) => ({
+        ...order,
+        status: order.status === 'awaiting_approval' ? 'pending' : order.status
+      });
+
       setOrders({
-        ongoing: ongoingRes.data?.data?.orders || [],
-        completed: completedRes.data?.data?.orders || [],
-        cancelled: cancelledRes.data?.data?.orders || []
+        ongoing: (ongoingRes.data?.data?.orders || []).map(mapOrderStatus),
+        completed: (completedRes.data?.data?.orders || []).map(mapOrderStatus),
+        cancelled: (cancelledRes.data?.data?.orders || []).map(mapOrderStatus)
       });
     } catch (error) {
       console.error('Error fetching orders:', error);
