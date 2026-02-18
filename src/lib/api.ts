@@ -1161,14 +1161,6 @@ export const orderApi = {
     };
   }>(`/orders/${orderId}`),
 
-  // Cancel order (only for ongoing orders)
-  cancelOrder: (orderId: string, reason?: string) => api.post<{ 
-    status: string;
-    message: string;
-    data: {
-      order: any;
-    };
-  }>(`/orders/${orderId}/cancel`, { reason }),
 
   // Track order with admin approval status
   trackOrder: (orderId: string) => api.get<{ 

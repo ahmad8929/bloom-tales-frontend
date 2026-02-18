@@ -234,55 +234,6 @@ function OrderDetailsModal({ order, isOpen, onClose, onUpdateStatus }: OrderDeta
                     </div>
                   )}
                 </div>
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-primary" />
-                    Payment Proof Screenshot
-                  </p>
-                  {order.paymentDetails?.paymentProof?.url ? (
-                    <>
-                      <div className="relative w-full max-w-md group">
-                        <div 
-                          className="relative w-full aspect-video rounded-lg border-2 border-primary/20 shadow-sm cursor-pointer overflow-hidden bg-muted hover:border-primary/40 transition-colors"
-                          onClick={() => window.open(order.paymentDetails?.paymentProof?.url, '_blank')}
-                        >
-                          <Image
-                            src={order.paymentDetails.paymentProof.url}
-                            alt="Payment proof screenshot"
-                            fill
-                            className="object-contain group-hover:opacity-90 transition-opacity"
-                            sizes="(max-width: 768px) 100vw, 400px"
-                            unoptimized
-                            onError={(e) => {
-                              console.error('Error loading payment proof image:', e);
-                            }}
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          Click image to view full size
-                        </p>
-                        {order.paymentDetails.paymentProof.uploadedAt && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Uploaded: {new Date(order.paymentDetails.paymentProof.uploadedAt).toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="p-4 bg-muted rounded-lg border border-dashed">
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4" />
-                        No payment proof screenshot available
-                      </p>
-                      {order.paymentMethod !== 'cod' && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Customer has not uploaded a transaction screenshot yet.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
           )}

@@ -26,7 +26,6 @@ import {
   MapPin,
   CreditCard,
   RefreshCw,
-  Ban
 } from 'lucide-react';
 import { orderApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -94,34 +93,9 @@ interface OrderDetailsModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
-  onCancelOrder: (orderId: string, reason: string) => void;
 }
 
-function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetailsModalProps) {
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [isCancelling, setIsCancelling] = useState(false);
-
-  const handleCancelOrder = async () => {
-    if (!order || !cancelReason.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please provide a reason for cancellation',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsCancelling(true);
-    try {
-      await onCancelOrder(order._id, cancelReason);
-      setShowCancelDialog(false);
-      setCancelReason('');
-      onClose();
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalProps) {
 
   if (!order) return null;
 
@@ -182,7 +156,6 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
     }
   };
 
-  const canBeCancelled = order.status === 'pending' || order.status === 'confirmed';
   const statusInfo = getStatusInfo(order.status);
 
   return (
@@ -457,72 +430,6 @@ function OrderDetailsModal({ order, isOpen, onClose, onCancelOrder }: OrderDetai
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            
-            {canBeCancelled && (
-              <Button
-                variant="destructive"
-                onClick={() => setShowCancelDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Ban className="w-4 h-4" />
-                Cancel Order
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Cancel Order Dialog */}
-      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Ban className="w-5 h-5 text-red-500" />
-              Cancel Order
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to cancel this order? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Reason for cancellation *</label>
-              <Textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Please provide a reason for cancelling this order..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowCancelDialog(false);
-                setCancelReason('');
-              }}
-              disabled={isCancelling}
-            >
-              Keep Order
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancelOrder}
-              disabled={isCancelling || !cancelReason.trim()}
-            >
-              {isCancelling ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Cancelling...
-                </div>
-              ) : (
-                'Cancel Order'
-              )}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -736,24 +643,6 @@ export default function UserOrdersPage() {
     }
   };
 
-  const handleCancelOrder = async (orderId: string, reason: string) => {
-    try {
-      const response = await orderApi.cancelOrder(orderId, reason);
-      if (response.data) {
-        await fetchAllOrders(); // Refresh all orders
-        toast({
-          title: 'Success',
-          description: 'Order cancelled successfully',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to cancel order',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const totalOrders = orders.ongoing.length + orders.completed.length + orders.cancelled.length;
 
@@ -965,7 +854,6 @@ export default function UserOrdersPage() {
           setShowOrderDetails(false);
           setSelectedOrder(null);
         }}
-        onCancelOrder={handleCancelOrder}
       />
     </div>
   );
