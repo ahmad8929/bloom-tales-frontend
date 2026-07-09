@@ -1,7 +1,9 @@
 import { getCookie, removeCookie } from './utils';
 import type { AuthResponse } from '@/types/auth';
 
-const API_URL = "https://bloom-backend-rtch.onrender.com";
+
+// const API_URL = "https://bloom-backend-rtch.onrender.com";
+const API_URL = "https://orange-llama-692113.hostingersite.com";
 
 interface ApiResponse<T> {
   data?: T;
