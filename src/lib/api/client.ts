@@ -1,8 +1,7 @@
 import { getCookie, removeCookie } from '../utils';
 
-// Base URL comes from the environment so deployments never require code
-// edits. Falls back to the local backend for development.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// const API_URL = "https://bloom-backend-rtch.onrender.com";
+export const API_URL = "https://orange-llama-692113.hostingersite.com";
 
 export interface ApiResponse<T> {
   data?: T;
