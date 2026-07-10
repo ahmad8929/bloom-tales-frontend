@@ -35,9 +35,6 @@ const nextConfig = {
       },
     ],
   },
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  },
   typescript: {
     // Set to false in development for better DX
     ignoreBuildErrors: process.env.NODE_ENV === 'development',
