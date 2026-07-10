@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -70,29 +70,28 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-4">
-          <Card className="max-w-2xl w-full border-red-200 bg-red-50/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-700">
-                <AlertTriangle className="w-6 h-6" />
-                Something went wrong
+        <div className="flex min-h-[400px] items-center justify-center p-4">
+          <Card className="w-full max-w-2xl border-border">
+            <CardHeader className="text-center">
+              <CardTitle className="font-display text-2xl font-medium text-heading">
+                We hit a snag
               </CardTitle>
-              <CardDescription className="text-red-600">
-                We encountered an unexpected error. Don't worry, your data is safe.
+              <CardDescription className="text-text-muted">
+                Something didn&apos;t load quite right. Your data is safe — let&apos;s try again.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <div className="p-4 bg-white border border-red-200 rounded-lg">
-                  <p className="font-mono text-sm text-red-800 mb-2">
+                <div className="rounded-lg border border-border bg-sand/60 p-4">
+                  <p className="mb-2 font-mono text-sm text-heading">
                     {this.state.error.toString()}
                   </p>
                   {this.state.errorInfo && (
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-sm text-red-700 font-medium">
+                      <summary className="cursor-pointer text-sm font-medium text-text-muted">
                         Stack trace
                       </summary>
-                      <pre className="mt-2 text-xs overflow-auto p-2 bg-gray-50 rounded border">
+                      <pre className="mt-2 overflow-auto rounded border border-border bg-card p-2 text-xs">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </details>
@@ -100,25 +99,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <Button
-                  onClick={this.handleReset}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
+              <div className="flex justify-center gap-3">
+                <Button onClick={this.handleReset} variant="outline">
                   Try Again
                 </Button>
-                <Button
-                  onClick={this.handleReload}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
+                <Button onClick={this.handleReload} className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
                   Reload Page
                 </Button>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                If this problem persists, please contact support with the error details above.
+              <p className="text-center text-sm text-text-muted">
+                If this keeps happening, reach out and we&apos;ll take a look.
               </p>
             </CardContent>
           </Card>
@@ -133,15 +125,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 // Simpler function-based error fallback component for use in suspense boundaries
 export function ErrorFallback({ error, resetError }: { error: Error; resetError?: () => void }) {
   return (
-    <div className="min-h-[300px] flex items-center justify-center p-4">
-      <Card className="max-w-md w-full border-red-200 bg-red-50/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-700">
-            <AlertTriangle className="w-5 h-5" />
-            Error
+    <div className="flex min-h-[300px] items-center justify-center p-4">
+      <Card className="w-full max-w-md border-border">
+        <CardHeader className="text-center">
+          <CardTitle className="font-display text-xl font-medium text-heading">
+            We hit a snag
           </CardTitle>
-          <CardDescription className="text-red-600">
-            {error.message || 'An unexpected error occurred'}
+          <CardDescription className="text-text-muted">
+            {error.message || 'Something unexpected happened.'}
           </CardDescription>
         </CardHeader>
         <CardContent>

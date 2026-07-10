@@ -6,15 +6,17 @@ import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useCart } from '@/hooks/useCart';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { AddToCartButton } from './AddToCartButton';
 import { CartQuantityControls } from './CartQuantityControls';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
-import { Star, Tag, Share2, Maximize2 } from 'lucide-react';
+import { memo, useState, useEffect } from 'react';
+import { Share2, Eye } from 'lucide-react';
 import { cartApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { formatPrice, getImageUrl, getDiscountPercentage, PLACEHOLDER_PRODUCT_IMAGE } from '@/lib/format';
+import { TiltCard } from '@/components/motion/primitives';
+import { WishlistButton } from '@/components/WishlistButton';
+import { ProductQuickView } from '@/components/ProductQuickView';
 
 interface ProductCardProps {
   product: any; // Using any to match your current API structure
@@ -26,37 +28,21 @@ interface ProductCardProps {
   }>;
 }
 
-export function ProductCard({ product, cartItems }: ProductCardProps) {
+function ProductCardInner({ product, cartItems }: ProductCardProps) {
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { cartItems: reduxCartItems, removeFromCart } = useCart();
   const [isInCart, setIsInCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | undefined>();
   const [cartQuantity, setCartQuantity] = useState(1);
-
-  // Handle different image structures
-  const getImageUrl = (imageData: any) => {
-    if (typeof imageData === 'string') return imageData;
-    if (imageData?.url) return imageData.url;
-    return '/placeholder-product.jpg';
-  };
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const images = product.images || [];
-  const mainImage = images.length > 0 ? getImageUrl(images[0]) : '/placeholder-product.jpg';
+  const mainImage = images.length > 0 ? getImageUrl(images[0]) : PLACEHOLDER_PRODUCT_IMAGE;
+  const hoverImage = images.length > 1 ? getImageUrl(images[1]) : null;
 
-  // Format price
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(price);
-  };
-
-  // Calculate discount
-  const hasDiscount = product.comparePrice && product.comparePrice > product.price;
-  const discountPercentage = hasDiscount 
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
-    : 0;
+  const discountPercentage = getDiscountPercentage(product.price, product.comparePrice);
+  const hasDiscount = discountPercentage > 0;
 
   // Create link to product detail page
   const productId = product._id || product.id;
@@ -107,17 +93,6 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
     }
   }, [productId, cartItems, isAuthenticated, reduxCartItems]);
 
-  // Listen for cart updates
-  useEffect(() => {
-    const handleCartUpdate = (event: CustomEvent) => {
-      // Re-check cart when it's updated - the useEffect above will handle the update
-      // This is just to trigger a re-check
-    };
-
-    window.addEventListener('cartUpdated', handleCartUpdate as EventListener);
-    return () => window.removeEventListener('cartUpdated', handleCartUpdate as EventListener);
-  }, []);
-
   const handleAddToCartSuccess = () => {
     // Trigger cart update event - parent will refetch and pass new cartItems
     window.dispatchEvent(new CustomEvent('cartUpdated', {
@@ -132,15 +107,13 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
     try {
       // Check if user is authenticated
       if (!isAuthenticated) {
-        // Redirect to login with returnUrl pointing to checkout
-        const productSlug = product.slug || productId;
         router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
         return;
       }
 
       // Clear cart first to ensure only this product is in checkout
       await cartApi.clearCart();
-      
+
       // Add product to cart with default size "L" if no size specified
       const sizeToUse = product.size || 'L';
       const response = await cartApi.addToCart(
@@ -157,14 +130,13 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
       router.push('/checkout');
     } catch (error: any) {
       console.error('Error in Buy Now:', error);
-      
-      // Check if it's an authentication error
+
       const errorMessage = error.message || error.error || 'Failed to proceed with Buy Now';
       if (errorMessage.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('unauthorized')) {
         router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
         return;
       }
-      
+
       toast({
         title: 'Error',
         description: errorMessage,
@@ -176,10 +148,10 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const productUrl = `${window.location.origin}/products/${productId}`;
     const shareText = `Check out ${product.name} on Bloom Tales!`;
-    
+
     try {
       // Try Web Share API first (mobile devices)
       if (navigator.share) {
@@ -189,13 +161,10 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
           url: productUrl,
         });
       } else {
-        // Fallback: Copy to clipboard
         await navigator.clipboard.writeText(productUrl);
       }
     } catch (error: any) {
-      // User cancelled or error occurred
       if (error.name !== 'AbortError') {
-        // Try fallback to clipboard if Web Share failed
         try {
           await navigator.clipboard.writeText(productUrl);
         } catch (clipboardError) {
@@ -206,90 +175,110 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
   };
 
   return (
-<Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-md group border border-border/60">
-
-      <CardHeader className="p-0 relative">
-        <div className="aspect-[3/4] sm:aspect-[4/5] relative overflow-hidden">
-          <Link href={`/products/${productId}`}>
+    <article className="group flex h-full flex-col">
+      {/* Image — subtle 3D tilt + shadow lift on hover */}
+      <TiltCard max={5} className="relative overflow-hidden bg-sand shadow-sm shadow-heading/5 transition-shadow duration-500 group-hover:shadow-xl group-hover:shadow-heading/15">
+        <Link href={`/products/${productId}`} className="img-zoom block">
+          <div className="relative aspect-[3/4]">
             <Image
               src={mainImage}
               alt={product.name || 'Product Image'}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className={`object-cover transition-opacity duration-700 ease-luxe ${hoverImage ? 'group-hover:opacity-0' : ''}`}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
-          </Link>
-          
-          {/* Product Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            {product.isNewArrival && (
-              <Badge className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5">
-                <Star className="w-2.5 h-2.5 mr-0.5" />
-                NEW
-              </Badge>
+            {hoverImage && (
+              <Image
+                src={hoverImage}
+                alt={`${product.name} — alternate view`}
+                fill
+                className="object-cover opacity-0 transition-opacity duration-700 ease-luxe group-hover:opacity-100"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
             )}
-            {product.isSale && (
-              <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
-                <Tag className="w-2.5 h-2.5 mr-0.5" />
-                SALE
-              </Badge>
-            )}
-            {/* {product.isStretched && (
-              <Badge className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
-                <Maximize2 className="w-2.5 h-2.5 mr-0.5" />
-                STRETCHED
-              </Badge>
-            )} */}
           </div>
+        </Link>
 
-          {/* Discount Badge */}
-          {hasDiscount && (
-            <div className="absolute top-2 right-2 z-10">
-              <Badge variant="destructive" className="text-xs font-bold px-1.5 py-0.5">
-                {discountPercentage}% OFF
-              </Badge>
-            </div>
+        {/* Badges — quiet editorial labels */}
+        <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
+          {product.isNewArrival && (
+            <span className="bg-ivory/95 px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-luxe text-heading">
+              New
+            </span>
           )}
-
-          {/* Share Button */}
-          <div className="absolute bottom-2 right-2 z-10">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md"
-              onClick={handleShare}
-              title="Share product"
-            >
-              <Share2 className="h-4 w-4 text-gray-700" />
-            </Button>
-          </div>
+          {hasDiscount ? (
+            <span className="bg-gold px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-luxe text-white">
+              −{discountPercentage}%
+            </span>
+          ) : product.isSale ? (
+            <span className="bg-gold px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-luxe text-white">
+              Sale
+            </span>
+          ) : null}
         </div>
-      </CardHeader>
-      <CardContent className="flex-grow p-2 md:p-3">
-<CardTitle className="text-[13px] leading-snug mb-1 md:text-sm">
 
-          <Link 
-            href={`/products/${productId}`} 
-            className="hover:text-primary transition-colors line-clamp-2 font-medium"
+        {/* Hover actions — wishlist, quick view, share */}
+        <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5 opacity-0 transition-all duration-300 group-hover:opacity-100 focus-within:opacity-100">
+          <WishlistButton productId={productId} />
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setQuickViewOpen(true);
+            }}
+            title="Quick view"
+            aria-label="Quick view"
+            className="flex h-8 w-8 items-center justify-center bg-ivory/90 text-heading transition-colors duration-300 hover:bg-ivory hover:text-gold"
           >
-            {product.name}
-          </Link>
-        </CardTitle>
-        
-        {/* Pricing */}
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <span className="font-bold text-base text-primary">
+            <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={handleShare}
+            title="Share product"
+            aria-label="Share product"
+            className="flex h-8 w-8 items-center justify-center bg-ivory/90 text-heading transition-colors duration-300 hover:bg-ivory hover:text-gold"
+          >
+            <Share2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Quick add — slides up on hover (desktop) */}
+        {!isInCart && (
+          <div className="absolute inset-x-0 bottom-0 z-10 hidden translate-y-full p-3 transition-transform duration-500 ease-luxe group-hover:translate-y-0 lg:block">
+            <AddToCartButton
+              product={product}
+              className="w-full bg-ivory/95 text-heading shadow-none backdrop-blur hover:bg-gold hover:text-white"
+              size_prop="sm"
+              onSuccess={handleAddToCartSuccess}
+            >
+              Add to Bag
+            </AddToCartButton>
+          </div>
+        )}
+      </TiltCard>
+
+      {/* Details */}
+      <div className="flex flex-grow flex-col gap-1 pt-4">
+        <Link
+          href={`/products/${productId}`}
+          className="line-clamp-2 font-display text-[15px] leading-snug text-heading transition-colors hover:text-gold md:text-base"
+        >
+          {product.name}
+        </Link>
+        <div className="flex items-baseline gap-2">
+          <span className="font-sans text-sm font-semibold text-gold">
             {formatPrice(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-xs text-muted-foreground line-through">
+            <span className="font-sans text-xs text-text-muted line-through">
               {formatPrice(product.comparePrice)}
             </span>
           )}
         </div>
-      </CardContent>
-      <CardFooter className="p-2 pt-1 md:p-3 md:pt-0">
+      </div>
 
+      {/* Cart controls */}
+      <div className="pt-3">
         {isInCart ? (
           <div className="w-full space-y-2">
             <CartQuantityControls
@@ -312,33 +301,41 @@ export function ProductCard({ product, cartItems }: ProductCardProps) {
                 }));
               }}
             />
-            <Button
-              className="w-full"
-              size="sm"
-              onClick={handleBuyNow}
-            >
+            <Button className="w-full" size="sm" onClick={handleBuyNow}>
               Buy Now
             </Button>
           </div>
         ) : (
-          <div className="w-full flex flex-col gap-2">
-            <AddToCartButton 
-              product={product} 
-              className="w-full" 
-              size_prop="sm"
-              onSuccess={handleAddToCartSuccess}
-            />
+          <div className="flex w-full flex-col gap-2">
+            {/* Mobile/tablet add-to-bag; desktop uses the hover overlay */}
+            <div className="lg:hidden">
+              <AddToCartButton
+                product={product}
+                className="w-full"
+                size_prop="sm"
+                onSuccess={handleAddToCartSuccess}
+              >
+                Add to Bag
+              </AddToCartButton>
+            </div>
             <Button
               className="w-full"
               size="sm"
-              variant="outline"
+              variant="secondary"
               onClick={handleBuyNow}
             >
               Buy Now
             </Button>
           </div>
         )}
-      </CardFooter>
-    </Card>
+      </div>
+
+      {/* Quick view dialog */}
+      <ProductQuickView product={product} open={quickViewOpen} onOpenChange={setQuickViewOpen} />
+    </article>
   );
 }
+
+// Memoized — product grids re-render often (cart updates, filters) while
+// individual card props rarely change.
+export const ProductCard = memo(ProductCardInner);

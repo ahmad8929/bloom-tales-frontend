@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
-import { X, Filter, Search } from 'lucide-react';
+import { X, SlidersHorizontal, Search, Check } from 'lucide-react';
 import { cartApi } from '@/lib/api';
 import { PRODUCT_COLORS, PRODUCT_SIZES } from '@/lib/constants';
+import { Stagger, StaggerItem } from '@/components/motion/primitives';
 import {
   Sheet,
   SheetContent,
@@ -27,7 +27,7 @@ interface ShopClientProps {
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'name-asc';
 
-const FilterSidebar = ({ 
+const FilterSidebar = ({
     allSizes,
     selectedSizes,
     handleSizeChange,
@@ -42,124 +42,122 @@ const FilterSidebar = ({
     isStretched,
     setIsStretched
 }: any) => (
-    <div className="space-y-6">
+    <div className="space-y-10">
         <div>
-            <h3 className="font-headline text-lg mb-4">Product Flags</h3>
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Checkbox 
-                        id="new-arrival" 
-                        checked={isNewArrival} 
-                        onCheckedChange={setIsNewArrival} 
+            <p className="eyebrow mb-5">Refine</p>
+            <div className="space-y-4">
+                <label className="flex cursor-pointer items-center gap-3">
+                    <Checkbox
+                        id="new-arrival"
+                        checked={isNewArrival}
+                        onCheckedChange={setIsNewArrival}
                     />
-                    <Label htmlFor="new-arrival" className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                        New Arrivals
-                    </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Checkbox 
-                        id="on-sale" 
-                        checked={isSale} 
-                        onCheckedChange={setIsSale} 
+                    <span className="font-sans text-sm text-text-normal">New Arrivals</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3">
+                    <Checkbox
+                        id="on-sale"
+                        checked={isSale}
+                        onCheckedChange={setIsSale}
                     />
-                    <Label htmlFor="on-sale" className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                        On Sale
-                    </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Checkbox 
-                        id="is-stretched" 
-                        checked={isStretched} 
-                        onCheckedChange={setIsStretched} 
+                    <span className="font-sans text-sm text-text-normal">On Sale</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3">
+                    <Checkbox
+                        id="is-stretched"
+                        checked={isStretched}
+                        onCheckedChange={setIsStretched}
                     />
-                    <Label htmlFor="is-stretched" className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        Already Stretched
-                    </Label>
-                </div>
+                    <span className="font-sans text-sm text-text-normal">Already Stretched</span>
+                </label>
             </div>
         </div>
 
-        <div>
-            <h3 className="font-headline text-lg mb-4">Color</h3>
-            <div className="max-h-64 overflow-y-auto">
-                <div className="space-y-1">
-                    {PRODUCT_COLORS.map((color) => {
-                        const isSelected = selectedColors?.includes(color.name) ?? false;
-                        return (
-                            <div 
-                                key={color.name} 
-                                className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
-                                    isSelected 
-                                        ? 'bg-primary text-primary-foreground' 
-                                        : 'hover:bg-accent'
-                                }`}
-                                onClick={() => handleColorChange(color.name)}
-                            >
-                                <Checkbox 
-                                    id={`color-${color.name}`} 
-                                    checked={isSelected}
-                                    onCheckedChange={() => handleColorChange(color.name)} 
-                                    className="flex-shrink-0"
-                                />
-                                <Label 
-                                    htmlFor={`color-${color.name}`} 
-                                    className="text-sm cursor-pointer flex-1"
-                                >
-                                    {color.name}
-                                </Label>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-            {selectedColors.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                    {selectedColors.length} color{selectedColors.length > 1 ? 's' : ''} selected
-                </p>
-            )}
-        </div>
+        <div className="hairline" />
 
         <div>
-            <h3 className="font-headline text-lg mb-4">Size</h3>
-            <div className="grid grid-cols-3 gap-2">
+            <p className="eyebrow mb-5">Size</p>
+            <div className="flex flex-wrap gap-2">
                 {PRODUCT_SIZES.map((size) => {
-                    // Check if this size is available in any product
                     const isAvailable = allSizes.includes(size);
+                    const isSelected = selectedSizes.includes(size);
                     return (
-                        <div key={size} className="flex items-center gap-2">
-                            <Checkbox 
-                                id={`size-${size}`} 
-                                checked={selectedSizes.includes(size)} 
-                                onCheckedChange={() => handleSizeChange(size)}
-                                disabled={!isAvailable}
-                            />
-                            <Label 
-                                htmlFor={`size-${size}`} 
-                                className={`text-sm cursor-pointer ${!isAvailable ? 'text-muted-foreground opacity-50' : ''}`}
-                            >
-                                {size}
-                            </Label>
-                        </div>
+                        <button
+                            key={size}
+                            type="button"
+                            disabled={!isAvailable}
+                            onClick={() => handleSizeChange(size)}
+                            className={`flex h-10 min-w-[2.75rem] items-center justify-center border px-3 font-sans text-xs font-semibold uppercase tracking-wide transition-all duration-300 ${
+                                isSelected
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : 'border-border bg-transparent text-text-normal hover:border-primary'
+                            } ${!isAvailable ? 'cursor-not-allowed opacity-30' : ''}`}
+                        >
+                            {size}
+                        </button>
                     );
                 })}
             </div>
         </div>
 
+        <div className="hairline" />
+
         <div>
-            <h3 className="font-headline text-lg mb-4">Price Range</h3>
+            <p className="eyebrow mb-5">Colour</p>
+            <div className="grid grid-cols-6 gap-2.5">
+                {PRODUCT_COLORS.map((color) => {
+                    const isSelected = selectedColors?.includes(color.name) ?? false;
+                    return (
+                        <button
+                            key={color.name}
+                            type="button"
+                            title={color.name}
+                            aria-label={color.name}
+                            aria-pressed={isSelected}
+                            onClick={() => handleColorChange(color.name)}
+                            className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300 ${
+                                isSelected
+                                    ? 'border-gold ring-1 ring-gold ring-offset-2 ring-offset-background'
+                                    : 'border-border hover:border-gold'
+                            }`}
+                            style={{ backgroundColor: color.hexCode }}
+                        >
+                            {isSelected && (
+                                <Check
+                                    className="h-3.5 w-3.5 drop-shadow"
+                                    style={{
+                                        color:
+                                            ['#000000', '#000080', '#800000', '#722F37', '#800020', '#36454F', '#3D5B3D', '#006A4E', '#6F4E37', '#7B3F00'].includes(color.hexCode)
+                                                ? '#fff'
+                                                : '#221B16',
+                                    }}
+                                />
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+            {selectedColors.length > 0 && (
+                <p className="mt-3 font-sans text-xs text-text-muted">
+                    {selectedColors.length} colour{selectedColors.length > 1 ? 's' : ''} selected
+                </p>
+            )}
+        </div>
+
+        <div className="hairline" />
+
+        <div>
+            <p className="eyebrow mb-5">Price</p>
             <Slider
                 value={[priceRange]}
                 max={15000}
                 step={500}
                 onValueChange={(value) => handlePriceChange(value[0])}
-                className="mb-3"
+                className="mb-4"
             />
-            <div className="flex justify-between text-sm text-muted-foreground">
+            <div className="flex justify-between font-sans text-xs text-text-muted">
                 <span>₹0</span>
-                <span className="font-medium">₹{priceRange.toLocaleString('en-IN')}</span>
+                <span className="font-semibold text-heading">Up to ₹{priceRange.toLocaleString('en-IN')}</span>
                 <span>₹15,000</span>
             </div>
         </div>
@@ -219,7 +217,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
   // Initialize filters from URL params
   useEffect(() => {
     isSyncingFromUrl.current = true;
-    
+
     const sizeParams = searchParams.getAll('size');
     const colorParams = searchParams.getAll('color');
     const searchParam = searchParams.get('search');
@@ -252,7 +250,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
     } else {
       setSortOption('newest');
     }
-    
+
     // Reset flag after a short delay to allow state updates to complete
     setTimeout(() => {
       isSyncingFromUrl.current = false;
@@ -261,7 +259,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
 
   // Update URL params when filters change (but skip initial mount to avoid conflicts)
   const [isInitialMount, setIsInitialMount] = useState(true);
-  
+
   useEffect(() => {
     setIsInitialMount(false);
   }, []);
@@ -269,45 +267,44 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
   useEffect(() => {
     // Skip URL update on initial mount (let URL params initialize state first)
     if (isInitialMount) return;
-    
+
     // Skip if we're currently syncing from URL params to avoid infinite loop
     if (isSyncingFromUrl.current) return;
-    
+
     const params = new URLSearchParams();
-    
+
     selectedSizes.forEach(size => params.append('size', size));
     selectedColors.forEach(color => params.append('color', color));
-    
+
     if (searchQuery.trim()) {
       params.set('search', searchQuery.trim());
     }
-    
+
     if (priceRange < 15000) {
       params.set('maxPrice', priceRange.toString());
     }
-    
+
     if (isNewArrival) {
       params.set('isNewArrival', 'true');
     }
-    
+
     if (isSale) {
       params.set('isSale', 'true');
     }
-    
+
     if (isStretched) {
       params.set('isStretched', 'true');
     }
-    
+
     if (sortOption !== 'newest') {
       params.set('sort', sortOption);
     }
-    
+
     const queryString = params.toString();
     const newUrl = queryString ? `/products?${queryString}` : '/products';
-    const currentUrl = window.location.pathname + window.location.search;
     const currentQueryString = window.location.search;
     const newQueryString = queryString ? `?${queryString}` : '';
-    
+
     // Only update URL if the query string is different to avoid infinite loops
     if (currentQueryString !== newQueryString) {
       router.replace(newUrl, { scroll: false });
@@ -325,7 +322,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
   const handlePriceChange = (value: number) => {
     setPriceRange(value);
   };
-  
+
   const resetFilters = () => {
     setSelectedSizes([]);
     setSelectedColors([]);
@@ -343,7 +340,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
 
     // Search filter
     if (searchQuery.trim()) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.material?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -355,7 +352,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
       filtered = filtered.filter(product => {
         // Check if product has colors array
         if (product.colors && Array.isArray(product.colors) && product.colors.length > 0) {
-          return product.colors.some((color: any) => 
+          return product.colors.some((color: any) =>
             selectedColors.includes(color.name)
           );
         }
@@ -369,7 +366,7 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
       filtered = filtered.filter(product => {
         // Check if product has variants with the selected size and stock > 0
         if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
-          return product.variants.some((v: any) => 
+          return product.variants.some((v: any) =>
             selectedSizes.includes(v.size) && v.stock > 0
           );
         }
@@ -408,14 +405,14 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
     }
   }, [products, selectedSizes, selectedColors, priceRange, sortOption, searchQuery, isNewArrival, isSale, isStretched]);
 
-  const activeFilterCount = selectedSizes.length + selectedColors.length + 
-    (priceRange < 15000 ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSale ? 1 : 0) + 
+  const activeFilterCount = selectedSizes.length + selectedColors.length +
+    (priceRange < 15000 ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSale ? 1 : 0) +
     (isStretched ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
 
   return (
-    <div className="grid lg:grid-cols-4 gap-8">
+    <div className="grid gap-12 lg:grid-cols-4">
       <aside className="hidden lg:block lg:col-span-1">
-        <div className="sticky top-4">
+        <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto no-scrollbar pb-8 pr-4">
           <FilterSidebar
               allSizes={allSizes}
               selectedSizes={selectedSizes}
@@ -433,33 +430,38 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
           />
         </div>
       </aside>
-      
+
       <main className="lg:col-span-3">
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search products by name, description, or material..."
+        {/* Search */}
+        <div className="mb-8 flex items-center gap-3 border-b border-border pb-3 transition-colors focus-within:border-gold">
+          <Search className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.5} />
+          <input
+            placeholder="Search by name, fabric or feeling…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="w-full bg-transparent font-sans text-sm text-heading placeholder:text-text-muted/60 focus:outline-none"
           />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} aria-label="Clear search">
+              <X className="h-4 w-4 text-text-muted transition-colors hover:text-heading" />
+            </button>
+          )}
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <div className='flex items-center gap-4'>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
                 <div className="lg:hidden">
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="outline">
-                                <Filter className="mr-2 h-4 w-4" /> 
+                            <Button variant="secondary" size="sm">
+                                <SlidersHorizontal className="mr-2 h-3.5 w-3.5" />
                                 Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="w-[300px] sm:w-[400px] overflow-y-auto">
+                        <SheetContent side="left" className="w-[320px] overflow-y-auto bg-background sm:w-[380px]">
                             <div className="p-6">
-                                <h2 className="text-lg font-semibold mb-4">Filters</h2>
+                                <h2 className="mb-8 font-display text-2xl">Filters</h2>
                                 <FilterSidebar
                                     allSizes={allSizes}
                                     selectedSizes={selectedSizes}
@@ -479,17 +481,27 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
                         </SheetContent>
                     </Sheet>
                 </div>
-                 {activeFilterCount > 0 && (
-                  <Button variant="ghost" onClick={resetFilters} className="hidden sm:inline-flex items-center">
-                    <X className="mr-2 h-4 w-4" /> Reset ({activeFilterCount})
-                  </Button>
+
+                <p className="font-sans text-xs uppercase tracking-luxe text-text-muted">
+                  {filteredAndSortedProducts.length} of {products.length} pieces
+                </p>
+
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={resetFilters}
+                    className="inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-luxe text-gold transition-colors hover:text-heading"
+                  >
+                    <X className="h-3.5 w-3.5" /> Clear ({activeFilterCount})
+                  </button>
                 )}
             </div>
-            
-            <div className="flex items-center gap-2">
-                <Label htmlFor="sort" className="text-muted-foreground whitespace-nowrap">Sort by:</Label>
+
+            <div className="flex items-center gap-3">
+                <Label htmlFor="sort" className="whitespace-nowrap font-sans text-xs uppercase tracking-luxe text-text-muted">
+                  Sort
+                </Label>
                 <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
-                    <SelectTrigger className="w-[180px]" id="sort">
+                    <SelectTrigger className="w-[180px] border-0 border-b border-border bg-transparent px-0 font-sans text-sm focus:ring-0" id="sort">
                         <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
@@ -502,33 +514,29 @@ export function ShopClient({ products, allSizes }: ShopClientProps) {
             </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredAndSortedProducts.length} of {products.length} products
-        </div>
-
         {/* Products Grid */}
         {filteredAndSortedProducts.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <Stagger gap={0.05} className="grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-14 lg:grid-cols-3">
             {filteredAndSortedProducts.map(product => (
-              <ProductCard 
-                key={product._id || product.id} 
-                product={product} 
-                cartItems={cartItems}
-              />
+              <StaggerItem key={product._id || product.id}>
+                <ProductCard
+                  product={product}
+                  cartItems={cartItems}
+                />
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         ) : (
-          <div className="text-center py-16">
-            <div className="max-w-md mx-auto">
-              <h2 className="text-2xl font-headline mb-2">No Products Found</h2>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery.trim() 
-                  ? `No products match "${searchQuery}". Try different search terms or adjust your filters.`
+          <div className="border border-dashed border-border py-24 text-center">
+            <div className="mx-auto max-w-md px-6">
+              <h2 className="mb-3 font-display text-3xl">Nothing quite matches</h2>
+              <p className="mb-8 text-sm leading-relaxed text-text-muted">
+                {searchQuery.trim()
+                  ? `We couldn't find anything for "${searchQuery}". Try different words or loosen a filter.`
                   : "Try adjusting your filters to find what you're looking for."
                 }
               </p>
-              <Button onClick={resetFilters}>Clear All Filters</Button>
+              <Button onClick={resetFilters} variant="outline">Clear All Filters</Button>
             </div>
           </div>
         )}

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignupForm } from '@/components/auth/SignupForm';
+import { AuthShell } from '@/components/auth/AuthShell';
 import { useAuth } from '@/hooks/useAuth';
 import { getCookie } from '@/lib/utils';
 
@@ -40,8 +41,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] py-12">
+    <AuthShell
+      image="/hero/hero5.png"
+      quote="Every wardrobe deserves a story worth telling."
+    >
       <SignupForm />
-    </div>
+    </AuthShell>
   );
 }

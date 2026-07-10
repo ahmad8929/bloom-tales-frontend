@@ -1,14 +1,25 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Inter } from 'next/font/google';
+import { Playfair_Display, Manrope } from 'next/font/google';
 import { Providers } from '@/components/Providers';
 import { AuthInitializer } from '@/components/AuthInitializer';
 import { CartInitializer } from '@/components/CartInitializer';
 import { Toaster } from '@/components/ui/toaster';
 import { ConditionalLayout } from '@/components/ConditionalLayout';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { BRAND } from '@/lib/constants';
 
-const inter = Inter({ subsets: ['latin'] });
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bloomtales.com'),
@@ -112,11 +123,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${playfair.variable} ${manrope.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <meta name="theme-color" content="#8B5CF6" />
+        <meta name="theme-color" content="#221B16" />
         <meta name="color-scheme" content="light" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="format-detection" content="telephone=no" />
@@ -163,15 +174,23 @@ export default function RootLayout({
               "logo": "https://bloomtales.com/image.png",
               "image": "https://bloomtales.com/image.png",
               "priceRange": "₹₹",
+              "telephone": BRAND.phone,
+              "email": BRAND.email,
               "address": {
                 "@type": "PostalAddress",
                 "addressLocality": "Bareilly",
                 "addressRegion": "Uttar Pradesh",
                 "addressCountry": "IN"
               },
+              "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                "opens": "09:00",
+                "closes": "20:00"
+              },
               "sameAs": [
                 "https://www.facebook.com/bloomtales",
-                "https://www.instagram.com/bloomtales",
+                BRAND.instagram,
                 "https://twitter.com/bloomtales_clothing"
               ],
               "offers": {
@@ -201,7 +220,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="canonical" href="https://bloomtales.com" />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <Providers>
           <AuthInitializer />
           <CartInitializer />

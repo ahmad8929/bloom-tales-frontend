@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import type { Product } from '@/types/product';
+import { formatPrice, formatDate } from '@/lib/format';
 import {
   Table,
   TableBody,
@@ -208,25 +209,6 @@ export function ProductTable({ onDelete, onUpdate }: ProductTableProps) {
   // Get unique values for filters
   const uniqueSizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort();
   const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
-
-  const formatPrice = (price: number | string) => {
-    const numPrice = Number(price) || 0;
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(numPrice);
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   const getSortIcon = (field: string) => {
     if (sortField !== field) return null;

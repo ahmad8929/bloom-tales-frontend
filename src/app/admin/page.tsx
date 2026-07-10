@@ -7,15 +7,15 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Package, 
-  ShoppingCart, 
-  Users, 
+import { ErrorState } from '@/components/ErrorState';
+import {
+  Package,
+  ShoppingCart,
+  Users,
   DollarSign,
   TrendingUp,
   Eye,
   ArrowRight,
-  AlertCircle,
   Clock,
   CheckCircle,
   XCircle,
@@ -133,15 +133,13 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={fetchDashboardStats}>
-              Try Again
-            </Button>
-          </div>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <ErrorState
+            compact
+            title="Dashboard is taking a moment"
+            message={error}
+            onRetry={fetchDashboardStats}
+          />
         </div>
       </AdminLayout>
     );

@@ -1,3 +1,5 @@
+import { BRAND } from '@/lib/constants';
+
 export default function ShippingPage() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 max-w-4xl">
@@ -130,9 +132,9 @@ export default function ShippingPage() {
           <div className="space-y-2 text-text-normal">
             <p>For any shipping or refund related queries, please contact us:</p>
             <ul className="list-none space-y-2">
-              <li><strong>Email:</strong> bloomtalesclothing@gmail.com</li>
-              <li><strong>Phone:</strong> Available on our contact page</li>
-              <li><strong>Business Hours:</strong> Monday to Saturday, 10:00 AM - 7:00 PM IST</li>
+              <li><strong>Email:</strong> {BRAND.email}</li>
+              <li><strong>Phone:</strong> {BRAND.phone}</li>
+              <li><strong>Business Hours:</strong> {BRAND.hours}</li>
             </ul>
           </div>
         </section>

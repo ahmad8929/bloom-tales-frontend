@@ -10,6 +10,7 @@ import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, RefreshCw } from 'lucide-
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
+import { ErrorState } from '@/components/ErrorState';
 import { cartApi } from '@/lib/api';
 import { RootState } from '@/store';
 import { updateCartItemLocal, removeFromCartLocal } from '@/store/slices/cartSlice';
@@ -307,34 +308,26 @@ export function CartView() {
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <div className="max-w-md mx-auto">
-          <h2 className="text-2xl font-semibold mb-4 text-red-600">Error Loading Cart</h2>
-          <p className="text-muted-foreground mb-6">{error}</p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={fetchCart} className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/products">Continue Shopping</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <ErrorState
+        compact
+        title="Your cart is taking a moment"
+        message={error}
+        onRetry={fetchCart}
+        secondaryAction={{ label: 'Continue Shopping', href: '/products' }}
+      />
     );
   }
 
   if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="max-w-md mx-auto">
-          <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
-          <p className="text-muted-foreground mb-6">
-            Looks like you haven't added anything to your cart yet.
+      <div className="border border-dashed border-border py-24 text-center">
+        <div className="mx-auto max-w-md px-6">
+          <ShoppingBag className="mx-auto mb-6 h-12 w-12 text-gold" strokeWidth={1} />
+          <h2 className="mb-3 font-display text-3xl">Your bag is empty</h2>
+          <p className="mb-8 text-sm leading-relaxed text-text-muted">
+            Beautiful things are waiting. Explore the collection and find something to love.
           </p>
-          <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
+          <Button asChild size="lg">
             <Link href="/products">Start Shopping</Link>
           </Button>
         </div>
@@ -343,111 +336,100 @@ export function CartView() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
-      <div className="lg:col-span-2 space-y-3 sm:space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-          <h2 className="text-lg sm:text-xl font-semibold">
-            Cart Items ({cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'})
+    <div className="grid gap-10 lg:grid-cols-3 lg:gap-12">
+      <div className="lg:col-span-2">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
+          <h2 className="font-display text-2xl">
+            {cart.totalItems} {cart.totalItems === 1 ? 'piece' : 'pieces'}
           </h2>
-          {!isGuestCart && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+          {!isGuestCart ? (
+            <button
               onClick={fetchCart}
-              className="flex items-center gap-2 w-full sm:w-auto"
+              className="inline-flex items-center gap-2 font-sans text-[11px] font-semibold uppercase tracking-luxe text-text-muted transition-colors hover:text-gold"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
               Refresh
-            </Button>
-          )}
-          {isGuestCart && (
-            <div className="text-sm text-muted-foreground">
-              <Link href="/login" className="text-primary hover:underline">
+            </button>
+          ) : (
+            <div className="font-sans text-sm text-text-muted">
+              <Link href="/login" className="text-gold hover:underline">
                 Log in
               </Link>
-              {' to save your cart'}
+              {' to save your bag'}
             </div>
           )}
         </div>
 
-        {cart.items.map(item => (
-          <Card key={item._id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <div className="flex gap-3 sm:gap-4 p-3 sm:p-4">
-              {/* Product Image - Fixed size on mobile */}
-              <Link 
+        <div className="divide-y divide-border">
+          {cart.items.map(item => (
+            <div key={item._id} className="flex gap-4 py-6 sm:gap-6">
+              {/* Product Image */}
+              <Link
                 href={`/products/${item.product._id || item.productId}`}
-                className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200"
+                className="img-zoom relative block h-32 w-24 flex-shrink-0 overflow-hidden bg-sand sm:h-40 sm:w-32"
               >
                 <Image
                   src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
                   alt={item.product.images?.[0]?.alt || item.product.name}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 128px"
+                  sizes="(max-width: 640px) 96px, 128px"
                   priority
                 />
               </Link>
-              
+
               {/* Product Details */}
-              <div className="flex-grow min-w-0 flex flex-col gap-2 sm:gap-3">
-                {/* Product Info Section */}
-                <div className="flex-1 min-w-0">
-                  <Link 
+              <div className="flex min-w-0 flex-grow flex-col justify-between gap-3">
+                <div className="min-w-0">
+                  <Link
                     href={`/products/${item.product._id || item.productId}`}
-                    className="text-sm sm:text-base font-semibold hover:text-primary transition-colors block line-clamp-2 mb-1.5"
+                    className="mb-1.5 line-clamp-2 block font-display text-base leading-snug text-heading transition-colors hover:text-gold sm:text-lg"
                   >
                     {item.product.name}
                   </Link>
-                  
-                  <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {item.size && (
-                        <span className="inline-flex items-center gap-1">
-                          <span>Size:</span>
-                          <span className="font-medium text-foreground">{item.size}</span>
-                        </span>
-                      )}
-                      {item.color && (
-                        <div className="flex items-center gap-1.5">
-                          <span>Color:</span>
-                          <div
-                            className="w-3.5 h-3.5 rounded-full border border-gray-300 shadow-sm"
-                            style={{ backgroundColor: item.color.hexCode }}
-                            title={item.color.name}
-                          />
-                          <span className="font-medium text-foreground text-xs">{item.color.name}</span>
-                        </div>
-                      )}
-                      {item.material && (
-                        <span className="inline-flex items-center gap-1">
-                          <span>Material:</span>
-                          <span className="font-medium text-foreground">{item.material}</span>
-                        </span>
-                      )}
-                    </div>
+
+                  <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-sans text-xs text-text-muted">
+                    {item.size && (
+                      <span>
+                        Size <span className="font-semibold text-heading">{item.size}</span>
+                      </span>
+                    )}
+                    {item.color && (
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className="h-3 w-3 rounded-full border border-border"
+                          style={{ backgroundColor: item.color.hexCode }}
+                          title={item.color.name}
+                        />
+                        {item.color.name}
+                      </span>
+                    )}
+                    {item.material && (
+                      <span>
+                        Material <span className="font-semibold text-heading">{item.material}</span>
+                      </span>
+                    )}
                   </div>
-                  
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-semibold text-sm sm:text-base text-foreground">
+
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-sans text-sm font-semibold text-heading sm:text-base">
                       ₹{item.product.price.toLocaleString('en-IN')}
                     </span>
                     {item.product.comparePrice && item.product.comparePrice > item.product.price && (
-                      <span className="text-xs text-muted-foreground line-through">
+                      <span className="font-sans text-xs text-text-muted line-through">
                         ₹{item.product.comparePrice.toLocaleString('en-IN')}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Quantity and Actions Section */}
-                <div className="flex items-center justify-between gap-2 sm:gap-3 pt-2 border-t">
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
+                {/* Quantity + actions */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center border border-border">
+                    <button
+                      className="flex h-9 w-9 items-center justify-center transition-colors hover:bg-sand disabled:opacity-40"
                       disabled={updatingItems.has(item._id)}
+                      aria-label="Decrease quantity"
                       onClick={() => {
                         if (item.quantity === 1) {
                           removeFromCart(item._id);
@@ -456,67 +438,57 @@ export function CartView() {
                         }
                       }}
                     >
-                      <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
-                    <span className="w-8 sm:w-10 text-center font-medium text-xs sm:text-sm">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="w-10 text-center font-sans text-sm font-semibold">
+                      {item.quantity}
+                    </span>
+                    <button
+                      className="flex h-9 w-9 items-center justify-center transition-colors hover:bg-sand disabled:opacity-40"
                       disabled={updatingItems.has(item._id)}
+                      aria-label="Increase quantity"
                       onClick={() => updateQuantity(item._id, item.quantity + 1)}
                     >
-                      <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  
-                  {/* Subtotal and Delete */}
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="text-right">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">Subtotal</p>
-                      <p className="font-semibold text-xs sm:text-sm text-foreground">
-                        ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-destructive shrink-0"
+
+                  <div className="flex items-center gap-3 sm:gap-5">
+                    <p className="font-sans text-sm font-semibold text-heading">
+                      ₹{(item.quantity * item.product.price).toLocaleString('en-IN')}
+                    </p>
+                    <button
+                      className="text-text-muted transition-colors hover:text-destructive disabled:opacity-40"
                       disabled={updatingItems.has(item._id)}
                       onClick={() => removeFromCart(item._id)}
                       title="Remove item"
+                      aria-label="Remove item"
                     >
-                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
+                      <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </Card>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div className="lg:sticky lg:top-4 h-fit">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
-              Order Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 sm:space-y-4">
-            <div className="flex justify-between text-sm sm:text-base">
-              <span>Subtotal ({cart.totalItems} items)</span>
-              <span>₹{subtotal.toLocaleString('en-IN')}</span>
+      <div className="h-fit lg:sticky lg:top-28">
+        <div className="border border-border bg-card p-6 sm:p-8">
+          <h3 className="mb-6 font-display text-2xl">Order Summary</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between font-sans text-sm">
+              <span className="text-text-muted">Subtotal ({cart.totalItems} items)</span>
+              <span className="font-semibold">₹{subtotal.toLocaleString('en-IN')}</span>
             </div>
-            <Separator />
-            <div className="flex justify-between text-base sm:text-lg font-semibold">
-              <span>Total</span>
-              <span>₹{total.toLocaleString('en-IN')}</span>
+            <div className="hairline" />
+            <div className="flex justify-between font-sans text-base">
+              <span className="font-semibold uppercase tracking-wide">Total</span>
+              <span className="font-display text-xl font-semibold">₹{total.toLocaleString('en-IN')}</span>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3 pt-4">
+          </div>
+          <div className="mt-8 flex flex-col gap-3">
             {isGuestCart ? (
               <>
                 <Button className="w-full" size="lg" asChild>
@@ -525,7 +497,7 @@ export function CartView() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button variant="outline" className="w-full" asChild>
+                <Button variant="secondary" className="w-full" asChild>
                   <Link href="/products">Continue Shopping</Link>
                 </Button>
               </>
@@ -537,13 +509,16 @@ export function CartView() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button variant="outline" className="w-full" asChild>
+                <Button variant="secondary" className="w-full" asChild>
                   <Link href="/products">Continue Shopping</Link>
                 </Button>
               </>
             )}
-          </CardFooter>
-        </Card>
+          </div>
+          <p className="mt-6 text-center font-sans text-[11px] uppercase tracking-luxe text-text-muted">
+            Secure checkout · Quality assured
+          </p>
+        </div>
       </div>
     </div>
   );
