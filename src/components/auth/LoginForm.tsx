@@ -289,14 +289,15 @@ export function LoginForm() {
   }
   return (
     <>
-      <div className="space-y-6 bg-card p-8 rounded-xl shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto border border-border">
+      <div className="space-y-6 bg-card p-8 sm:p-10 w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto border border-border">
 
-  
+
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-heading">
+          <p className="eyebrow mb-3">Sign in</p>
+          <h1 className="font-display text-3xl sm:text-4xl font-medium text-heading">
             Welcome Back
           </h1>
-          <p className="text-sm text-text-muted mt-1">
+          <p className="text-sm text-text-muted mt-2">
             Sign in to your account to continue
           </p>
         </div>

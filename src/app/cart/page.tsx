@@ -59,17 +59,19 @@ function CartPageSkeleton() {
 
 export default function CartPage() {
   return (
-    <div className="container mx-auto px-4 py-12 min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4">Shopping Cart</h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Review your selected items and proceed to checkout when you're ready.
-        </p>
+    <div className="min-h-screen">
+      <div className="border-b border-border bg-sand/50">
+        <div className="container py-14 text-center md:py-20">
+          <p className="eyebrow mb-4">Almost yours</p>
+          <h1 className="font-display text-4xl font-medium md:text-6xl">Shopping Bag</h1>
+        </div>
       </div>
-      
-      <Suspense fallback={<CartPageSkeleton />}>
-        <CartView />
-      </Suspense>
+
+      <div className="container py-12 md:py-16">
+        <Suspense fallback={<CartPageSkeleton />}>
+          <CartView />
+        </Suspense>
+      </div>
     </div>
   );
 }

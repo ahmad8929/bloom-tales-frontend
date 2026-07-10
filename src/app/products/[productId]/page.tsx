@@ -2,30 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { updateCartItemLocal } from '@/store/slices/cartSlice';
 import { useCart } from '@/hooks/useCart';
-import { productApi, cartApi } from "@/lib/api";
-import { IndianRupee, ShoppingCart, Star, Package, Truck, Shield, RotateCcw, Loader2, Share2, Maximize2 } from "lucide-react";
-import { AddToCartButton } from "@/components/AddToCartButton";
-import { CartQuantityControls } from "@/components/CartQuantityControls";
-import { ProductImageGallery } from "@/components/ProductImageGallery";
-import { NewArrival } from "@/components/common/newArrival";
-import { Sale } from "@/components/common/sale";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import { PRODUCT_COLORS, PRODUCT_SIZES } from "@/lib/constants";
-import type { Product } from "@/types/product";
+import { productApi, cartApi } from '@/lib/api';
+import { ShoppingCart, Share2 } from 'lucide-react';
+import { AddToCartButton } from '@/components/AddToCartButton';
+import { CartQuantityControls } from '@/components/CartQuantityControls';
+import { ProductImageGallery } from '@/components/ProductImageGallery';
+import { ProductDetailSkeleton } from '@/components/product/ProductDetailSkeleton';
+import { ProductDetailError } from '@/components/product/ProductDetailError';
+import { ProductBadges } from '@/components/product/ProductBadges';
+import { ProductPricing } from '@/components/product/ProductPricing';
+import { ProductColorsDisplay } from '@/components/product/ProductColorsDisplay';
+import { MaterialSelector } from '@/components/product/MaterialSelector';
+import { SizeSelector } from '@/components/product/SizeSelector';
+import { parseCareInstructions } from '@/components/product/CareInstructions';
+import { ProductTrustBadges } from '@/components/product/ProductTrustBadges';
+import { ProductStory } from '@/components/product/ProductStory';
+import { RelatedProducts } from '@/components/product/RelatedProducts';
+import { StickyAddToCart } from '@/components/product/StickyAddToCart';
+import { WishlistButton } from '@/components/WishlistButton';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { getDiscountPercentage } from '@/lib/format';
+import type { Product } from '@/types/product';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { cartItems: reduxCartItems, removeFromCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
@@ -46,78 +51,75 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   const fetchProduct = async (id: string) => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    console.log('Fetching product with ID:', id);
-    const response = await productApi.getProduct(id);
-    console.log('Product detail API response:', response);
-    
-    if (response.error) {
-      console.error('API Error:', response.error);
-      setError(response.error);
-      return;
-    }
-
-    // Handle the API response structure with safe type checking
-    let productData = null;
-    
-    // Check for nested data structure: { data: { data: { product: {...} } } }
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      const nestedData = (response.data as any).data;
-      if (nestedData && typeof nestedData === 'object' && 'product' in nestedData) {
-        productData = nestedData.product;
-      }
-    }
-    // Check for direct product in response.data: { data: { product: {...} } }
-    else if (response.data && typeof response.data === 'object' && 'product' in (response.data as any)) {
-      productData = (response.data as any).product;
-    }
-    // Check if product data is directly in response.data
-    else if (response.data && typeof response.data === 'object') {
-      productData = response.data;
-    }
-    
-    console.log('Parsed product:', productData);
-    
-    if (!productData) {
-      setError('Product not found');
-      return;
-    }
-    
-    setProduct(productData);
-    
-    // Set default size from variants or legacy fields
     try {
-      if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
-        const firstAvailableVariant = productData.variants.find((v: any) => v && (v.stock === undefined || v.stock > 0)) || productData.variants[0];
-        if (firstAvailableVariant && firstAvailableVariant.size) {
-          setSelectedSize(firstAvailableVariant.size);
-        }
-      } else if (productData.size) {
-        setSelectedSize(productData.size);
-      } else {
-        setSelectedSize('');
-      }
-    } catch (error) {
-      console.error('Error setting initial variant state:', error);
-      setSelectedSize(productData.size || '');
-    }
+      setLoading(true);
+      setError(null);
 
-    // Set default material to first material tag if available
-    if (productData.materials && Array.isArray(productData.materials) && productData.materials.length > 0) {
-      setSelectedMaterial(productData.materials[0]);
-    } else {
-      setSelectedMaterial('');
+      const response = await productApi.getProduct(id);
+
+      if (response.error) {
+        setError(response.error);
+        return;
+      }
+
+      // Handle the API response structure with safe type checking
+      let productData = null;
+
+      // Check for nested data structure: { data: { data: { product: {...} } } }
+      if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+        const nestedData = (response.data as any).data;
+        if (nestedData && typeof nestedData === 'object' && 'product' in nestedData) {
+          productData = nestedData.product;
+        }
+      }
+      // Check for direct product in response.data: { data: { product: {...} } }
+      else if (response.data && typeof response.data === 'object' && 'product' in (response.data as any)) {
+        productData = (response.data as any).product;
+      }
+      // Check if product data is directly in response.data
+      else if (response.data && typeof response.data === 'object') {
+        productData = response.data;
+      }
+
+      if (!productData) {
+        setError('Product not found');
+        return;
+      }
+
+      setProduct(productData);
+
+      // Set default size from variants or legacy fields
+      try {
+        if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
+          const firstAvailableVariant =
+            productData.variants.find((v: any) => v && (v.stock === undefined || v.stock > 0)) ||
+            productData.variants[0];
+          if (firstAvailableVariant && firstAvailableVariant.size) {
+            setSelectedSize(firstAvailableVariant.size);
+          }
+        } else if (productData.size) {
+          setSelectedSize(productData.size);
+        } else {
+          setSelectedSize('');
+        }
+      } catch (error) {
+        console.error('Error setting initial variant state:', error);
+        setSelectedSize(productData.size || '');
+      }
+
+      // Set default material to first material tag if available
+      if (productData.materials && Array.isArray(productData.materials) && productData.materials.length > 0) {
+        setSelectedMaterial(productData.materials[0]);
+      } else {
+        setSelectedMaterial('');
+      }
+    } catch (error: any) {
+      console.error('Error fetching product:', error);
+      setError(error.message || 'Failed to load product');
+    } finally {
+      setLoading(false);
     }
-  } catch (error: any) {
-    console.error('Error fetching product:', error);
-    setError(error.message || 'Failed to load product');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Check if product is in cart - MUST be before early returns
   useEffect(() => {
@@ -126,88 +128,67 @@ export default function ProductDetailPage() {
       return;
     }
 
+    // Material to compare against — selected, or the product's first material
+    const materialToCheck =
+      selectedMaterial && selectedMaterial.trim()
+        ? selectedMaterial
+        : product?.materials && Array.isArray(product.materials) && product.materials.length > 0
+          ? product.materials[0]
+          : '';
+
+    const matchesSelection = (item: any, guest: boolean) => {
+      try {
+        if (!item || !item.product) return false;
+        const sameProduct = guest
+          ? item.product.id === productId || item.product._id === productId
+          : item.productId === productId || item.product?._id === productId;
+        const sameSize = guest
+          ? item.size === selectedSize || (!selectedSize && (item.size === product?.size || item.product.size === product?.size))
+          : item.size === selectedSize || (!selectedSize && item.size === product?.size);
+        const itemMaterial = item.material || '';
+        const sameMaterial = materialToCheck
+          ? itemMaterial === materialToCheck
+          : !itemMaterial || itemMaterial === '';
+        return sameProduct && sameSize && sameMaterial;
+      } catch (error) {
+        console.error('Error checking cart item:', error);
+        return false;
+      }
+    };
+
+    const applyCartItem = (cartItem: any, guest: boolean) => {
+      if (cartItem && (guest || cartItem._id)) {
+        setIsInCart(true);
+        setCartItemId(guest ? undefined : cartItem._id);
+        setCartQuantity(cartItem.quantity);
+      } else {
+        setIsInCart(false);
+        setCartItemId(undefined);
+        setCartQuantity(1);
+      }
+    };
+
     const checkCart = () => {
       if (isAuthenticated) {
         // For authenticated users, check server cart
-        const checkServerCart = async () => {
-          try {
-            const response = await cartApi.getCart();
-            if (response.data?.data?.cart?.items) {
-              // Get the material to check - use selectedMaterial or default to first material
-              const materialToCheck = selectedMaterial && selectedMaterial.trim() 
-                ? selectedMaterial 
-                : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
-                  ? product.materials[0] 
-                  : '');
-              
-              const cartItem = response.data.data.cart.items.find(
-                (item: any) => {
-                  try {
-                    if (!item || !item.product) return false;
-                    const sameProduct = item.productId === productId || item.product?._id === productId;
-                    const sameSize = item.size === selectedSize || (!selectedSize && item.size === product?.size);
-                    const itemMaterial = item.material || '';
-                    const sameMaterial = materialToCheck ? itemMaterial === materialToCheck : (!itemMaterial || itemMaterial === '');
-                    return sameProduct && sameSize && sameMaterial;
-                  } catch (error) {
-                    console.error('Error checking cart item:', error);
-                    return false;
-                  }
-                }
-              );
-              if (cartItem && cartItem._id) {
-                setIsInCart(true);
-                setCartItemId(cartItem._id);
-                setCartQuantity(cartItem.quantity);
-              } else {
-                setIsInCart(false);
-                setCartItemId(undefined);
-                setCartQuantity(1);
-              }
+        cartApi
+          .getCart()
+          .then((response) => {
+            const items = response.data?.data?.cart?.items;
+            if (items) {
+              applyCartItem(items.find((item: any) => matchesSelection(item, false)), false);
             }
-          } catch (error) {
+          })
+          .catch((error) => {
             console.log('Cart check failed:', error);
             setIsInCart(false);
-          }
-        };
-        checkServerCart();
+          });
       } else {
         // For guest users, check Redux cart state
         if (reduxCartItems && reduxCartItems.length > 0) {
-          // Get the material to check - use selectedMaterial or default to first material
-          const materialToCheck = selectedMaterial && selectedMaterial.trim() 
-            ? selectedMaterial 
-            : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
-              ? product.materials[0] 
-              : '');
-          
-          const cartItem = reduxCartItems.find(
-            (item: any) => {
-              try {
-                const sameProduct = item.product.id === productId || item.product._id === productId;
-                const sameSize = item.size === selectedSize || (!selectedSize && (item.size === product?.size || item.product.size === product?.size));
-                const itemMaterial = item.material || '';
-                const sameMaterial = materialToCheck ? itemMaterial === materialToCheck : (!itemMaterial || itemMaterial === '');
-                return sameProduct && sameSize && sameMaterial;
-              } catch (error) {
-                console.error('Error checking cart item:', error);
-                return false;
-              }
-            }
-          );
-          if (cartItem) {
-            setIsInCart(true);
-            setCartItemId(undefined); // No cartItemId for guest items
-            setCartQuantity(cartItem.quantity);
-          } else {
-            setIsInCart(false);
-            setCartItemId(undefined);
-            setCartQuantity(1);
-          }
+          applyCartItem(reduxCartItems.find((item: any) => matchesSelection(item, true)), true);
         } else {
-          setIsInCart(false);
-          setCartItemId(undefined);
-          setCartQuantity(1);
+          applyCartItem(null, true);
         }
       }
     };
@@ -215,16 +196,11 @@ export default function ProductDetailPage() {
     checkCart();
 
     // Listen for cart updates
-    const handleCartUpdate = () => {
-      checkCart();
-    };
-
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('cartUpdated', checkCart);
+    return () => window.removeEventListener('cartUpdated', checkCart);
   }, [productId, isAuthenticated, product, selectedSize, selectedMaterial, reduxCartItems]);
 
   const handleAddToCartSuccess = () => {
-    // Trigger cart update to refresh state
     window.dispatchEvent(new CustomEvent('cartUpdated', {
       detail: { action: 'add', productId }
     }));
@@ -233,7 +209,6 @@ export default function ProductDetailPage() {
   // Update cart check when material changes
   useEffect(() => {
     if (product && product.materials && Array.isArray(product.materials) && product.materials.length > 0) {
-      // Trigger cart check when material selection changes
       window.dispatchEvent(new CustomEvent('cartUpdated', {
         detail: { action: 'check', productId }
       }));
@@ -242,46 +217,42 @@ export default function ProductDetailPage() {
 
   const handleShare = async () => {
     if (!product) return;
-    
+
     const productUrl = `${window.location.origin}/products/${productId}`;
     const shareText = `Check out ${product.name} on Bloom Tales!`;
-    
+
     try {
-      // Try Web Share API first (mobile devices)
       if (navigator.share) {
-        await navigator.share({
-          title: product.name,
-          text: shareText,
-          url: productUrl,
-        });
+        await navigator.share({ title: product.name, text: shareText, url: productUrl });
       } else {
-        // Fallback: Copy to clipboard
         await navigator.clipboard.writeText(productUrl);
       }
     } catch (error: any) {
-      // User cancelled or error occurred
       if (error.name !== 'AbortError') {
-        // Try fallback to clipboard if Web Share failed
         try {
           await navigator.clipboard.writeText(productUrl);
-        } catch (clipboardError) {
+        } catch {
           // Silent fail - no toast notification
         }
       }
     }
   };
 
+  // Preferred material — explicit choice first, then product's first material
+  const resolveMaterial = () =>
+    selectedMaterial && selectedMaterial.trim()
+      ? selectedMaterial
+      : product?.materials && Array.isArray(product.materials) && product.materials.length > 0
+        ? product.materials[0]
+        : undefined;
+
   const handleBuyNow = async (material?: string) => {
     try {
-      // Check if user is authenticated
       if (!isAuthenticated) {
-        // Redirect to login with returnUrl pointing to checkout
-        const currentPath = `/products/${productId}`;
         router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
         return;
       }
 
-      // Check if product exists
       if (!product) {
         throw new Error('Product not found');
       }
@@ -289,7 +260,6 @@ export default function ProductDetailPage() {
       // Clear cart first to ensure only this product is in checkout
       await cartApi.clearCart();
 
-      // Use selected size or default to "L" if no size is selected
       const sizeToUse = selectedSize || product?.size || 'L';
 
       // Check stock for selected/default size
@@ -303,43 +273,33 @@ export default function ProductDetailPage() {
         throw new Error('Product is out of stock');
       }
 
-      // Add product to cart with default size "L" if not selected
       const productIdToAdd = product._id || product.id;
       if (!productIdToAdd) {
         throw new Error('Product ID is required');
       }
-
-      // Get material - use provided material, or selectedMaterial, or first material tag
-      const materialToUse = material || (selectedMaterial && selectedMaterial.trim() 
-        ? selectedMaterial 
-        : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
-          ? product.materials[0] 
-          : undefined));
 
       const response = await cartApi.addToCart(
         productIdToAdd,
         cartQuantity || 1,
         sizeToUse,
         product?.color || undefined,
-        materialToUse
+        material || resolveMaterial()
       );
 
       if (response.error) {
         throw new Error(response.error);
       }
 
-      // Redirect to checkout
       router.push('/checkout');
     } catch (error: any) {
       console.error('Error in Buy Now:', error);
-      
-      // Check if it's an authentication error
+
       const errorMessage = error.message || 'Failed to proceed to checkout';
       if (errorMessage.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403')) {
         router.push(`/login?returnUrl=${encodeURIComponent('/checkout')}&buyNow=true`);
         return;
       }
-      
+
       toast({
         title: 'Error',
         description: errorMessage,
@@ -349,89 +309,29 @@ export default function ProductDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">Loading product...</span>
-        </div>
-      </div>
-    );
+    return <ProductDetailSkeleton />;
   }
 
   if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-20">
-          <div className="max-w-md mx-auto">
-            <h2 className="text-2xl font-bold mb-4 text-red-600">Product Not Found</h2>
-            <p className="text-muted-foreground mb-6">{error}</p>
-            <div className="flex gap-4 justify-center">
-              <Button onClick={() => fetchProduct(productId)}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/products')}>
-                Back to Products
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <ProductDetailError message={error} onRetry={() => fetchProduct(productId)} />;
   }
 
   if (!product) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-20">
-          <div className="max-w-md mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-            <p className="text-muted-foreground mb-6">
-              The product you're looking for doesn't exist.
-            </p>
-            <Button onClick={() => router.push('/products')}>
-              Back to Products
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <ProductDetailError />;
   }
 
-  // Format care instructions
-  // const careInstructions = typeof product.careInstructions === 'string' 
-  //   ? product.careInstructions.split('\n').filter(Boolean)
-  //   : Array.isArray(product.careInstructions) 
-  //   ? product.careInstructions 
-  //   : [];
+  const careInstructions = parseCareInstructions(product.careInstructions);
 
-    const careInstructions = typeof product.careInstructions === 'string'
-  ? product.careInstructions
-      .split(/\r?\n/)          // handles \n and \r\n
-      .map(line => line.trim())
-      .filter(Boolean)         // removes empty lines
-  : Array.isArray(product.careInstructions)
-  ? product.careInstructions
-      .map(line => String(line).trim())
-      .filter(Boolean)
-  : [];
-
-
-  // Calculate discount if compare price exists
-const hasDiscount = product.comparePrice && product.comparePrice > product.price;
-const discountPercentage = hasDiscount && product.comparePrice
-  ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
-  : 0;
-const savings = hasDiscount && product.comparePrice ? product.comparePrice - product.price : 0;
+  const discountPercentage = getDiscountPercentage(product.price, product.comparePrice);
+  const savings = discountPercentage > 0 && product.comparePrice ? product.comparePrice - product.price : 0;
 
   // Format images for gallery
-  const imageUrls = product.images?.map((img: any) => 
+  const imageUrls = product.images?.map((img: any) =>
     typeof img === 'string' ? img : img.url
   ) || ['/placeholder-product.jpg'];
 
-  // Compute available sizes and colors from variants
-  const getAvailableSizes = () => {
-    if (!product) return [];
+  // Compute available sizes from variants (falls back to legacy size field)
+  const availableSizes = (() => {
     if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
       const sizes = new Set<string>();
       product.variants.forEach((v: any) => {
@@ -441,378 +341,135 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
       });
       return Array.from(sizes).sort();
     }
-    // Fallback to legacy size
     return product.size ? [product.size] : [];
-  };
+  })();
 
-  const getVariantStock = (size: string) => {
-    if (!product || !size) return null;
+  const currentStock = (() => {
+    if (!selectedSize) return null;
     if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
-      const variant = product.variants.find((v: any) => v && v.size === size);
-      return variant ? (variant.stock ?? 0) : 0;
+      const variant = product.variants.find((v: any) => v && v.size === selectedSize);
+      return variant ? variant.stock ?? 0 : 0;
     }
     return null;
-  };
+  })();
 
-  const availableSizes = getAvailableSizes();
-  const currentStock = selectedSize ? getVariantStock(selectedSize) : null;
+  const outOfStock = currentStock !== null && currentStock === 0;
 
+  // The cart entry matching the current material+size selection, if any
+  const currentMaterialInCart =
+    product.materials && Array.isArray(product.materials) && product.materials.length > 0
+      ? reduxCartItems?.find((item: any) => {
+          const itemProductId = item.product?._id || item.product?.id || item.productId;
+          const itemSize = item.size || product.size || 'L';
+          const itemMaterial = item.material || '';
+          return (
+            itemProductId === productId &&
+            itemSize === (selectedSize || product.size || 'L') &&
+            itemMaterial === (selectedMaterial || '')
+          );
+        })
+      : isInCart
+        ? { quantity: cartQuantity, _id: cartItemId }
+        : null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container py-8 md:py-12">
       {/* Breadcrumb */}
-      <div className="mb-6 text-sm text-muted-foreground">
-        <button onClick={() => router.push('/')} className="hover:text-foreground transition-colors">
+      <nav className="mb-8 flex items-center gap-2 font-sans text-[11px] uppercase tracking-luxe text-text-muted">
+        <button onClick={() => router.push('/')} className="transition-colors hover:text-gold">
           Home
-        </button> 
-        {' / '}
-        <button onClick={() => router.push('/products')} className="hover:text-foreground transition-colors">
-          Products
-        </button> 
-        {' / '}
-        <span className="text-foreground">{product.name}</span>
-      </div>
+        </button>
+        <span className="text-border">/</span>
+        <button onClick={() => router.push('/products')} className="transition-colors hover:text-gold">
+          Collection
+        </button>
+        <span className="text-border">/</span>
+        <span className="truncate text-heading">{product.name}</span>
+      </nav>
 
-      <div className="grid md:grid-cols-2 gap-8 items-start mb-16">
+      <div className="mb-20 grid items-start gap-10 md:grid-cols-2 lg:gap-16">
         {/* Product Images */}
-        <div className="md:sticky md:top-4 w-full">
-          <ProductImageGallery 
-            imageUrls={imageUrls} 
+        <div className="w-full md:sticky md:top-28">
+          <ProductImageGallery
+            imageUrls={imageUrls}
             productName={product.name}
             videoUrl={product.video}
           />
         </div>
 
         {/* Product Details */}
-        <div className="space-y-6">
-          {/* Product Badges */}
-          <div className="flex gap-2">
-            {product.isNewArrival && (
-              <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                <Star className="w-3 h-3 mr-1" />
-                New Arrival
-              </Badge>
-            )}
-            {product.isSale && (
-              <Badge variant="destructive">
-                <Package className="w-3 h-3 mr-1" />
-                On Sale
-              </Badge>
-            )}
-            {product.isStretched && (
-              <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                <Maximize2 className="w-3 h-3 mr-1" />
-                Already Stretched
-              </Badge>
-            )}
-            {hasDiscount && (
-              <Badge variant="destructive" className="text-sm">
-                {discountPercentage}% OFF
-              </Badge>
-            )}
-          </div>
+        <div className="animate-fade-up space-y-8">
+          <ProductBadges product={product} discountPercentage={discountPercentage} />
 
           {/* Product Name & Description */}
           <div>
-            <h1 className="font-headline text-3xl md:text-4xl font-bold mb-3">{product.name}</h1>
+            <h1 className="mb-4 font-display text-4xl font-medium leading-tight md:text-5xl">{product.name}</h1>
             {product.description && (
-              <p className="text-lg text-muted-foreground leading-relaxed">{product.description}</p>
+              <p className="max-w-lg leading-relaxed text-text-muted">{product.description}</p>
             )}
           </div>
 
-          {/* Pricing */}
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-3">
-              <div className="text-3xl font-bold flex items-center text-primary">
-                <IndianRupee className="h-7 w-7 mr-1" /> 
-                {product.price.toLocaleString('en-IN')}
-              </div>
-              {hasDiscount && (
-                <div className="text-xl text-muted-foreground line-through">
-                  ₹{product.comparePrice?.toLocaleString('en-IN')}
-                </div>
-              )}
-            </div>
-            {hasDiscount && (
-              <p className="text-green-600 font-medium">
-                You save ₹{savings.toLocaleString('en-IN')}!
-              </p>
-            )}
-          </div>
+          <ProductPricing product={product} savings={savings} />
 
-          {/* Product Details */}
           <div className="space-y-4">
-            {/* Product Colors Display */}
-            {((product.colors && product.colors.length > 0) || product.color) && (
-              <div className="space-y-2">
-                <Label className="font-semibold text-base">
-                  {product.colors && product.colors.length > 1 ? 'Colors' : 'Color'}
-                </Label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {(product.colors && product.colors.length > 0 ? product.colors : product.color ? [product.color] : []).map((color: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-200 hover:border-primary transition-colors"
-                    >
-                      <div
-                        className="w-6 h-6 rounded-full border-2 border-gray-300"
-                        style={{ backgroundColor: color.hexCode }}
-                      />
-                      <span className="text-sm font-medium">{color.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <ProductColorsDisplay product={product} />
+
+            {product.materials && Array.isArray(product.materials) && (
+              <MaterialSelector
+                materials={product.materials}
+                selectedMaterial={selectedMaterial}
+                onSelect={setSelectedMaterial}
+                productId={productId}
+                productSize={product.size}
+                selectedSize={selectedSize}
+                cartItems={reduxCartItems as any}
+              />
             )}
 
-            {/* Material Tags Selection - Only show if materials array exists and has items */}
-            {product.materials && Array.isArray(product.materials) && product.materials.length > 0 && (
-              <div className="space-y-2">
-                <Label className="font-semibold text-base">Select Material <span className="text-red-500 text-sm font-normal">*</span></Label>
-                <div className="flex flex-wrap gap-2">
-                  {product.materials.map((material: string, index: number) => {
-                    const isSelected = selectedMaterial === material;
-                    // Check if this specific material+size combination is in cart
-                    const materialInCart = reduxCartItems?.find((item: any) => {
-                      const itemProductId = item.product?._id || item.product?.id || item.productId;
-                      const itemSize = item.size || product.size || 'L';
-                      const itemMaterial = item.material || '';
-                      return itemProductId === productId && 
-                             itemSize === (selectedSize || product.size || 'L') &&
-                             itemMaterial === material;
-                    });
-                    
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => {
-                          // Always set material - cannot deselect when materials exist
-                          setSelectedMaterial(material);
-                        }}
-                        className={`relative px-4 py-2 rounded-md border-2 transition-all text-sm font-medium ${
-                          isSelected
-                            ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                            : 'border-gray-200 hover:border-primary/50 text-gray-700 bg-white'
-                        }`}
-                      >
-                        {material}
-                        {materialInCart && (
-                          <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                            {materialInCart.quantity || 1}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedMaterial && (
-                  <p className="text-sm text-muted-foreground">
-                    Selected: <span className="font-medium text-foreground">{selectedMaterial}</span>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Size Selection */}
             {availableSizes.length > 0 && (
-              <div className="space-y-2">
-                <Label className="font-semibold text-base">Size</Label>
-                <div className="flex flex-wrap gap-2">
-               {PRODUCT_SIZES.map((size) => {
-  const variant = product.variants?.find((v: any) => v?.size === size);
-  const stock = variant ? variant.stock ?? 0 : 0;
-  const isAvailable = stock > 0;
-  const isSelected = selectedSize === size;
-
-  return (
-    <div key={size} className="relative group">
-      <button
-        type="button"
-        disabled={!isAvailable}
-        onClick={() => isAvailable && setSelectedSize(size)}
-        className={`
-          px-4 py-2 rounded-md border text-sm font-medium min-w-[48px]
-          transition-all
-          ${
-            isSelected
-              ? 'bg-primary text-primary-foreground border-primary'
-              : 'border-gray-300 hover:border-primary hover:bg-primary/10'
-          }
-          ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
-      >
-        {size}
-      </button>
-
-      {/* Hover tooltip ONLY for out of stock */}
-      {!isAvailable && (
-        <span
-          className="
-            pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2
-            whitespace-nowrap rounded bg-black px-2 py-1 text-[11px] text-white
-            opacity-0 group-hover:opacity-100 transition-opacity
-          "
-        >
-          Out of stock
-        </span>
-      )}
-    </div>
-  );
-})}
-
-
-
-                </div>
-              </div>
+              <SizeSelector product={product} selectedSize={selectedSize} onSelect={setSelectedSize} />
             )}
-
-            {/* Stock Information */}
-            {/* {currentStock !== null && (
-              <div className="space-y-2">
-                <Label className="font-semibold text-base">Availability</Label>
-                <p className={`font-medium ${currentStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {currentStock > 0 
-                    ? `${currentStock} in stock` 
-                    : 'Out of stock'}
-                </p>
-              </div>
-            )} */}
-
-
-
-            {/* Care Instructions */}
-           {careInstructions.length > 0 && (
-  <div>
-    <h3 className="font-semibold text-lg mb-2">Care Instructions</h3>
-    <ul className="space-y-1">
-      {careInstructions.map((instruction, index) => (
-        <li
-          key={index}
-          className="text-muted-foreground flex items-start gap-2"
-        >
-          <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
-          {instruction}
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
-
           </div>
 
           {/* Action Buttons */}
           <div className="space-y-4">
-            {/* Check if the selected material+size combination is in cart */}
-            {(() => {
-              const currentMaterialInCart = product.materials && Array.isArray(product.materials) && product.materials.length > 0
-                ? reduxCartItems?.find((item: any) => {
-                    const itemProductId = item.product?._id || item.product?.id || item.productId;
-                    const itemSize = item.size || product.size || 'L';
-                    const itemMaterial = item.material || '';
-                    return itemProductId === productId && 
-                           itemSize === (selectedSize || product.size || 'L') &&
-                           itemMaterial === (selectedMaterial || '');
-                  })
-                : isInCart ? { quantity: cartQuantity, _id: cartItemId } : null;
-
-              if (currentMaterialInCart) {
-                // Safely get cartItemId - check if _id exists on the object, otherwise use state variable
-                let itemId: string | undefined = undefined;
-                if ('_id' in currentMaterialInCart && typeof currentMaterialInCart._id === 'string') {
-                  itemId = currentMaterialInCart._id;
-                } else if ('id' in currentMaterialInCart && typeof currentMaterialInCart.id === 'string') {
-                  itemId = currentMaterialInCart.id;
-                } else {
-                  itemId = cartItemId;
-                }
-                
-                return (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-center">
-                      <CartQuantityControls
-                        productId={productId}
-                        initialQuantity={currentMaterialInCart.quantity || 1}
-                        cartItemId={itemId}
-                        onQuantityChange={(qty) => {
-                          setCartQuantity(qty);
-                          window.dispatchEvent(new CustomEvent('cartUpdated', {
-                            detail: { action: 'update', productId, quantity: qty }
-                          }));
-                        }}
-                        onRemove={async () => {
-                          await removeFromCart(productId);
-                          setIsInCart(false);
-                          setCartQuantity(1);
-                          window.dispatchEvent(new CustomEvent('cartUpdated', {
-                            detail: { action: 'remove', productId }
-                          }));
-                        }}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        className="flex-1 bg-primary hover:bg-primary/90"
-                        onClick={() => handleBuyNow(selectedMaterial)}
-                        disabled={currentStock !== null && currentStock === 0}
-                      >
-                        Buy Now
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleShare}
-                        className="shrink-0"
-                        title="Share product"
-                      >
-                        <Share2 className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="flex gap-2">
-                  <AddToCartButton 
-                    product={product} 
-                    quantity={1}
-                    material={
-                      // Always use selected material, or default to first material if materials exist
-                      selectedMaterial && selectedMaterial.trim() 
-                        ? selectedMaterial 
-                        : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
-                          ? product.materials[0] 
-                          : undefined)
+            {currentMaterialInCart ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center">
+                  <CartQuantityControls
+                    productId={productId}
+                    initialQuantity={currentMaterialInCart.quantity || 1}
+                    cartItemId={
+                      typeof (currentMaterialInCart as any)._id === 'string'
+                        ? (currentMaterialInCart as any)._id
+                        : typeof (currentMaterialInCart as any).id === 'string'
+                          ? (currentMaterialInCart as any).id
+                          : cartItemId
                     }
-                    size={selectedSize || product.size || 'L'}
-                    color={product.color || undefined}
-                    className="flex-1"
-                    onSuccess={handleAddToCartSuccess}
-                    disabled={
-                      (currentStock !== null && currentStock === 0)
-                    }
-                  >
-                    <ShoppingCart className="mr-2 h-5 w-5" /> 
-                    {currentStock !== null && currentStock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                  </AddToCartButton>
-                  
-                  <Button 
-                    className="flex-1 bg-primary hover:bg-primary/90"
-                    onClick={() => {
-                      // Use selected material or default to first material
-                      const materialToUse = selectedMaterial && selectedMaterial.trim() 
-                        ? selectedMaterial 
-                        : (product?.materials && Array.isArray(product.materials) && product.materials.length > 0 
-                          ? product.materials[0] 
-                          : undefined);
-                      handleBuyNow(materialToUse);
+                    onQuantityChange={(qty) => {
+                      setCartQuantity(qty);
+                      window.dispatchEvent(new CustomEvent('cartUpdated', {
+                        detail: { action: 'update', productId, quantity: qty }
+                      }));
                     }}
-                    disabled={currentStock !== null && currentStock === 0}
+                    onRemove={async () => {
+                      await removeFromCart(productId);
+                      setIsInCart(false);
+                      setCartQuantity(1);
+                      window.dispatchEvent(new CustomEvent('cartUpdated', {
+                        detail: { action: 'remove', productId }
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    onClick={() => handleBuyNow(selectedMaterial)}
+                    disabled={outOfStock}
                   >
                     Buy Now
                   </Button>
-                  
                   <Button
                     variant="outline"
                     size="icon"
@@ -823,137 +480,69 @@ const savings = hasDiscount && product.comparePrice ? product.comparePrice - pro
                     <Share2 className="h-5 w-5" />
                   </Button>
                 </div>
-              );
-            })()}
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <AddToCartButton
+                  product={product}
+                  quantity={1}
+                  material={resolveMaterial()}
+                  size={selectedSize || product.size || 'L'}
+                  color={product.color || undefined}
+                  className="flex-1"
+                  onSuccess={handleAddToCartSuccess}
+                  disabled={outOfStock}
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+                </AddToCartButton>
+
+                <Button
+                  className="flex-1"
+                  onClick={() => handleBuyNow(resolveMaterial())}
+                  disabled={outOfStock}
+                >
+                  Buy Now
+                </Button>
+
+                <WishlistButton
+                  productId={productId}
+                  className="h-11 w-11 shrink-0 border border-sage bg-transparent hover:bg-transparent"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleShare}
+                  className="shrink-0"
+                  title="Share product"
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Features */}
-          <div className="grid grid-cols-2 gap-4 pt-6 border-t">
-            {/* <div className="flex items-center gap-3 text-sm">
-              <Truck className="h-5 w-5 text-primary" />
-              <span>Free Delivery</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <RotateCcw className="h-5 w-5 text-primary" />
-              <span>Easy Returns</span>
-            </div> */}
-            <div className="flex items-center gap-3 text-sm">
-              <Shield className="h-5 w-5 text-primary" />
-              <span>Secure Payment</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Package className="h-5 w-5 text-primary" />
-              <span>Quality Assured</span>
-            </div>
-          </div>
+          <ProductTrustBadges />
         </div>
       </div>
 
-      <Separator className="my-16" />
+      {/* Product storytelling */}
+      <div className="border-t border-border py-16 md:py-20">
+        <ProductStory product={product} careInstructions={careInstructions} />
+      </div>
 
-      {/* Product Details Section */}
-      {/* <div className="mb-16">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">Product Details</CardTitle>
-            <CardDescription>Complete information about this product.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-3">Specifications</h4>
-                <dl className="space-y-2">
-                  {selectedSize && (
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Size:</dt>
-                      <dd className="font-medium">{selectedSize}</dd>
-                    </div>
-                  )}
-                  {!selectedSize && product.size && (
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Size:</dt>
-                      <dd className="font-medium">{product.size}</dd>
-                    </div>
-                  )}
-                  {((product.colors && product.colors.length > 0) || product.color) && (
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">
-                        {product.colors && product.colors.length > 1 ? 'Colors:' : 'Color:'}
-                      </dt>
-                      <dd className="font-medium flex items-center gap-2 flex-wrap">
-                        {(product.colors && product.colors.length > 0 ? product.colors : product.color ? [product.color] : []).map((color: any, index: number) => (
-                          <div key={index} className="flex items-center gap-1.5">
-                            <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
-                              style={{ backgroundColor: color.hexCode }}
-                            />
-                            <span className="text-sm">{color.name}</span>
-                            {index < (product.colors?.length || 1) - 1 && <span className="text-muted-foreground">,</span>}
-                          </div>
-                        ))}
-                      </dd>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Material:</dt>
-                    <dd className="font-medium capitalize">{product.material}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">SKU:</dt>
-                    <dd className="font-medium">{product._id || product.id}</dd>
-                  </div>
-                  {product.status && (
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Status:</dt>
-                      <dd className="font-medium capitalize">{product.status}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-3">Features</h4>
-                <ul className="space-y-2">
-                  {product.isNewArrival && (
-                    <li className="flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      Latest Design
-                    </li>
-                  )}
-                  {product.isSale && (
-                    <li className="flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                      Special Offer
-                    </li>
-                  )}
-                  <li className="flex items-center gap-2 text-sm">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                    Premium Quality
-                  </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                    Comfortable Fit
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div> */}
+      {/* Related products */}
+      <RelatedProducts />
 
-      {/* <Separator className="my-16" /> */}
-
-      {/* New Arrivals Section */}
-      {/* <div className="mb-8">
-        <NewArrival limit={4} showViewAll={false} />
-      </div> */}
-
-      {/* <Separator className="my-16" /> */}
-
-      {/* Sale Section */}
-      {/* <div>
-        <Sale limit={4} showViewAll={false} title="Don't Miss These Deals!" />
-      </div> */}
+      {/* Mobile sticky purchase bar */}
+      <StickyAddToCart
+        product={product}
+        size={selectedSize || product.size || 'L'}
+        material={resolveMaterial()}
+        disabled={outOfStock}
+        onBuyNow={() => handleBuyNow(resolveMaterial())}
+        onAddSuccess={handleAddToCartSuccess}
+      />
     </div>
   );
 }

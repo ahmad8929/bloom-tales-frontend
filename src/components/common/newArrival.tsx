@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, ChevronLeft, ChevronRight, Sparkles, ArrowRight, Star } from 'lucide-react';
 import { productApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { formatPrice, getDiscountPercentage as calculateDiscount } from '@/lib/format';
 
 interface Product {
   _id: string;
@@ -203,12 +204,6 @@ else setVisibleCards(4);
     setTouchStart(0);
     setTouchEnd(0);
   };
-
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price);
-
-  const calculateDiscount = (price: number, comparePrice: number) =>
-    Math.round(((comparePrice - price) / comparePrice) * 100);
 
   // Loading state
   if (loading) {

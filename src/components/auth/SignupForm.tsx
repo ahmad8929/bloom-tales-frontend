@@ -114,10 +114,11 @@ export function SignupForm() {
   };
 
   return (
-    <div className="space-y-6 bg-card p-8 rounded-xl shadow-lg max-w-md mx-auto border border-border">
+    <div className="space-y-6 bg-card p-8 sm:p-10 max-w-md mx-auto border border-border">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-heading">Create an account</h1>
-        <p className="text-sm text-text-muted">
+        <p className="eyebrow mb-3">Join us</p>
+        <h1 className="font-display text-3xl font-medium tracking-tight text-heading">Create an account</h1>
+        <p className="text-sm text-text-muted mt-2">
           Enter your information below to create your account
         </p>
       </div>

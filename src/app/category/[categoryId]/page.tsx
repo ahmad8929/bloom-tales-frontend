@@ -6,6 +6,7 @@ import { ShopClient } from "@/components/ShopClient";
 import { productApi } from "@/lib/api";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ErrorState";
 
 interface Product {
   _id: string;
@@ -75,9 +76,9 @@ export default function CategoryProductsPage() {
         // Fallback: get all products and filter client-side
         console.log('Attempting fallback: get all products and filter...');
         const allProductsResponse = await productApi.getAllProducts({ limit: '1000' });
-        
+
         if (allProductsResponse.error) {
-          throw new Error(`Failed to fetch products: ${response.error}`);
+          throw new Error(response.error);
         }
         
         if (allProductsResponse.data?.data?.products) {
@@ -148,7 +149,7 @@ export default function CategoryProductsPage() {
     } catch (error: any) {
       console.error('=== ERROR IN FETCH ===');
       console.error('Error details:', error);
-      setError(`Failed to load products: ${error.message || error}`);
+      setError(error.message || "This collection couldn't be loaded.");
     } finally {
       setLoading(false);
     }
@@ -185,8 +186,8 @@ export default function CategoryProductsPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="mb-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => router.push('/products')}
             className="flex items-center gap-2"
           >
@@ -194,22 +195,12 @@ export default function CategoryProductsPage() {
             Back to All Products
           </Button>
         </div>
-        
-        <div className="text-center py-20">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4 text-red-600">Error Loading Products</h2>
-            <p className="text-muted-foreground mb-6">{error}</p>
-            
-            <div className="flex gap-4 justify-center mt-6">
-              <Button onClick={() => fetchProductsByCategory(categoryId)}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/products')}>
-                View All Products
-              </Button>
-            </div>
-          </div>
-        </div>
+
+        <ErrorState
+          message={error}
+          onRetry={() => fetchProductsByCategory(categoryId)}
+          secondaryAction={{ label: 'View All Products', href: '/products' }}
+        />
       </div>
     );
   }
@@ -251,39 +242,36 @@ export default function CategoryProductsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      {/* Back Button */}
-      <div className="mb-6">
-        <Button 
-          variant="outline" 
-          onClick={() => router.push('/products')}
-          className="flex items-center gap-2 hover:bg-primary/10"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to All Products
-        </Button>
-      </div>
-      
-      {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl md:text-5xl font-bold">{categoryName} Collection</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Discover our stunning {categoryName.toLowerCase()} collection, designed with elegance and style in mind.
-        </p>
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <div className="h-1 w-12 bg-primary rounded-full"></div>
-          <span className="text-sm text-muted-foreground font-medium">
-            {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'} available
-          </span>
-          <div className="h-1 w-12 bg-primary rounded-full"></div>
+    <div>
+      {/* Header band */}
+      <div className="border-b border-border bg-sand/50">
+        <div className="container py-14 md:py-20">
+          <button
+            onClick={() => router.push('/products')}
+            className="mb-6 inline-flex items-center gap-2 font-sans text-[11px] font-semibold uppercase tracking-luxe text-text-muted transition-colors hover:text-gold"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            All Products
+          </button>
+          <div className="text-center">
+            <p className="eyebrow mb-4 animate-fade-up">The Collection</p>
+            <h1 className="animate-fade-up font-display text-4xl font-medium md:text-6xl" style={{ animationDelay: '0.1s' }}>
+              {categoryName}
+            </h1>
+            <p className="mt-4 animate-fade-up font-sans text-xs uppercase tracking-luxe text-text-muted" style={{ animationDelay: '0.2s' }}>
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'piece' : 'pieces'} available
+            </p>
+          </div>
         </div>
       </div>
-      
+
       {/* Products */}
-      <ShopClient 
-        products={filteredProducts} 
-        allSizes={allSizes}
-      />
+      <div className="container py-12 md:py-16">
+        <ShopClient
+          products={filteredProducts}
+          allSizes={allSizes}
+        />
+      </div>
     </div>
   );
 }

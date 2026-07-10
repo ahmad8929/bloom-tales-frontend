@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ShopClient } from "@/components/ShopClient";
 import { productApi } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { ErrorState } from "@/components/ErrorState";
 import type { Product } from "@/types/product";
 
 export default function ProductsPage() {
@@ -75,18 +75,46 @@ export default function ProductsPage() {
 
   console.log('All sizes:', allSizes);
 
+  const pageHeader = (
+    <div className="border-b border-border bg-sand/50">
+      <div className="container py-14 text-center md:py-20">
+        <p className="eyebrow mb-4 animate-fade-up">The Collection</p>
+        <h1 className="animate-fade-up font-display text-4xl font-medium md:text-6xl" style={{ animationDelay: '0.1s' }}>
+          Every story, every style
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl animate-fade-up text-text-muted" style={{ animationDelay: '0.2s' }}>
+          Discover pieces you&apos;ll love — handpicked sarees, kurtis and modern silhouettes.
+        </p>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold">Our Collection</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Discover pieces you'll love, for every story and every style.
-          </p>
-        </div>
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">Loading products...</span>
+      <div>
+        {pageHeader}
+        <div className="container py-12">
+          <div className="grid gap-12 lg:grid-cols-4">
+            <div className="hidden space-y-6 lg:block">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="h-3 w-16 animate-pulse bg-sand" />
+                  <div className="h-24 w-full animate-pulse bg-sand" />
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-3">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 lg:grid-cols-3">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="aspect-[3/4] w-full animate-pulse bg-sand" />
+                    <div className="h-4 w-3/4 animate-pulse bg-sand" />
+                    <div className="h-4 w-1/3 animate-pulse bg-sand" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -94,24 +122,10 @@ export default function ProductsPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold">Our Collection</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Discover pieces you'll love, for every story and every style.
-          </p>
-        </div>
-        <div className="text-center py-20">
-          <div className="max-w-md mx-auto">
-            <h2 className="text-2xl font-bold mb-4 text-red-600">Error Loading Products</h2>
-            <p className="text-muted-foreground mb-6">{error}</p>
-            <button 
-              onClick={fetchProducts}
-              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
+      <div>
+        {pageHeader}
+        <div className="container">
+          <ErrorState message={error} onRetry={fetchProducts} />
         </div>
       </div>
     );
@@ -119,22 +133,17 @@ export default function ProductsPage() {
 
   if (products.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold">Our Collection</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Discover pieces you'll love, for every story and every style.
-          </p>
-        </div>
-        <div className="text-center py-20">
-          <div className="max-w-md mx-auto">
-            <h2 className="text-2xl font-bold mb-4">No Products Available</h2>
-            <p className="text-muted-foreground mb-6">
-              We're working on adding new products. Check back soon!
+      <div>
+        {pageHeader}
+        <div className="container py-24 text-center">
+          <div className="mx-auto max-w-md">
+            <h2 className="mb-3 font-display text-3xl">The shelves are being dressed</h2>
+            <p className="mb-8 text-sm text-text-muted">
+              We&apos;re adding new pieces. Check back soon!
             </p>
-            <button 
+            <button
               onClick={fetchProducts}
-              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+              className="border border-primary/70 px-8 py-3 font-sans text-[12px] font-semibold uppercase tracking-luxe text-primary transition-all hover:bg-primary hover:text-primary-foreground"
             >
               Refresh
             </button>
@@ -145,21 +154,14 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl md:text-5xl font-bold">Our Collection</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Discover pieces you'll love, for every story and every style.
-        </p>
-        <div className="mt-4 text-sm text-muted-foreground">
-          {products.length} products available
-        </div>
+    <div>
+      {pageHeader}
+      <div className="container py-12 md:py-16">
+        <ShopClient
+          products={products}
+          allSizes={allSizes}
+        />
       </div>
-      
-      <ShopClient 
-        products={products} 
-        allSizes={allSizes}
-      />
     </div>
   );
 }

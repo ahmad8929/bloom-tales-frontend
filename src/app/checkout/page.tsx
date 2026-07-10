@@ -575,10 +575,10 @@ export default function CheckoutPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container py-24">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading checkout...</p>
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border border-border border-t-gold"></div>
+          <p className="mt-5 font-sans text-xs uppercase tracking-luxe text-text-muted">Preparing your checkout…</p>
         </div>
       </div>
     );
@@ -586,11 +586,13 @@ export default function CheckoutPage() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-        <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
-        <p className="text-muted-foreground mb-6">Add some items to proceed with checkout.</p>
-        <Button onClick={() => router.push('/products')}>Continue Shopping</Button>
+      <div className="container py-24 text-center">
+        <div className="mx-auto max-w-md border border-dashed border-border px-6 py-16">
+          <ShoppingBag className="mx-auto mb-6 h-12 w-12 text-gold" strokeWidth={1} />
+          <h2 className="mb-3 font-display text-3xl">Your bag is empty</h2>
+          <p className="mb-8 text-sm text-text-muted">Add some pieces to proceed with checkout.</p>
+          <Button onClick={() => router.push('/products')}>Continue Shopping</Button>
+        </div>
       </div>
     );
   }
@@ -599,9 +601,10 @@ export default function CheckoutPage() {
 
   return (
     <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
-      <div className="text-center mb-4 sm:mb-6 md:mb-12">
-        <h1 className="font-headline text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-1 sm:mb-2 md:mb-4">Checkout</h1>
-        <p className="text-xs sm:text-sm md:text-base text-muted-foreground">Complete your order details below</p>
+      <div className="text-center mb-6 sm:mb-8 md:mb-14">
+        <p className="eyebrow mb-3">The final touch</p>
+        <h1 className="font-display text-3xl md:text-5xl font-medium mb-2">Checkout</h1>
+        <p className="text-xs sm:text-sm md:text-base text-text-muted">Complete your order details below</p>
       </div>
 
       {/* No Returns Policy Notice */}

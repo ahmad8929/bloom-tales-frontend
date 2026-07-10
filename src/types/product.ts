@@ -1,3 +1,9 @@
+export interface Category {
+  name: string;
+  count: number;
+  slug: string;
+}
+
 export interface ProductVariant {
   size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
   stock: number;

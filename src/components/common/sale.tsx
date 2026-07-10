@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { productApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import { formatPrice, getDiscountPercentage as calculateDiscount } from "@/lib/format";
 
 interface Product {
   _id: string;
@@ -220,14 +221,6 @@ export function Sale({
     setTouchEnd(0);
   };
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(price);
-
-  const calculateDiscount = (price: number, comparePrice: number) =>
-    Math.round(((comparePrice - price) / comparePrice) * 100);
 
   const calculateSavings = (price: number, comparePrice: number) =>
     comparePrice - price;

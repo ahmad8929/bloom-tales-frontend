@@ -1,68 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { bannerOffers } from '@/dummyData';
+import { Marquee } from '@/components/motion/primitives';
+import { BRAND } from '@/lib/constants';
+
+const ANNOUNCEMENTS = [
+  'Shipping across India at ₹149',
+  'New arrivals every week',
+  'Complimentary gift wrapping on all orders',
+  'For international shipping, reach us on WhatsApp',
+  'Secure payments · Quality assured',
+];
 
 export function ScrollingBanner() {
-  const [currentBanner, setCurrentBanner] = useState(0);
-
-  // Auto-scroll banner
-  useEffect(() => {
-    const bannerTimer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % bannerOffers.length);
-    }, 3000);
-
-    return () => clearInterval(bannerTimer);
-  }, []);
+  const handleClick = () => {
+    const phoneNumber = BRAND.phone.replace(/\D/g, ''); // e.g. "+91 8076465961" -> "918076465961"
+    const message = encodeURIComponent('Hello! I am interested in international shipping.');
+    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+  };
 
   return (
-    <section className="bg-[#C4A082] text-[#5A3E2B] py-2.5 overflow-hidden relative">
-      {/* Animated Background */}
-      <div className="absolute inset-0 animate-pulse opacity-20"></div>
-      
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center">
-          <div 
-            className="transition-all duration-500 ease-in-out transform"
-            key={currentBanner}
-            style={{
-              animation: 'slideInFade 0.5s ease-in-out'
-            }}
+    <div
+      className="cursor-pointer bg-heading text-ivory"
+      onClick={handleClick}
+      role="banner"
+    >
+      <Marquee speed={40} className="py-2">
+        {ANNOUNCEMENTS.map((text, i) => (
+          <span
+            key={i}
+            className="mx-6 inline-flex items-center gap-6 font-sans text-[10.5px] font-medium uppercase tracking-luxe text-ivory/90"
           >
-            <p className="text-sm font-semibold flex items-center justify-center gap-2 text-[#5A3E2B] drop-shadow-sm">
-              <span className="text-lg animate-bounce">
-                {bannerOffers[currentBanner].emoji}
-              </span>
-              <span className="font-bold">
-                {bannerOffers[currentBanner].text}
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#5A3E2B]/30">
-        <div 
-          className="h-full bg-[#5A3E2B] transition-all duration-300 ease-linear"
-          style={{ 
-            width: `${((currentBanner + 1) / bannerOffers.length) * 100}%` 
-          }}
-        />
-      </div>
-
-      <style jsx>{`
-        @keyframes slideInFade {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </section>
+            {text}
+            <span className="text-gold-soft" aria-hidden="true">◆</span>
+          </span>
+        ))}
+      </Marquee>
+    </div>
   );
 }

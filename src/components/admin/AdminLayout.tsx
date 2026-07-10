@@ -14,6 +14,7 @@ import {
   LogOut,
   Webcam,
   Ticket,
+  Clapperboard,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -31,6 +32,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
     { icon: Users, label: 'Customers', href: '/admin/customers' },
     { icon: Ticket, label: 'Coupons', href: '/admin/coupons' },
+    { icon: Clapperboard, label: 'Reels', href: '/admin/reels' },
     { icon: Webcam, label: 'Go to Website', href: '/' },
   ];
 

@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Alegreya', serif;
-}
-
-/* Ensure smooth scrolling and proper overflow handling */
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
@@ -15,6 +10,8 @@ html {
 body {
   overflow-x: hidden;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Fix for mobile viewport height */
@@ -26,91 +23,116 @@ body {
 
 @layer base {
   :root {
-    /* Main Background - Soft Blush Nude */
-    --background: 20 58% 87%; /* #F2D6C9 */
-    --foreground: 25 35% 26%; /* #5A3E2B - Warm Brown for text */
-    
-    /* Card / Soft Champagne */
-    --card: 20 67% 95%; /* #FAEEE8 */
-    --card-foreground: 25 35% 26%; /* #5A3E2B */
-    
-    /* Popover */
-    --popover: 20 67% 95%; /* #FAEEE8 */
-    --popover-foreground: 25 35% 26%; /* #5A3E2B */
-    
-    /* Primary Gold - Logo, Headings, Primary Buttons */
-    --primary: 33 44% 51%; /* #B88A4E */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF */
-    
-    /* Secondary - Transparent with border */
-    --secondary: 0 0% 100% / 0; /* Transparent */
-    --secondary-foreground: 33 44% 51%; /* #B88A4E */
-    
-    /* Muted - For muted text */
-    --muted: 25 20% 55%; /* #9A7F6A */
-    --muted-foreground: 25 20% 55%; /* #9A7F6A */
-    
-    /* Accent - Muted Rose for badges, CTAs */
-    --accent: 9 28% 70%; /* #C9A19A */
-    --accent-foreground: 0 0% 100%; /* #FFFFFF */
-    
-    /* Hover - Dark Gold / Bronze */
-    --hover: 33 46% 42%; /* #9C6F3A */
-    --hover-foreground: 0 0% 100%; /* #FFFFFF */
-    
-    /* Secondary Hover Background */
-    --secondary-hover: 20 67% 95%; /* #FAEEE8 */
-    
-    /* Destructive */
-    --destructive: 0 84.2% 60.2%;
+    /* ————— Bloom Tales official brand palette ————— */
+    /* Champagne White canvas — #FDFBF9 */
+    --background: 30 50% 98%;
+    --foreground: 28 13% 38%; /* soft taupe body text */
+
+    --ivory: 30 50% 98%; /* Champagne White #FDFBF9 */
+    --ink: 24 20% 11%; /* espresso — reserved for scrims/overlays */
+    --sand: 24 50% 96%; /* Warm Cream #FAF4F0 — alt sections, cards, dividers */
+
+    /* Brand section tones */
+    --blush: 10 49% 91%; /* Soft Blush Pink #F3E0DC — hero */
+    --linen: 22 39% 86%; /* Nude Linen #EAD9CF — alt sections, hero subheading */
+
+    /* Sage — secondary actions #A6B7A3 */
+    --sage: 111 12% 68%;
+    --sage-deep: 111 12% 50%;
+
+    /* Product cards & surfaces — #FAF4F0 */
+    --card: 24 50% 96%;
+    --card-foreground: 28 13% 38%;
+
+    --popover: 30 50% 98%;
+    --popover-foreground: 28 13% 38%;
+
+    /* Primary — Dusty Rose CTA #D8A7A1, white text */
+    --primary: 7 41% 74%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary — quiet sage outline */
+    --secondary: 111 12% 68%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted */
+    --muted: 29 18% 44%; /* deepened for legibility on light surfaces */
+    --muted-foreground: 29 18% 44%;
+
+    /* Accent — warm cream for hover surfaces (menus, rows) */
+    --accent: 24 50% 96%;
+    --accent-foreground: 28 13% 38%;
+
+    /* Gold — Dusty Rose accent #D8A7A1 (icons, prices, hover links) */
+    --gold: 7 41% 74%;
+    --gold-soft: 10 49% 91%; /* Soft Blush #F3E0DC */
+    --gold-foreground: 0 0% 100%;
+    /* Deepened Dusty Rose for small-caps label TEXT (eyebrows) — same hue,
+       enough weight to read clearly where --gold itself stays soft for
+       icons, borders and hover accents. */
+    --gold-ink: 8 34% 38%;
+
+    /* Hover — darker Dusty Rose for button/link hovers */
+    --hover: 7 33% 64%; /* ~#C68E87 */
+    --hover-foreground: 0 0% 100%;
+
+    --secondary-hover: 24 50% 96%;
+
+    --destructive: 0 60% 42%;
     --destructive-foreground: 0 0% 98%;
-    
-    /* Borders */
-    --border: 25 48% 78%; /* #E2C4AE */
-    --input: 25 48% 78%; /* #E2C4AE */
-    --input-bg: 20 100% 98%; /* #FFF7F3 */
-    --input-focus: 33 44% 51%; /* #B88A4E */
-    
-    /* Text Colors */
-    --heading: 33 44% 51%; /* #B88A4E - Main Heading */
-    --subheading: 33 35% 38%; /* #7A5534 - Sub Heading */
-    --text-normal: 25 35% 26%; /* #5A3E2B - Normal Text */
-    --text-muted: 25 20% 55%; /* #9A7F6A - Muted Text */
-    
-    /* Ring (focus ring) */
-    --ring: 33 44% 51%; /* #B88A4E */
-    --radius: 0.5rem;
+
+    /* Borders & dividers — #FAF4F0 family */
+    --border: 24 35% 92%; /* hairline visible on champagne */
+    --input: 22 39% 86%; /* #EAD9CF */
+    --input-bg: 0 0% 100%;
+    --input-focus: 7 41% 74%;
+
+    /* Text hierarchy — Warm Golden Beige family, deepened for real contrast
+       against the light champagne/blush surfaces (was ~2:1, now ~4.5–5.5:1) */
+    --heading: 27 32% 34%;
+    --subheading: 28 24% 42%;
+    --text-normal: 28 13% 38%;
+    --text-muted: 29 18% 44%;
+
+    --ring: 7 41% 74%;
+    --radius: 0rem;
   }
 
   .dark {
-    --background: 25 35% 10%;
-    --foreground: 20 67% 95%;
-    --card: 25 35% 15%;
-    --card-foreground: 20 67% 95%;
-    --popover: 25 35% 15%;
-    --popover-foreground: 20 67% 95%;
-    --primary: 33 44% 51%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 25 35% 20%;
-    --secondary-foreground: 33 44% 51%;
-    --muted: 25 20% 55%;
-    --muted-foreground: 25 20% 55%;
-    --accent: 9 28% 70%;
-    --accent-foreground: 0 0% 100%;
-    --hover: 33 46% 42%;
-    --hover-foreground: 0 0% 100%;
-    --secondary-hover: 25 35% 20%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 24 18% 8%;
+    --foreground: 40 38% 96%;
+    --ivory: 40 38% 96%;
+    --ink: 24 18% 8%;
+    --sand: 26 14% 16%;
+    --card: 24 16% 12%;
+    --card-foreground: 40 38% 96%;
+    --popover: 24 16% 12%;
+    --popover-foreground: 40 38% 96%;
+    --primary: 40 38% 96%;
+    --primary-foreground: 24 18% 8%;
+    --secondary: 26 14% 16%;
+    --secondary-foreground: 40 38% 96%;
+    --muted: 33 10% 60%;
+    --muted-foreground: 33 10% 60%;
+    --accent: 26 14% 16%;
+    --accent-foreground: 40 38% 96%;
+    --gold: 37 40% 58%;
+    --gold-soft: 30 18% 20%;
+    --gold-foreground: 40 38% 96%;
+    --hover: 36 24% 84%;
+    --hover-foreground: 24 18% 8%;
+    --secondary-hover: 26 14% 16%;
+    --destructive: 0 55% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 25 48% 78%;
-    --input: 25 48% 78%;
-    --input-bg: 25 35% 15%;
-    --input-focus: 33 44% 51%;
-    --heading: 33 44% 51%;
-    --subheading: 33 35% 38%;
-    --text-normal: 20 67% 95%;
-    --text-muted: 25 20% 55%;
-    --ring: 33 44% 51%;
+    --border: 26 12% 22%;
+    --input: 26 12% 26%;
+    --input-bg: 24 16% 12%;
+    --input-focus: 37 40% 58%;
+    --heading: 40 38% 96%;
+    --subheading: 38 24% 82%;
+    --text-normal: 40 30% 92%;
+    --text-muted: 33 10% 60%;
+    --ring: 37 40% 58%;
   }
 }
 
@@ -119,19 +141,21 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-text-normal;
+    @apply bg-background text-text-normal font-sans text-[15px] leading-relaxed;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
-    @apply text-heading;
+    @apply font-display text-heading font-semibold tracking-tight;
+    text-shadow: 0 1px 2px hsl(var(--ink) / 0.06), 0 6px 20px hsl(var(--gold) / 0.18);
   }
-  
-  h2, h3, h4, h5, h6 {
-    @apply text-subheading;
-  }
-  
+
   p {
     @apply text-text-normal;
+  }
+
+  ::selection {
+    background: hsl(var(--gold) / 0.28);
+    color: hsl(var(--ink));
   }
 }
 
@@ -139,65 +163,157 @@ body {
   .text-heading {
     color: hsl(var(--heading));
   }
-  
+
   .text-subheading {
     color: hsl(var(--subheading));
   }
-  
+
   .text-normal {
     color: hsl(var(--text-normal));
   }
-  
+
   .text-muted-custom {
     color: hsl(var(--text-muted));
   }
+
+  /* Editorial eyebrow label — deepened ink so it reads on blush/champagne,
+     while decorative --gold (icons, borders, hovers) stays untouched */
+  .eyebrow {
+    @apply font-sans text-[11px] font-bold uppercase tracking-wider2;
+    color: hsl(var(--gold-ink));
+    text-shadow: 0 1px 1px hsl(var(--ink) / 0.08);
+  }
+
+  /* Soft lift for secondary copy sitting over photographic or tinted
+     backdrops (hero subhead, editorial pull-quotes) */
+  .text-depth-soft {
+    text-shadow: 0 1px 2px hsl(var(--ink) / 0.06), 0 8px 24px hsl(var(--ivory) / 0.6);
+  }
+
+  /* Hairline divider */
+  .hairline {
+    @apply h-px w-full bg-border;
+  }
+
+  /* Image hover zoom container */
+  .img-zoom img {
+    transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .img-zoom:hover img {
+    transform: scale(1.06);
+  }
+
+  /* Glass surface */
+  .glass {
+    background: hsl(var(--background) / 0.82);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
+
+  .glass-dark {
+    background: hsl(var(--ink) / 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  /* Underline reveal for nav links */
+  .link-underline {
+    position: relative;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    height: 1px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-underline:hover::after,
+  .link-underline[data-active='true']::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* Hide scrollbar for carousels */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Slow-breathing brand gradient for decorative surfaces */
+  .animate-gradient-luxe {
+    background: linear-gradient(
+      120deg,
+      hsl(var(--blush)),
+      hsl(var(--linen)),
+      hsl(var(--gold-soft)),
+      hsl(var(--blush))
+    );
+    background-size: 300% 300%;
+    animation: gradient-luxe 14s ease-in-out infinite;
+  }
+
+  @keyframes gradient-luxe {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Slow vertical float for decorative shapes */
+  .animate-float-slow {
+    animation: float-slow 7s ease-in-out infinite;
+  }
+  .animate-float-slower {
+    animation: float-slow 11s ease-in-out infinite reverse;
+  }
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+
+  /* Subtle film grain over hero imagery */
+  .grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    z-index: 2;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
 }
 
-/* Custom Scrollbar Styling */
+/* Custom scrollbar — quiet, warm */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary)) hsl(var(--background));
+  scrollbar-color: hsl(var(--gold) / 0.6) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
-  background: hsl(var(--background));
-  border-radius: 10px;
+  background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary));
-  border-radius: 10px;
-  border: 2px solid hsl(var(--background));
-  transition: background 0.3s ease;
+  background: hsl(var(--gold) / 0.5);
+  border-radius: 8px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--hover));
+  background: hsl(var(--gold));
 }
 
-/* Smooth transitions for all interactive elements */
-* {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
-}
-
-/* Enhanced smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Smooth animations for buttons and interactive elements */
-button, a, [role="button"] {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* WhatsApp Scrolling Banner Animation */
+/* Marquee (announcement bar, brand strips) */
 @keyframes scroll-infinite {
   0% {
     transform: translateX(0);
@@ -212,6 +328,19 @@ button, a, [role="button"] {
   display: flex;
 }
 
-.whatsapp-banner:hover .animate-scroll-infinite {
+.whatsapp-banner:hover .animate-scroll-infinite,
+.marquee-pause:hover .animate-scroll-infinite {
   animation-play-state: paused;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,211 +1,154 @@
 'use client';
 
-import { Facebook, Instagram, Twitter, Mail, Linkedin, MapPin, Phone, Clock, Heart } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import Link from 'next/link';
+import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Clock, ArrowRight, Check } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import {
+  BRAND,
+  FOOTER_SHOP_LINKS,
+  FOOTER_CARE_LINKS,
+  FOOTER_COMPANY_LINKS,
+} from '@/lib/constants';
+
+const SOCIAL_LINKS = [
+  { icon: Instagram, href: BRAND.instagram, label: 'Instagram' },
+  { icon: Facebook, href: '#', label: 'Facebook' },
+  { icon: Twitter, href: '#', label: 'Twitter' },
+  { icon: Mail, href: `mailto:${BRAND.email}`, label: 'Email' },
+];
+
+function FooterColumn({ title, links }: { title: string; links: readonly { name: string; href: string }[] }) {
+  return (
+    <div>
+      <p className="mb-3 font-sans text-[10px] font-semibold uppercase tracking-luxe text-heading">
+        {title}
+      </p>
+      <ul className="space-y-1.5">
+        {links.map((link) => (
+          <li key={link.name}>
+            <Link
+              href={link.href}
+              className="font-sans text-[13px] text-text-muted transition-colors hover:text-gold"
+            >
+              {link.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
 
-  const quickLinks = [
-    { name: "Home", href: "/" },
-    { name: "Shop", href: "/products" },
-    { name: "About Us", href: "/about" },
-    { name: "Contact", href: "/contact" }
-  ];
-
-  const customerService = [
-    { name: "FAQ", href: "/faq" },
-    { name: "Shipping & Returns", href: "/shipping" },
-    { name: "Privacy Policy", href: "/privacy" },
-    { name: "Terms & Conditions", href: "/terms" }
-  ];
-
-  const socialLinks = [
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Instagram, href: "https://www.instagram.com/bloomtales_clothing/", label: "Instagram" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Mail, href: "mailto:bloomtalesclothing@gmail.com", label: "Email" }
-  ];
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    // Newsletter backend not wired yet — acknowledge locally
+    setSubscribed(true);
+    setEmail('');
+  };
 
   return (
-    <footer className="bg-[#5A3E2B] text-card relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-10 left-10 w-32 h-32 border border-white/20 rounded-full animate-pulse"></div>
-        <div className="absolute top-32 right-20 w-16 h-16 border border-white/20 rounded-full animate-bounce"></div>
-        <div className="absolute bottom-20 left-1/4 w-24 h-24 border border-white/20 rounded-full animate-pulse delay-100"></div>
-        <div className="absolute bottom-32 right-1/3 w-12 h-12 border border-white/20 rounded-full animate-bounce delay-200"></div>
-      </div>
+    <footer className="border-t border-sand bg-ivory">
+      <div className="container py-10 md:py-12">
+        <div className="grid gap-10 md:grid-cols-12 md:gap-6">
+          {/* Brand */}
+          <div className="md:col-span-4">
+            <Logo />
+            <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-text-muted">
+              Sarees, kurtis and modern silhouettes, curated with an eye for
+              craft — born in Bareilly, worn everywhere.
+            </p>
 
-      <div className="container mx-auto px-6 py-8 relative z-10">
-        {/* Top Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-8">
-          {/* Brand Info */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <Heart className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <h2 className="text-xl font-bold text-heading">
-                Bloomtales Boutique
-              </h2>
-            </div>
-            <div className="space-y-1.5 text-sm text-text-muted">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span>Bareilly, Uttar Pradesh, India</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                <span>+91 8076465961</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>bloomtalesclothing@gmail.com</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>Mon-Sat: 9AM-8PM</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          {/* <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-card mb-4 relative">
-              Quick Links
-              <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
-            </h3>
-            <ul className="space-y-3">
-              {quickLinks.map((link, index) => (
-                <li key={link.name}>
-                  <Link 
-                    href={link.href} 
-                    className="text-card hover:text-primary hover:translate-x-1 transition-all duration-300 inline-block group"
-                  >
-                    <span className="border-b border-transparent group-hover:border-primary transition-all duration-300">
-                      {link.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div> */}
-
-          {/* Customer Service */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-card mb-3 relative">
-              Customer Service
-              <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
-            </h3>
-            <ul className="space-y-2">
-              {customerService.map((link, index) => (
-                <li key={link.name}>
-                  <Link 
-                    href={link.href} 
-                    className="text-card hover:text-primary hover:translate-x-1 transition-all duration-300 inline-block group"
-                  >
-                    <span className="border-b border-transparent group-hover:border-primary transition-all duration-300">
-                      {link.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Developer Info & Newsletter */}
-          {/* <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-card mb-4 relative">
-                Developer
-                <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-primary"></div>
-              </h3>
-              <p className="text-card text-sm leading-relaxed mb-3">
-                Develope and maintain by ❤️ 
-                <br/>
-                {" "}
-                <a
-                  href="https://www.linkedin.com/in/ahmad8929/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-primary hover:text-hover transition-colors duration-300 group"
-                >
-                  <span className="border-b border-transparent group-hover:border-primary transition-all duration-300">
-                    Mohd Ahmad
-                  </span>
-                 
-                  <br/>
-                  <Linkedin className="w-3 h-3" />
-                </a>
+            <div className="mt-4 space-y-1.5 font-sans text-[12px] text-text-muted">
+              <p className="flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-gold" strokeWidth={1.5} />
+                {BRAND.location}
               </p>
-              <p className="text-text-muted text-xs">
-                Passionate about crafting clean, responsive, and high-performance web applications.
-              </p>
-            </div>
-          </div> */}
-        </div>
-
-        {/* Divider */}
-        <div className="relative mb-6">
-          <div className="w-full border-t border-border/30"></div>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Social Icons */}
-          <div className="flex gap-4">
-            {socialLinks.map((social, index) => (
-              <a 
-                key={social.label}
-                href={social.href} 
-                target={social.href.startsWith('mailto') ? '_self' : '_blank'}
-                rel="noopener noreferrer"
-                className="group relative"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="w-10 h-10 bg-card/20 hover:bg-primary rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
-                  <social.icon className="w-5 h-5 text-card group-hover:text-primary-foreground transition-colors duration-300" />
-                </div>
-                
-                {/* Tooltip */}
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-text-normal text-card text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                  {social.label}
-                </div>
+              <a href={`tel:${BRAND.phone.replace(/\s+/g, '')}`} className="flex items-center gap-2 transition-colors hover:text-gold">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-gold" strokeWidth={1.5} />
+                {BRAND.phone}
               </a>
-            ))}
+              <p className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 shrink-0 text-gold" strokeWidth={1.5} />
+                {BRAND.hours}
+              </p>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target={social.href.startsWith('mailto') ? '_self' : '_blank'}
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="flex h-8 w-8 items-center justify-center text-gold transition-all duration-300 hover:-translate-y-0.5 hover:text-hover"
+                >
+                  <social.icon className="h-4 w-4" strokeWidth={1.5} />
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Copyright */}
-          <div className="text-center">
-            <p className="text-xs text-text-muted">
-              &copy; {currentYear} Bloomtales Boutique. All Rights Reserved.
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              Made with <Heart className="w-3 h-3 inline text-accent animate-pulse" /> in India
-            </p>
+          {/* Links */}
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:col-span-5">
+            <FooterColumn title="Shop" links={FOOTER_SHOP_LINKS} />
+            <FooterColumn title="Support" links={FOOTER_CARE_LINKS} />
+            <FooterColumn title="Company" links={FOOTER_COMPANY_LINKS} />
           </div>
 
-          {/* Trust Badges */}
-          {/* <div className="flex gap-3 opacity-70">
-            <div className="text-xs text-text-muted bg-card/20 px-2 py-1 rounded border border-border">
-              🔒 SSL Secured
-            </div>
-            <div className="text-xs text-text-muted bg-card/20 px-2 py-1 rounded border border-border">
-              ✅ Verified Store
-            </div>
-          </div> */}
+          {/* Newsletter */}
+          <div className="md:col-span-3">
+            <p className="mb-3 font-sans text-[10px] font-semibold uppercase tracking-luxe text-heading">
+              Newsletter
+            </p>
+            {subscribed ? (
+              <p className="flex items-center gap-2 font-sans text-[13px] text-text-normal">
+                <Check className="h-4 w-4 text-gold" />
+                Welcome to the list.
+              </p>
+            ) : (
+              <form
+                onSubmit={handleSubscribe}
+                className="flex items-center border-b border-input pb-2 transition-colors focus-within:border-gold"
+              >
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Your email address"
+                  className="w-full bg-transparent font-sans text-[13px] text-heading placeholder:text-text-muted/60 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  aria-label="Subscribe"
+                  className="pl-3 text-gold transition-all hover:translate-x-0.5 hover:text-hover"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
+            )}
+            <p className="mt-2 text-[11px] leading-relaxed text-text-muted/80">
+              New collections and private previews, never too often.
+            </p>
+          </div>
         </div>
 
-        {/* Floating Animation */}
-        <div className="absolute bottom-4 right-4 opacity-20">
-          <div className="w-6 h-6 bg-primary rounded-full animate-bounce"></div>
+        {/* Bottom bar */}
+        <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-sand pt-5 sm:flex-row">
+          <p className="font-sans text-[11px] text-text-muted/80">
+            © {currentYear} Bloomtales Boutique. All rights reserved.
+          </p>
+          <p className="font-sans text-[11px] text-text-muted/80">Crafted with care in India</p>
         </div>
       </div>
-
-      {/* Bottom Gradient */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
     </footer>
   );
 }

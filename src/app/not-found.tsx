@@ -10,19 +10,19 @@ export default function NotFoundPage() {
       <div className="max-w-md mx-auto text-center space-y-8">
         {/* 404 Number */}
         <div>
-          <h1 className="text-8xl md:text-9xl font-bold text-heading">
+          <h1 className="animate-fade-up font-display text-8xl font-medium italic text-heading md:text-9xl">
             404
           </h1>
         </div>
 
         {/* Main Content */}
-        <div className="space-y-4">
-          <h2 className="text-2xl md:text-3xl font-semibold text-heading">
-            Page Not Found
+        <div className="animate-fade-up space-y-4" style={{ animationDelay: '0.1s' }}>
+          <h2 className="font-display text-2xl font-medium text-heading md:text-3xl">
+            This page has wandered off
           </h2>
-          
-          <p className="text-base text-text-muted leading-relaxed">
-            The page you're looking for doesn't exist or has been moved.
+
+          <p className="text-base leading-relaxed text-text-muted">
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </p>
         </div>
 

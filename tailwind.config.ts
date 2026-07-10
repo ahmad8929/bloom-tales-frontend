@@ -3,20 +3,32 @@ import type {Config} from 'tailwindcss';
 export default {
   darkMode: ['class'],
   content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',  // Updated to cover all files in src
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: '1.25rem',
+        sm: '1.5rem',
+        lg: '2.5rem',
+        xl: '3rem',
+      },
       screens: {
-        "2xl": "1400px",
+        '2xl': '1440px',
       },
     },
     extend: {
       fontFamily: {
-        body: ['Alegreya', 'serif'],
-        headline: ['Belleza', 'sans-serif'],
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        // Legacy aliases used across the codebase
+        body: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        headline: ['var(--font-display)', 'Georgia', 'serif'],
+      },
+      letterSpacing: {
+        luxe: '0.18em',
+        wider2: '0.3em',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -44,6 +56,20 @@ export default {
         accent: {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
+        },
+        gold: {
+          DEFAULT: 'hsl(var(--gold))',
+          soft: 'hsl(var(--gold-soft))',
+          foreground: 'hsl(var(--gold-foreground))',
+        },
+        ink: 'hsl(var(--ink))',
+        ivory: 'hsl(var(--ivory))',
+        sand: 'hsl(var(--sand))',
+        blush: 'hsl(var(--blush))',
+        linen: 'hsl(var(--linen))',
+        sage: {
+          DEFAULT: 'hsl(var(--sage))',
+          deep: 'hsl(var(--sage-deep))',
         },
         hover: {
           DEFAULT: 'hsl(var(--hover))',
@@ -78,25 +104,45 @@ export default {
       },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(24px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        kenburns: {
+          from: { transform: 'scale(1.08)' },
+          to: { transform: 'scale(1)' },
+        },
+        shimmer: {
+          from: { backgroundPosition: '200% 0' },
+          to: { backgroundPosition: '-200% 0' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        marquee: 'marquee 32s linear infinite',
+        'fade-up': 'fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-in': 'fade-in 1.2s ease both',
+        kenburns: 'kenburns 8s cubic-bezier(0.22, 1, 0.36, 1) both',
+        shimmer: 'shimmer 2.2s linear infinite',
+      },
+      transitionTimingFunction: {
+        luxe: 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
     },
   },
