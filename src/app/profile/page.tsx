@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { profileApi } from '@/lib/api';
+import { validateAddressFields, validatePersonName, validateOptionalPhone, validateAge } from '@/lib/validation';
 import { User, MapPin, Plus, Edit, Trash2, Save, X, Clock, Mail, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getCookie } from '@/lib/utils';
@@ -82,6 +83,7 @@ export default function ProfilePage() {
   });
 
   const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
+  const [profileFormErrors, setProfileFormErrors] = useState<Record<string, string>>({});
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
 
   // Function to fetch pincode details
@@ -214,7 +216,32 @@ export default function ProfilePage() {
     }
   };
 
+  const validateProfileForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const firstNameError = validatePersonName(formData.firstName, 'First name');
+    const lastNameError = validatePersonName(formData.lastName, 'Last name');
+    const phoneError = validateOptionalPhone(formData.phone);
+    const ageError = validateAge(formData.age);
+
+    if (firstNameError) errors.firstName = firstNameError;
+    if (lastNameError) errors.lastName = lastNameError;
+    if (phoneError) errors.phone = phoneError;
+    if (ageError) errors.age = ageError;
+
+    setProfileFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSaveProfile = async () => {
+    if (!validateProfileForm()) {
+      toast({
+        title: 'Please fix the highlighted fields',
+        description: 'Some profile details are missing or invalid.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setIsSaving(true);
       const updateData: any = {};
@@ -285,13 +312,20 @@ export default function ProfilePage() {
   };
 
   const validateAddressForm = (): boolean => {
-    // Validation removed - always return true
-    setAddressFormErrors({});
-    return true;
+    const errors = validateAddressFields(addressForm);
+    setAddressFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSaveAddress = async () => {
-    // Validation removed - proceed directly
+    if (!validateAddressForm()) {
+      toast({
+        title: 'Please fix the highlighted fields',
+        description: 'Some address details are missing or invalid.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -415,7 +449,7 @@ export default function ProfilePage() {
                 <CardDescription>Your account details and preferences</CardDescription>
               </div>
               {!isEditing && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button variant="outline" size="sm" onClick={() => { setProfileFormErrors({}); setIsEditing(true); }}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </Button>
@@ -431,16 +465,34 @@ export default function ProfilePage() {
                     <Input
                       id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, firstName: e.target.value });
+                        if (profileFormErrors.firstName) {
+                          setProfileFormErrors({ ...profileFormErrors, firstName: '' });
+                        }
+                      }}
+                      className={profileFormErrors.firstName ? 'border-destructive' : ''}
                     />
+                    {profileFormErrors.firstName && (
+                      <p className="text-sm text-destructive">{profileFormErrors.firstName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name *</Label>
                     <Input
                       id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, lastName: e.target.value });
+                        if (profileFormErrors.lastName) {
+                          setProfileFormErrors({ ...profileFormErrors, lastName: '' });
+                        }
+                      }}
+                      className={profileFormErrors.lastName ? 'border-destructive' : ''}
                     />
+                    {profileFormErrors.lastName && (
+                      <p className="text-sm text-destructive">{profileFormErrors.lastName}</p>
+                    )}
                   </div>
                 </div>
 
@@ -461,10 +513,21 @@ export default function ProfilePage() {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+91 XXXXX XXXXX"
+                    placeholder="10-digit mobile number"
+                    maxLength={10}
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, phone: value });
+                      if (profileFormErrors.phone) {
+                        setProfileFormErrors({ ...profileFormErrors, phone: '' });
+                      }
+                    }}
+                    className={profileFormErrors.phone ? 'border-destructive' : ''}
                   />
+                  {profileFormErrors.phone && (
+                    <p className="text-sm text-destructive">{profileFormErrors.phone}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -476,8 +539,17 @@ export default function ProfilePage() {
                       min="13"
                       max="120"
                       value={formData.age}
-                      onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, age: e.target.value });
+                        if (profileFormErrors.age) {
+                          setProfileFormErrors({ ...profileFormErrors, age: '' });
+                        }
+                      }}
+                      className={profileFormErrors.age ? 'border-destructive' : ''}
                     />
+                    {profileFormErrors.age && (
+                      <p className="text-sm text-destructive">{profileFormErrors.age}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gender">Gender</Label>
@@ -503,6 +575,7 @@ export default function ProfilePage() {
                     variant="outline"
                     onClick={() => {
                       setIsEditing(false);
+                      setProfileFormErrors({});
                       setFormData({
                         firstName: profile.firstName || '',
                         lastName: profile.lastName || '',
@@ -694,12 +767,14 @@ export default function ProfilePage() {
                     type="tel"
                     value={addressForm.phone}
                     onChange={(e) => {
-                      setAddressForm({ ...addressForm, phone: e.target.value });
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setAddressForm({ ...addressForm, phone: value });
                       if (addressFormErrors.phone) {
                         setAddressFormErrors({ ...addressFormErrors, phone: '' });
                       }
                     }}
-                    placeholder="+91 XXXXX XXXXX"
+                    placeholder="10-digit mobile number"
+                    maxLength={10}
                     className={addressFormErrors.phone ? 'border-destructive' : ''}
                   />
                   {addressFormErrors.phone && (

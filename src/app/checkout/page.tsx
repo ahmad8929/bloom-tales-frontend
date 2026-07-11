@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cartApi, orderApi, profileApi, couponApi, paymentApi } from '@/lib/api';
+import { validateAddressFields } from '@/lib/validation';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -416,13 +417,20 @@ export default function CheckoutPage() {
   };
 
   const validateAddressForm = (): boolean => {
-    // Validation removed - always return true
-    setAddressFormErrors({});
-    return true;
+    const errors = validateAddressFields(addressForm);
+    setAddressFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSaveAddress = async () => {
-    // Validation removed - proceed directly
+    if (!validateAddressForm()) {
+      toast({
+        title: 'Please fix the highlighted fields',
+        description: 'Some address details are missing or invalid.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -1034,12 +1042,14 @@ export default function CheckoutPage() {
                     type="tel"
                     value={addressForm.phone}
                     onChange={(e) => {
-                      setAddressForm({ ...addressForm, phone: e.target.value });
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setAddressForm({ ...addressForm, phone: value });
                       if (addressFormErrors.phone) {
                         setAddressFormErrors({ ...addressFormErrors, phone: '' });
                       }
                     }}
-                    placeholder="+91 XXXXX XXXXX"
+                    placeholder="10-digit mobile number"
+                    maxLength={10}
                     disabled={isSubmitting}
                     className={`text-sm sm:text-base ${addressFormErrors.phone ? 'border-destructive' : ''}`}
                   />
