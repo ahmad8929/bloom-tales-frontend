@@ -26,7 +26,7 @@ export const authApi = {
     postAuth('/login', credentials, 'Login failed'),
 
   register: (signupData: { firstName: string; lastName: string; email: string; password: string }) =>
-    postAuth('/register', signupData, 'Signup failed'),
+    postAuth('/signup', signupData, 'Signup failed'),
 
   resendVerification: (email: string) =>
     postAuth('/resend-verification', { email }, 'Failed to resend verification'),
