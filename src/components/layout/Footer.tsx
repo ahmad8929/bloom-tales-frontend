@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Clock, ArrowRight, Check } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Clock } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import {
   BRAND,
@@ -42,16 +41,6 @@ function FooterColumn({ title, links }: { title: string; links: readonly { name:
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    // Newsletter backend not wired yet — acknowledge locally
-    setSubscribed(true);
-    setEmail('');
-  };
 
   return (
     <footer className="border-t border-sand bg-ivory">
@@ -97,56 +86,18 @@ export function Footer() {
           </div>
 
           {/* Links */}
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:col-span-5">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:col-span-8">
             <FooterColumn title="Shop" links={FOOTER_SHOP_LINKS} />
             <FooterColumn title="Support" links={FOOTER_CARE_LINKS} />
             <FooterColumn title="Company" links={FOOTER_COMPANY_LINKS} />
           </div>
-
-          {/* Newsletter */}
-          <div className="md:col-span-3">
-            <p className="mb-3 font-sans text-[10px] font-semibold uppercase tracking-luxe text-heading">
-              Newsletter
-            </p>
-            {subscribed ? (
-              <p className="flex items-center gap-2 font-sans text-[13px] text-text-normal">
-                <Check className="h-4 w-4 text-gold" />
-                Welcome to the list.
-              </p>
-            ) : (
-              <form
-                onSubmit={handleSubscribe}
-                className="flex items-center border-b border-input pb-2 transition-colors focus-within:border-gold"
-              >
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email address"
-                  className="w-full bg-transparent font-sans text-[13px] text-heading placeholder:text-text-muted/60 focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  aria-label="Subscribe"
-                  className="pl-3 text-gold transition-all hover:translate-x-0.5 hover:text-hover"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </form>
-            )}
-            <p className="mt-2 text-[11px] leading-relaxed text-text-muted/80">
-              New collections and private previews, never too often.
-            </p>
-          </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-sand pt-5 sm:flex-row">
+        <div className="mt-10 flex items-center justify-center border-t border-sand pt-5">
           <p className="font-sans text-[11px] text-text-muted/80">
             © {currentYear} Bloomtales Boutique. All rights reserved.
           </p>
-          <p className="font-sans text-[11px] text-text-muted/80">Crafted with care in India</p>
         </div>
       </div>
     </footer>
