@@ -191,7 +191,7 @@ export const features: Feature[] = [
   {
     id: 1,
     title: "Pan India Delivery",
-    description: "Shipping across all of India at ₹149",
+    description: "Free delivery on prepaid orders across India",
     icon: "truck"
   },
   {
@@ -224,7 +224,7 @@ export const bannerOffers: BannerOffer[] = [
   {
     id: 2,
     emoji: "🚚",
-    text: "Shipping across India at just ₹149"
+    text: "Free delivery on prepaid orders · ₹250 on COD"
   },
   {
     id: 3,

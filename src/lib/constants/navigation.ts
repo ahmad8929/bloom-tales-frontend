@@ -12,23 +12,15 @@ export const NAV_LINKS: NavLink[] = [
   { label: 'Our Story', href: '/about' },
 ];
 
-export const FOOTER_SHOP_LINKS = [
-  { name: 'New Arrivals', href: '/products?isNewArrival=true' },
-  { name: 'All Products', href: '/products' },
-  { name: 'On Sale', href: '/products?isSale=true' },
-  { name: 'Your Cart', href: '/cart' },
+export const FOOTER_HELP_LINKS = [
+  { name: 'FAQs', href: '/faq' },
+  { name: 'Contact Us', href: '/contact' },
+  { name: 'Customer Reviews', href: '/reviews' },
 ] as const;
 
-export const FOOTER_CARE_LINKS = [
-  { name: 'FAQ', href: '/faq' },
-  { name: 'Shipping & Returns', href: '/shipping' },
+export const FOOTER_POLICY_LINKS = [
   { name: 'Privacy Policy', href: '/privacy' },
-  { name: 'Terms & Conditions', href: '/terms' },
-] as const;
-
-export const FOOTER_COMPANY_LINKS = [
-  { name: 'Our Story', href: '/about' },
-  { name: 'Contact', href: '/contact' },
+  { name: 'Terms Of Services', href: '/terms' },
 ] as const;
 
 export const SEARCH_SUGGESTIONS = ['Saree', 'Kurti', 'Lehenga', 'Anarkali', 'Western'] as const;

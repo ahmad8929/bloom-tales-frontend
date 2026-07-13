@@ -32,8 +32,8 @@ export default function ShippingPage() {
             <div>
               <h3 className="text-xl font-semibold mb-2 text-subheading">Shipping Charges</h3>
               <ul className="list-disc ml-6 space-y-2">
-                <li><strong>Standard Shipping:</strong> ₹149 for all orders across India</li>
-                <li>Shipping charges are uniform regardless of order value or destination</li>
+                <li><strong>Prepaid Orders:</strong> Free delivery across India</li>
+                <li><strong>Cash on Delivery (COD):</strong> ₹250 delivery charge applies</li>
                 <li>All orders are shipped via our trusted courier partners</li>
               </ul>
               <p className="mt-2 text-sm text-text-muted">

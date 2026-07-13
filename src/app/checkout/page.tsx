@@ -237,8 +237,8 @@ export default function CheckoutPage() {
     let advancePayment = 0;
 
     if (paymentMethod === 'cod') {
-      // COD: ₹199 shipping (no advance payment)
-      shipping = 199;
+      // COD: ₹250 delivery charge (no advance payment)
+      shipping = 250;
       advancePayment = 0;
     } else {
       // Online payment (Cashfree): Free shipping
@@ -772,7 +772,7 @@ export default function CheckoutPage() {
                       Cash on Delivery (COD)
                     </Label>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Pay on delivery. (₹199 shipping charge applies)
+                      Pay on delivery. (₹250 delivery charge applies)
                     </p>
                   </div>
                 </div>
@@ -783,7 +783,7 @@ export default function CheckoutPage() {
                       Secure Online Payment (Cashfree)
                     </Label>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Free shipping. Secure payment gateway with instant confirmation. Supports UPI, Cards, Net Banking, Wallets.
+                      Free delivery. Secure payment gateway with instant confirmation. Supports UPI, Cards, Net Banking, Wallets.
                     </p>
                   </div>
                 </div>

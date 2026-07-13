@@ -138,7 +138,7 @@ export function ProductStory({ product, careInstructions }: ProductStoryProps) {
           }
         >
           <div className="space-y-3">
-            <p>Shipping across India at ₹149 — orders are usually dispatched within 2–3 business days.</p>
+            <p>Free delivery on prepaid orders (₹250 delivery charge on COD) — orders are usually dispatched within 2–3 business days.</p>
             <p>For international shipping, reach us on WhatsApp and we&apos;ll arrange it personally.</p>
             <p>
               Full details in our{' '}

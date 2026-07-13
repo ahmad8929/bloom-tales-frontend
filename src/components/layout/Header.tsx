@@ -43,11 +43,36 @@ export function Header() {
     setShopOpen(false);
   }, [pathname]);
 
-  // Lock body scroll while an overlay is open
+  // Lock body scroll while an overlay is open. `overflow: hidden` alone is
+  // ignored by iOS Safari for touch scrolling, so pin the body with
+  // position: fixed and restore the scroll offset on unlock.
   useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen || searchOpen ? 'hidden' : '';
+    if (!(mobileMenuOpen || searchOpen)) return;
+
+    const scrollY = window.scrollY;
+    const lockedPath = window.location.pathname;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const { style } = document.body;
+
+    style.position = 'fixed';
+    style.top = `-${scrollY}px`;
+    style.left = '0';
+    style.right = '0';
+    style.width = '100%';
+    style.overflow = 'hidden';
+    if (scrollbarWidth > 0) style.paddingRight = `${scrollbarWidth}px`;
+
     return () => {
-      document.body.style.overflow = '';
+      style.position = '';
+      style.top = '';
+      style.left = '';
+      style.right = '';
+      style.width = '';
+      style.overflow = '';
+      style.paddingRight = '';
+      // Restore scroll only if we're still on the same page; after a
+      // navigation the new page should start at the top.
+      window.scrollTo(0, window.location.pathname === lockedPath ? scrollY : 0);
     };
   }, [mobileMenuOpen, searchOpen]);
 
@@ -227,7 +252,7 @@ export function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="glass fixed inset-0 z-[60] flex flex-col"
+            className="glass fixed inset-0 z-[60] flex h-dvh flex-col overscroll-contain"
           >
             <div className="container flex h-16 items-center justify-end lg:h-20">
               <button
@@ -291,7 +316,7 @@ export function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="fixed inset-0 z-[60] bg-ink/50 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[60] h-dvh touch-none bg-ink/50 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.aside
@@ -299,7 +324,7 @@ export function Header() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.5, ease: EASE_LUXE }}
-              className="fixed inset-y-0 left-0 z-[61] flex w-[85vw] max-w-sm flex-col bg-background lg:hidden"
+              className="fixed inset-y-0 left-0 z-[61] flex h-dvh w-[85vw] max-w-sm flex-col bg-background lg:hidden"
             >
               <div className="flex h-16 items-center justify-between border-b border-border px-5">
                 <Logo />
@@ -312,7 +337,7 @@ export function Header() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-8">
+              <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-8">
                 <nav className="space-y-1">
                   {NAV_LINKS.map((link, i) => (
                     <motion.div
