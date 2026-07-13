@@ -219,9 +219,6 @@ export function Header() {
                         <span className="font-display text-lg transition-colors group-hover:text-gold">
                           {category.name}
                         </span>
-                        <span className="font-sans text-[10px] uppercase tracking-luxe text-text-muted">
-                          {category.count}
-                        </span>
                       </Link>
                     ))
                   ) : (
