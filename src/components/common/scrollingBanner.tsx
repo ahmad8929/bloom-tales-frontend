@@ -4,7 +4,7 @@ import { Marquee } from '@/components/motion/primitives';
 import { BRAND } from '@/lib/constants';
 
 const ANNOUNCEMENTS = [
-  'Shipping across India at ₹149',
+  'Free delivery on prepaid orders · ₹250 delivery charge on COD',
   'New arrivals every week',
   'Complimentary gift wrapping on all orders',
   'For international shipping, reach us on WhatsApp',
