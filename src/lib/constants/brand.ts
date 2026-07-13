@@ -15,8 +15,10 @@ export const BRAND_COLORS = {
 export const BRAND = {
   name: 'Bloomtales',
   tagline: 'Boutique',
+  legalName: 'BloomTales Clothing & Co.',
   email: 'bloomtalesclothing@gmail.com',
   phone: '+91 8076465961',
+  whatsapp: 'https://wa.me/918076465961',
   location: 'Bareilly, Uttar Pradesh, India',
   hours: 'Mon–Sat · 9AM–8PM',
   instagram: 'https://www.instagram.com/bloomtales_clothing/',
