@@ -16,7 +16,7 @@ export function AuthShell({
   children,
   eyebrow = 'Bloomtales Boutique',
   quote = 'Every wardrobe deserves a story worth telling.',
-  image = '/hero/hero3.png',
+  image = '/hero2/hero-2.png',
 }: AuthShellProps) {
   return (
     <div className="grid min-h-[calc(100vh-8rem)] lg:grid-cols-2">
