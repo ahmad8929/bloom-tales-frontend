@@ -42,7 +42,7 @@ export default function SignupPage() {
 
   return (
     <AuthShell
-      image="/hero/hero5.png"
+      image="/hero2/hero-4.png"
       quote="Every wardrobe deserves a story worth telling."
     >
       <SignupForm />
