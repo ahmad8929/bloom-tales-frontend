@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, ShoppingBag, Menu, X, ArrowRight, User } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
@@ -18,7 +18,24 @@ export function Header() {
   const { itemCount } = useCart();
   const { user, isAuthenticated, logoutUser } = useAuth();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  // NAV_LINKS has three entries that all point at `/products` (Shop, New
+  // In, Sale) distinguished only by query flags, so matching on pathname
+  // alone always lit up the same link. Compare path + the flags each link
+  // actually cares about so exactly one nav item is active at a time.
+  const isLinkActive = (href: string) => {
+    const [linkPath, linkQuery] = href.split('?');
+    if (pathname !== linkPath) return false;
+    if (!linkQuery) {
+      return !searchParams.get('isNewArrival') && !searchParams.get('isSale');
+    }
+    const linkParams = new URLSearchParams(linkQuery);
+    return Array.from(linkParams.entries()).every(
+      ([key, value]) => searchParams.get(key) === value
+    );
+  };
 
   const { categories, loading: loadingCategories } = useCategories(8);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -118,7 +135,8 @@ export function Header() {
                   <div key={link.label} className="relative" onMouseEnter={() => setShopOpen(true)}>
                     <Link
                       href={link.href}
-                      data-active={pathname === '/products'}
+                      data-active={isLinkActive(link.href)}
+                      aria-current={isLinkActive(link.href) ? 'page' : undefined}
                       className="link-underline font-sans text-[12px] font-semibold uppercase tracking-luxe transition-colors hover:text-gold"
                     >
                       {link.label}
@@ -129,6 +147,8 @@ export function Header() {
                     key={link.label}
                     href={link.href}
                     onMouseEnter={() => setShopOpen(false)}
+                    data-active={isLinkActive(link.href)}
+                    aria-current={isLinkActive(link.href) ? 'page' : undefined}
                     className={cn(
                       'link-underline font-sans text-[12px] font-semibold uppercase tracking-luxe transition-colors hover:text-gold',
                       link.label === 'Sale' && 'text-gold'
@@ -345,10 +365,17 @@ export function Header() {
                     >
                       <Link
                         href={link.href}
-                        className="flex items-center justify-between border-b border-border/60 py-4 font-display text-2xl text-heading"
+                        aria-current={isLinkActive(link.href) ? 'page' : undefined}
+                        className={cn(
+                          'flex items-center justify-between border-b border-border/60 py-4 font-display text-2xl transition-colors',
+                          isLinkActive(link.href) ? 'text-gold' : 'text-heading'
+                        )}
                       >
                         {link.label}
-                        <ArrowRight className="h-4 w-4 text-text-muted" strokeWidth={1.5} />
+                        <ArrowRight
+                          className={cn('h-4 w-4', isLinkActive(link.href) ? 'text-gold' : 'text-text-muted')}
+                          strokeWidth={1.5}
+                        />
                       </Link>
                     </motion.div>
                   ))}

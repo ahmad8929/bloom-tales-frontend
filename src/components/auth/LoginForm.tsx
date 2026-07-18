@@ -76,7 +76,6 @@ export function LoginForm() {
     // If Redux says authenticated but no cookie exists, clear Redux state
     // This prevents showing "Redirecting..." when user should see login form
     if (isAuthenticated && !cookieToken) {
-      console.log('Clearing stale auth state - no cookie found');
       dispatch(logout());
     }
   }, [isAuthenticated, dispatch]);
@@ -173,7 +172,6 @@ export function LoginForm() {
             const cookieToken = getCookie('auth-token');
             
             if (cookieToken && cookieToken.length >= 10) {
-              console.log('Cookie verified, redirecting...');
               const redirectPath = redirectUrl && redirectUrl.startsWith('/') ? redirectUrl : '/';
               window.location.href = redirectPath;
               return;
@@ -303,60 +301,60 @@ export function LoginForm() {
         </div>
 
         {/* Redirect Reason Alert */}
-        {/* {redirectReason && !needsEmailVerification && !error && (
-          <Alert className="border-blue-200 bg-blue-50 text-blue-900 rounded-lg">
-            <AlertCircle className="h-5 w-5 text-blue-600" />
-            <AlertDescription className="text-blue-800">
+        {redirectReason && !needsEmailVerification && !error && (
+          <Alert className="border-gold/40 bg-gold-soft/60 text-heading">
+            <AlertCircle className="h-5 w-5 text-gold-ink" />
+            <AlertDescription className="text-heading">
               {redirectReason === 'auth-required' && 'Please log in to access this page.'}
               {redirectReason === 'session-expired' && 'Your session has expired. Please log in again to continue.'}
               {returnUrl && (
-                <span className="block mt-1 text-sm">
+                <span className="mt-1 block text-sm text-text-muted">
                   You'll be redirected back to {returnUrl} after logging in.
                 </span>
               )}
             </AlertDescription>
           </Alert>
-        )} */}
+        )}
 
         {/* Email Verification Alert */}
-        {/* {needsEmailVerification && (
-          <Alert className="border-primary/30 bg-primary/10 text-text-normal rounded-lg flex items-center justify-between">
+        {needsEmailVerification && (
+          <Alert className="flex items-center justify-between border-gold/40 bg-gold-soft/60 text-heading">
             <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-primary" />
-              <AlertDescription>
+              <Mail className="h-5 w-5 text-gold-ink" />
+              <AlertDescription className="text-heading">
                 Please verify your email before logging in.
               </AlertDescription>
             </div>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={handleOpenVerificationModal}
-              className="border-primary text-primary hover:bg-secondary-hover ml-2"
             >
               Resend Email
             </Button>
           </Alert>
-        )} */}
+        )}
 
         {/* General Error Alert */}
-        {/* {error && !needsEmailVerification && (
-          <Alert variant="destructive" className="rounded-lg">
+        {error && !needsEmailVerification && (
+          <Alert variant="destructive">
             <AlertCircle className="h-5 w-5" />
-            <AlertDescription className="flex items-center justify-between">
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
               <span>{error}</span>
               {error.includes('not registered') && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   asChild
-                  className="ml-4 border-primary text-primary hover:bg-secondary-hover"
                 >
                   <Link href="/signup">Sign Up</Link>
                 </Button>
               )}
             </AlertDescription>
           </Alert>
-        )} */}
+        )}
 
         {/* Login Form */}
         <Form {...form}>

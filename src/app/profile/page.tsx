@@ -739,7 +739,7 @@ export default function ProfilePage() {
           <div className="space-y-4 sm:space-y-5">
             {/* Personal Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Personal Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Personal Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressFullName" className="text-sm font-medium">Full Name *</Label>
@@ -786,7 +786,7 @@ export default function ProfilePage() {
 
             {/* Address Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Address Details</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Address Details</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressStreet" className="text-sm font-medium">Street Address *</Label>
@@ -886,7 +886,7 @@ export default function ProfilePage() {
 
             {/* Additional Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Additional Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Additional Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressNearbyPlaces" className="text-sm font-medium">Nearby Places/Landmarks</Label>

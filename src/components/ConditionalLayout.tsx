@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ScrollingBanner } from './common/scrollingBanner';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         {children}
       </main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
 }

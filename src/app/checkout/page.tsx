@@ -615,43 +615,6 @@ export default function CheckoutPage() {
         <p className="text-xs sm:text-sm md:text-base text-text-muted">Complete your order details below</p>
       </div>
 
-      {/* No Returns Policy Notice */}
-   {/*    <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-red-600 mt-0.5 sm:mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-red-900 mb-1 sm:mb-2 text-xs sm:text-sm md:text-base">No Returns Policy</h3>
-                <p className="text-red-800 text-xs sm:text-sm leading-relaxed break-words">
-                  <strong>Important:</strong> All products are non-returnable. Please review your order carefully before placing it. 
-                  By proceeding with checkout, you acknowledge that you have read and agree to this policy.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>  */}
-
-      {/* Order Review Process Notice */}
-    {/*  <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600 mt-0.5 sm:mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-blue-900 mb-1 sm:mb-2 text-xs sm:text-sm md:text-base">Order Review Process</h3>
-                <p className="text-blue-800 text-xs sm:text-sm leading-relaxed break-words">
-                  After placing your order, it will be sent to our admin team for review and approval. 
-                  You'll be notified via email once your order is approved and ready for processing. 
-                  This helps us ensure quality and prevent any issues with your order.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>  */}
-
       <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
         {/* Shipping Information */}
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 order-2 lg:order-1">
@@ -866,13 +829,13 @@ export default function CheckoutPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between rounded-lg border border-sage/40 bg-sage/10 p-2">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs sm:text-sm font-medium text-green-800">
+                      <CheckCircle className="h-4 w-4 text-sage-deep" />
+                      <span className="text-xs sm:text-sm font-medium text-sage-deep">
                         {appliedCoupon.code}
                       </span>
-                      <Badge variant="outline" className="text-[10px] sm:text-xs bg-green-100 text-green-800 border-green-300">
+                      <Badge variant="outline" className="border-sage/40 bg-sage/15 text-[10px] text-sage-deep sm:text-xs">
                         -₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}
                       </Badge>
                     </div>
@@ -882,14 +845,14 @@ export default function CheckoutPage() {
                       size="sm"
                       onClick={handleRemoveCoupon}
                       disabled={orderCreated}
-                      className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                      className="h-6 w-6 p-0 text-sage-deep hover:text-heading"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
                 )}
                 {couponError && (
-                  <p className="text-xs text-red-600">{couponError}</p>
+                  <p className="text-xs text-destructive">{couponError}</p>
                 )}
               </div>
 
@@ -905,33 +868,33 @@ export default function CheckoutPage() {
                 {/* Automatic Discount */}
                 {automaticDiscount > 0 && (
                   <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                    <span className="text-green-600 font-medium">
+                    <span className="font-medium text-sage-deep">
                       Discount {subtotal > 20000 ? '(10%)' : '(4%)'}
                     </span>
-                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">
+                    <span className="ml-2 flex-shrink-0 font-medium text-sage-deep">
                       -₹{automaticDiscount.toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
-                
+
                 {/* Coupon Discount */}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                    <span className="text-green-600 font-medium">
+                    <span className="font-medium text-sage-deep">
                       Coupon Discount ({appliedCoupon?.code})
                     </span>
-                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">
+                    <span className="ml-2 flex-shrink-0 font-medium text-sage-deep">
                       -₹{couponDiscount.toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
-                
+
                 {/* Shipping */}
                 <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
                   <span>Shipping</span>
                   <span className="flex-shrink-0 ml-2">
                     {shipping === 0 ? (
-                      <span className="text-green-600 font-medium">Free</span>
+                      <span className="font-medium text-sage-deep">Free</span>
                     ) : (
                       `₹${shipping.toLocaleString('en-IN')}`
                     )}
@@ -949,10 +912,10 @@ export default function CheckoutPage() {
 
               {orderCreated ? (
                 <div className="space-y-2 sm:space-y-3">
-                  <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-green-600 mb-1.5 sm:mb-2" />
-                    <p className="font-semibold text-green-800 text-xs sm:text-sm md:text-base">Order Placed Successfully!</p>
-                    <p className="text-xs sm:text-sm text-green-700 mt-1">Redirecting to your orders...</p>
+                  <div className="rounded-lg border border-sage/40 bg-sage/10 p-3 text-center sm:p-4">
+                    <CheckCircle className="mx-auto mb-1.5 h-6 w-6 text-sage-deep sm:mb-2 sm:h-8 sm:w-8" />
+                    <p className="text-xs font-semibold text-sage-deep sm:text-sm md:text-base">Order Placed Successfully!</p>
+                    <p className="mt-1 text-xs text-sage-deep/90 sm:text-sm">Redirecting to your orders...</p>
                   </div>
                 </div>
               ) : (
@@ -977,14 +940,14 @@ export default function CheckoutPage() {
 
               {!orderCreated && (
                 <>
-                  <div className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-[10px] sm:text-xs text-blue-800 text-center leading-relaxed">
-                      <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 align-middle" />
+                  <div className="rounded-lg border border-gold/30 bg-gold-soft/60 p-2 sm:p-3">
+                    <p className="text-center text-[10px] leading-relaxed text-gold-ink sm:text-xs">
+                      <AlertTriangle className="mr-1 inline h-3 w-3 align-middle sm:h-4 sm:w-4" />
                       Order will be sent for admin approval after placement
                     </p>
                   </div>
-                  <div className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-[10px] sm:text-xs text-red-800 text-center leading-relaxed">
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 sm:p-3">
+                    <p className="text-center text-[10px] leading-relaxed text-destructive sm:text-xs">
                       <strong>No Returns:</strong> All products are non-returnable
                     </p>
                   </div>
@@ -1013,7 +976,7 @@ export default function CheckoutPage() {
           <div className="space-y-4 sm:space-y-5">
             {/* Personal Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Personal Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Personal Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressFullName" className="text-sm font-medium">Full Name *</Label>
@@ -1062,7 +1025,7 @@ export default function CheckoutPage() {
 
             {/* Address Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Address Details</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Address Details</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressStreet" className="text-sm font-medium">Street Address *</Label>
@@ -1116,7 +1079,7 @@ export default function CheckoutPage() {
                       }}
                       disabled={isSubmitting}
                     >
-                      <SelectTrigger className={`text-sm sm:text-base bg-[#F5F5F5] hover:bg-[#EEEEEE] ${addressFormErrors.state ? 'border-destructive' : 'border-gray-300'}`}>
+                      <SelectTrigger className={`text-sm sm:text-base bg-input-bg hover:bg-sand ${addressFormErrors.state ? 'border-destructive' : 'border-input'}`}>
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1153,7 +1116,7 @@ export default function CheckoutPage() {
                     />
                     {isFetchingPincode && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gold"></div>
                       </div>
                     )}
                   </div>
@@ -1166,7 +1129,7 @@ export default function CheckoutPage() {
 
             {/* Additional Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Additional Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Additional Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressNearbyPlaces" className="text-sm font-medium">Nearby Places/Landmarks</Label>
@@ -1186,7 +1149,7 @@ export default function CheckoutPage() {
                     id="isDefault"
                     checked={addressForm.isDefault}
                     onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                    className="rounded border-gray-300 w-4 h-4 cursor-pointer"
+                    className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
                     disabled={isSubmitting}
                   />
                   <Label htmlFor="isDefault" className="cursor-pointer text-sm font-medium">
