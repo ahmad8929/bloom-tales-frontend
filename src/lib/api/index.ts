@@ -14,3 +14,5 @@ export { profileApi } from './profile';
 export { couponApi } from './coupons';
 export { reelApi } from './reels';
 export type { Reel } from './reels';
+export { checkoutApi } from './checkout';
+export type { CheckoutStateData, CheckoutPricing, CheckoutInlineAddress } from './checkout';

@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ScrollingBanner } from './common/scrollingBanner';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { FloatingCartButton } from '@/components/FloatingCartButton';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -31,6 +32,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
       </main>
       <Footer />
       <WhatsAppButton />
+      <FloatingCartButton />
     </div>
   );
 }
