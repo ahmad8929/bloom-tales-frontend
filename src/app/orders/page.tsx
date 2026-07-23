@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { orderApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { getOrderStatusInfo } from '@/lib/orderStatus';
 import Image from 'next/image';
 
 interface Order {
@@ -99,64 +100,7 @@ function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalProps) {
 
   if (!order) return null;
 
-  const getStatusInfo = (status: string) => {
-    if (status === 'pending') {
-      return {
-        color: 'bg-orange-100 text-orange-800',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        text: 'Pending'
-      };
-    }
-    
-    if (status === 'rejected') {
-      return {
-        color: 'bg-red-100 text-red-800',
-        icon: <XCircle className="w-4 h-4" />,
-        text: 'Rejected'
-      };
-    }
-
-    switch (status) {
-      case 'confirmed':
-        return {
-          color: 'bg-blue-100 text-blue-800',
-          icon: <CheckCircle className="w-4 h-4" />,
-          text: 'Confirmed'
-        };
-      case 'processing':
-        return {
-          color: 'bg-blue-100 text-blue-800',
-          icon: <Clock className="w-4 h-4" />,
-          text: 'Processing'
-        };
-      case 'shipped':
-        return {
-          color: 'bg-purple-100 text-purple-800',
-          icon: <Truck className="w-4 h-4" />,
-          text: 'Shipped'
-        };
-      case 'delivered':
-        return {
-          color: 'bg-green-100 text-green-800',
-          icon: <CheckCircle className="w-4 h-4" />,
-          text: 'Delivered'
-        };
-      case 'cancelled':
-        return {
-          color: 'bg-red-100 text-red-800',
-          icon: <XCircle className="w-4 h-4" />,
-          text: 'Cancelled'
-        };
-      default:
-        return {
-          color: 'bg-gray-100 text-gray-800',
-          icon: <Clock className="w-4 h-4" />,
-          text: status
-        };
-    }
-  };
-
-  const statusInfo = getStatusInfo(order.status);
+  const statusInfo = getOrderStatusInfo(order.status);
 
   return (
     <>
@@ -438,64 +382,7 @@ function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalProps) {
 }
 
 function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (order: Order) => void }) {
-  const getStatusInfo = (status: string) => {
-    if (status === 'pending') {
-      return {
-        color: 'bg-orange-100 text-orange-800',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        text: 'Pending'
-      };
-    }
-    
-    if (status === 'rejected') {
-      return {
-        color: 'bg-red-100 text-red-800',
-        icon: <XCircle className="w-4 h-4" />,
-        text: 'Rejected'
-      };
-    }
-
-    switch (status) {
-      case 'confirmed':
-        return {
-          color: 'bg-blue-100 text-blue-800',
-          icon: <CheckCircle className="w-4 h-4" />,
-          text: 'Confirmed'
-        };
-      case 'processing':
-        return {
-          color: 'bg-blue-100 text-blue-800',
-          icon: <Clock className="w-4 h-4" />,
-          text: 'Processing'
-        };
-      case 'shipped':
-        return {
-          color: 'bg-purple-100 text-purple-800',
-          icon: <Truck className="w-4 h-4" />,
-          text: 'Shipped'
-        };
-      case 'delivered':
-        return {
-          color: 'bg-green-100 text-green-800',
-          icon: <CheckCircle className="w-4 h-4" />,
-          text: 'Delivered'
-        };
-      case 'cancelled':
-        return {
-          color: 'bg-red-100 text-red-800',
-          icon: <XCircle className="w-4 h-4" />,
-          text: 'Cancelled'
-        };
-      default:
-        return {
-          color: 'bg-gray-100 text-gray-800',
-          icon: <Clock className="w-4 h-4" />,
-          text: status
-        };
-    }
-  };
-
-  const statusInfo = getStatusInfo(order.status);
+  const statusInfo = getOrderStatusInfo(order.status);
 
   return (
     <Card className="hover:shadow-md transition-shadow">

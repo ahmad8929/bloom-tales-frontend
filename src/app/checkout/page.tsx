@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -10,11 +10,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, CreditCard, Banknote, ShoppingBag, X, Clock, AlertTriangle, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
+import { CheckCircle, CreditCard, Banknote, ShoppingBag, X, Clock, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cartApi, orderApi, profileApi, paymentApi, couponApi } from '@/lib/api';
 import { validateAddressFields } from '@/lib/validation';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useEmiQuote } from '@/hooks/useEmiQuote';
+import { EmiPlanSelector } from '@/components/checkout/EmiPlanSelector';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -231,6 +233,28 @@ export default function CheckoutPage() {
   const [localCouponDiscount, setLocalCouponDiscount] = useState(0);
   const effectiveCouponCode = checkoutState?.couponCode ?? appliedCouponCode;
 
+  const [selectedEmiPlan, setSelectedEmiPlan] = useState<{ provider: string; tenureMonths: number } | null>(null);
+
+  // Mirrors the render-body fallback total formula below (hooks can't be
+  // called after the early returns further down, so the amount EMI plans
+  // are quoted against has to be computed here instead of reused from there).
+  const checkoutTotalAmount = useMemo(() => {
+    if (!cart) return 0;
+    const sub = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+    let autoDiscount = 0;
+    if (sub > 20000) autoDiscount = Math.round(sub * 0.10);
+    else if (sub > 10000) autoDiscount = Math.round(sub * 0.04);
+    const deliveryFeeLocal = paymentMethod === 'cod' ? 250 : 0;
+    const fallbackTotalLocal = Math.max(0, sub - autoDiscount - localCouponDiscount) + deliveryFeeLocal;
+    return pricing?.totalAmount ?? fallbackTotalLocal;
+  }, [cart, pricing, paymentMethod, localCouponDiscount]);
+
+  const { emiSupported, plans: emiPlans } = useEmiQuote(checkoutTotalAmount, paymentMethod === 'cashfree');
+
+  useEffect(() => {
+    if (paymentMethod !== 'cashfree') setSelectedEmiPlan(null);
+  }, [paymentMethod]);
+
   useEffect(() => {
     fetchCart();
     fetchAddresses();
@@ -361,7 +385,8 @@ export default function CheckoutPage() {
           pincode: selectedAddress.zipCode,
           nearbyPlaces: selectedAddress.nearbyPlaces || ''
         },
-        ...(effectiveCouponCode && { couponCode: effectiveCouponCode })
+        ...(effectiveCouponCode && { couponCode: effectiveCouponCode }),
+        ...(selectedEmiPlan && { emi: selectedEmiPlan })
       });
 
       if (response.error) {
@@ -579,21 +604,19 @@ export default function CheckoutPage() {
         throw new Error(response.error);
       }
 
+      const order = response.data?.data?.order;
       setOrderCreated(true);
 
       toast({
         title: 'Order Placed Successfully! 🎉',
-        description: 'Order created and sent for admin approval. You will be notified once approved.',
+        description: 'Your order has been confirmed. A confirmation email is on its way.',
       });
 
       // Clear cart and checkout state after successful order
       await cartApi.clearCart();
       await resetCheckout();
 
-      // Redirect to orders page after a short delay
-      setTimeout(() => {
-        router.push('/orders');
-      }, 2000);
+      router.push(`/checkout/payment-success?order=${order?._id}&method=cod`);
 
     } catch (error: any) {
       console.error('Error creating order:', error);
@@ -926,6 +949,14 @@ export default function CheckoutPage() {
                   </div>
                 </label>
               </RadioGroup>
+
+              {paymentMethod === 'cashfree' && emiSupported && (
+                <EmiPlanSelector
+                  plans={emiPlans}
+                  selected={selectedEmiPlan}
+                  onSelect={setSelectedEmiPlan}
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -1120,7 +1151,7 @@ export default function CheckoutPage() {
                   <div className="rounded-lg border border-sage/40 bg-sage/10 p-3 text-center sm:p-4">
                     <CheckCircle className="mx-auto mb-1.5 h-6 w-6 text-sage-deep sm:mb-2 sm:h-8 sm:w-8" />
                     <p className="text-xs font-semibold text-sage-deep sm:text-sm md:text-base">Order Placed Successfully!</p>
-                    <p className="mt-1 text-xs text-sage-deep/90 sm:text-sm">Redirecting to your orders...</p>
+                    <p className="mt-1 text-xs text-sage-deep/90 sm:text-sm">Redirecting to your order confirmation...</p>
                   </div>
                 </div>
               ) : (
@@ -1144,19 +1175,11 @@ export default function CheckoutPage() {
               )}
 
               {!orderCreated && (
-                <>
-                  <div className="rounded-lg border border-gold/30 bg-gold-soft/60 p-2 sm:p-3">
-                    <p className="text-center text-[10px] leading-relaxed text-gold-ink sm:text-xs">
-                      <AlertTriangle className="mr-1 inline h-3 w-3 align-middle sm:h-4 sm:w-4" />
-                      Order will be sent for admin approval after placement
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 sm:p-3">
-                    <p className="text-center text-[10px] leading-relaxed text-destructive sm:text-xs">
-                      <strong>No Returns:</strong> All products are non-returnable
-                    </p>
-                  </div>
-                </>
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 sm:p-3">
+                  <p className="text-center text-[10px] leading-relaxed text-destructive sm:text-xs">
+                    <strong>No Returns:</strong> All products are non-returnable
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>

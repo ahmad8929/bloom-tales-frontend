@@ -74,7 +74,17 @@ export type OrderStatus =
   | 'cancelled'
   | 'rejected';
 
-export type PaymentStatus = 'pending' | 'completed' | 'failed';
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+
+export interface EmiPlanSnapshot {
+  provider: string;
+  bankName: string | null;
+  tenureMonths: number;
+  interestRate: number;
+  processingFee: number;
+  monthlyInstallment: number;
+  totalPayable: number;
+}
 
 export interface Order {
   _id: string;
@@ -82,9 +92,14 @@ export interface Order {
   userId?: string;
   user?: OrderUserSummary;
   items: OrderItem[];
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
+  discount?: number;
   totalAmount: number;
   status: OrderStatus | string;
   paymentMethod: string;
+  paymentGateway?: string;
   paymentStatus: PaymentStatus | string;
   adminApproval: AdminApproval;
   paymentDetails?: PaymentDetails;
@@ -94,6 +109,9 @@ export interface Order {
   updatedAt?: string;
   estimatedDelivery?: string;
   trackingNumber?: string;
+  couponCode?: string;
+  emiEnabled?: boolean;
+  emiPlan?: EmiPlanSnapshot;
   category?: 'ongoing' | 'completed' | 'cancelled';
 }
 

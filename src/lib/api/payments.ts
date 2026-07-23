@@ -6,6 +6,7 @@ export const paymentApi = {
   createCashfreeSession: (data: {
     shippingAddress: ShippingAddress;
     couponCode?: string;
+    emi?: { provider: string; tenureMonths: number };
   }) =>
     api.post<{
       status: string;
