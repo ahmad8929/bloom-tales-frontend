@@ -24,13 +24,13 @@ body {
 @layer base {
   :root {
     /* ————— Bloom Tales official brand palette ————— */
-    /* Champagne White canvas — #FDFBF9 */
-    --background: 30 50% 98%;
+    /* Premium neutral canvas — #FAF8F5 */
+    --background: 36 33% 97%;
     --foreground: 28 13% 38%; /* soft taupe body text */
 
-    --ivory: 30 50% 98%; /* Champagne White #FDFBF9 */
+    --ivory: 36 33% 97%; /* Premium neutral canvas #FAF8F5 */
     --ink: 24 20% 11%; /* espresso — reserved for scrims/overlays */
-    --sand: 24 50% 96%; /* Warm Cream #FAF4F0 — alt sections, cards, dividers */
+    --sand: 40 23% 95%; /* Alternate sections #F5F3EF — dividers */
 
     /* Brand section tones */
     --blush: 10 49% 91%; /* Soft Blush Pink #F3E0DC — hero */
@@ -40,11 +40,11 @@ body {
     --sage: 111 12% 68%;
     --sage-deep: 111 12% 50%;
 
-    /* Product cards & surfaces — #FAF4F0 */
-    --card: 24 50% 96%;
+    /* Product cards, panels & forms — pure white #FFFFFF */
+    --card: 0 0% 100%;
     --card-foreground: 28 13% 38%;
 
-    --popover: 30 50% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 28 13% 38%;
 
     /* Primary — Dusty Rose CTA #D8A7A1, white text */
@@ -59,8 +59,8 @@ body {
     --muted: 29 18% 44%; /* deepened for legibility on light surfaces */
     --muted-foreground: 29 18% 44%;
 
-    /* Accent — warm cream for hover surfaces (menus, rows) */
-    --accent: 24 50% 96%;
+    /* Accent — alternate-section tone for hover surfaces (menus, rows) */
+    --accent: 40 23% 95%;
     --accent-foreground: 28 13% 38%;
 
     /* Gold — Dusty Rose accent #D8A7A1 (icons, prices, hover links) */
@@ -76,14 +76,14 @@ body {
     --hover: 7 33% 64%; /* ~#C68E87 */
     --hover-foreground: 0 0% 100%;
 
-    --secondary-hover: 24 50% 96%;
+    --secondary-hover: 40 23% 95%;
 
     --destructive: 0 60% 42%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Borders & dividers — #FAF4F0 family */
-    --border: 24 35% 92%; /* hairline visible on champagne */
-    --input: 22 39% 86%; /* #EAD9CF */
+    /* Borders & dividers — #E8E5DF, one consistent neutral tone sitewide */
+    --border: 40 16% 89%;
+    --input: 40 16% 89%;
     --input-bg: 0 0% 100%;
     --input-focus: 7 41% 74%;
 

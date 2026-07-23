@@ -837,7 +837,7 @@ export default function ProfilePage() {
                         }
                       }}
                     >
-                      <SelectTrigger className={`bg-[#F5F5F5] hover:bg-[#EEEEEE] ${addressFormErrors.state ? 'border-destructive' : 'border-gray-300'}`}>
+                      <SelectTrigger className={`bg-input-bg hover:bg-sand ${addressFormErrors.state ? 'border-destructive' : 'border-input'}`}>
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
@@ -904,7 +904,7 @@ export default function ProfilePage() {
                     id="isDefault"
                     checked={addressForm.isDefault}
                     onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                    className="rounded border-gray-300 w-4 h-4 cursor-pointer"
+                    className="rounded border-input w-4 h-4 cursor-pointer accent-primary"
                   />
                   <Label htmlFor="isDefault" className="cursor-pointer text-sm font-medium">
                     Set as default address
