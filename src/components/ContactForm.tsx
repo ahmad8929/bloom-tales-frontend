@@ -75,31 +75,31 @@ export function ContactForm() {
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="contact-name">Your Name *</Label>
-          <Input id="contact-name" value={values.name} onChange={setField('name')} placeholder="Full name" />
+          <Input id="contact-name" value={values.name} onChange={setField('name')} placeholder="Full name" aria-invalid={!!errors.name} />
           {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="contact-phone">Phone Number</Label>
-          <Input id="contact-phone" type="tel" value={values.phone} onChange={setField('phone')} placeholder="10-digit mobile (optional)" />
+          <Input id="contact-phone" type="tel" value={values.phone} onChange={setField('phone')} placeholder="10-digit mobile (optional)" aria-invalid={!!errors.phone} />
           {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
         </div>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="contact-email">Your Email *</Label>
-        <Input id="contact-email" type="email" value={values.email} onChange={setField('email')} placeholder="you@example.com" />
+        <Input id="contact-email" type="email" value={values.email} onChange={setField('email')} placeholder="you@example.com" aria-invalid={!!errors.email} />
         {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="contact-subject">Subject *</Label>
-        <Input id="contact-subject" value={values.subject} onChange={setField('subject')} placeholder="What is this about?" />
+        <Input id="contact-subject" value={values.subject} onChange={setField('subject')} placeholder="What is this about?" aria-invalid={!!errors.subject} />
         {errors.subject && <p className="text-xs text-destructive">{errors.subject}</p>}
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="contact-question">Your Question *</Label>
-        <Textarea id="contact-question" rows={5} value={values.question} onChange={setField('question')} placeholder="Tell us about your question or custom request…" />
+        <Textarea id="contact-question" rows={5} value={values.question} onChange={setField('question')} placeholder="Tell us about your question or custom request…" aria-invalid={!!errors.question} />
         {errors.question && <p className="text-xs text-destructive">{errors.question}</p>}
       </div>
 

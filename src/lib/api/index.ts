@@ -14,3 +14,20 @@ export { profileApi } from './profile';
 export { couponApi } from './coupons';
 export { reelApi } from './reels';
 export type { Reel } from './reels';
+export { checkoutApi } from './checkout';
+export type { CheckoutStateData, CheckoutPricing, CheckoutInlineAddress } from './checkout';
+export { emiApi } from './emi';
+export type { EmiPlanQuote } from './emi';
+export { analyticsApi } from './analytics';
+export type {
+  AnalyticsOverview,
+  AnalyticsRevenue,
+  RevenuePoint,
+  AnalyticsCohorts,
+  Cohort,
+  CohortRetentionPoint,
+  AnalyticsCustomers,
+  TopCustomer,
+  AnalyticsOrders,
+  OrderRetentionWindow,
+} from './analytics';

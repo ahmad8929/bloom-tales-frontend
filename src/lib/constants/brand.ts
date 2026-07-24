@@ -22,4 +22,5 @@ export const BRAND = {
   location: 'Bareilly, Uttar Pradesh, India',
   hours: 'Mon–Sat · 9AM–8PM',
   instagram: 'https://www.instagram.com/bloomtales_clothing/',
+  whatsappMessage: 'Hello BloomTales, I would like to know more about your products.',
 } as const;

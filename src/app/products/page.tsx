@@ -20,10 +20,8 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching all products...');
       const response = await productApi.getAllProducts();
-      console.log('Products API response:', response);
-      
+
       // Handle different response structures
       let productsList: Product[] = [];
       
@@ -42,7 +40,6 @@ export default function ProductsPage() {
         productsList = [];
       }
       
-      console.log('Processed products:', productsList);
       setProducts(productsList);
       
     } catch (error: any) {
@@ -72,8 +69,6 @@ export default function ProductsPage() {
       return sizes;
     }).filter((size): size is string => Boolean(size))
   )];
-
-  console.log('All sizes:', allSizes);
 
   const pageHeader = (
     <div className="border-b border-border bg-sand/50">

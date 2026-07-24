@@ -31,8 +31,13 @@ const MARQUEE_WORDS = [
 export default function Home() {
   return (
     <div className="flex flex-col">
-      {/* Cinematic hero — slides beneath the transparent header */}
-      <Hero />
+      {/* Cinematic hero — slides beneath the transparent header. Hidden on
+          mobile so the page opens straight on collections/products; kept
+          mounted (not conditionally rendered) so desktop hydration is
+          unaffected when the viewport is resized. */}
+      <div className="hidden md:block">
+        <Hero />
+      </div>
 
       {/* Editorial marquee strip */}
       <div className="border-y border-border bg-background">

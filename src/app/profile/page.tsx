@@ -739,7 +739,7 @@ export default function ProfilePage() {
           <div className="space-y-4 sm:space-y-5">
             {/* Personal Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Personal Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Personal Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressFullName" className="text-sm font-medium">Full Name *</Label>
@@ -786,7 +786,7 @@ export default function ProfilePage() {
 
             {/* Address Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Address Details</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Address Details</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressStreet" className="text-sm font-medium">Street Address *</Label>
@@ -837,7 +837,7 @@ export default function ProfilePage() {
                         }
                       }}
                     >
-                      <SelectTrigger className={`bg-[#F5F5F5] hover:bg-[#EEEEEE] ${addressFormErrors.state ? 'border-destructive' : 'border-gray-300'}`}>
+                      <SelectTrigger className={`bg-input-bg hover:bg-sand ${addressFormErrors.state ? 'border-destructive' : 'border-input'}`}>
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
@@ -886,7 +886,7 @@ export default function ProfilePage() {
 
             {/* Additional Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Additional Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Additional Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressNearbyPlaces" className="text-sm font-medium">Nearby Places/Landmarks</Label>
@@ -904,7 +904,7 @@ export default function ProfilePage() {
                     id="isDefault"
                     checked={addressForm.isDefault}
                     onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                    className="rounded border-gray-300 w-4 h-4 cursor-pointer"
+                    className="rounded border-input w-4 h-4 cursor-pointer accent-primary"
                   />
                   <Label htmlFor="isDefault" className="cursor-pointer text-sm font-medium">
                     Set as default address

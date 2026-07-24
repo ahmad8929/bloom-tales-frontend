@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Copy, CheckCircle, CreditCard, Smartphone, ShoppingBag, Upload, X, Camera, AlertTriangle, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
+import { CheckCircle, CreditCard, Banknote, ShoppingBag, X, Clock, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { cartApi, orderApi, profileApi, couponApi, paymentApi } from '@/lib/api';
+import { cartApi, orderApi, profileApi, paymentApi, couponApi } from '@/lib/api';
 import { validateAddressFields } from '@/lib/validation';
+import { useCheckout } from '@/hooks/useCheckout';
+import { useEmiQuote } from '@/hooks/useEmiQuote';
+import { EmiPlanSelector } from '@/components/checkout/EmiPlanSelector';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -64,18 +67,104 @@ const INDIAN_STATES = [
   'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh'
 ];
 
+const DELIVERY_WINDOWS = ['10am–1pm', '1pm–4pm', '4pm–8pm'];
+const ADDRESS_FIELD_ORDER = ['fullName', 'phone', 'street', 'city', 'state', 'zipCode'] as const;
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('cashfree');
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [userEmail, setUserEmail] = useState('');
-  
+
+  const {
+    checkoutState,
+    pricing,
+    isLoading: isCheckoutLoading,
+    fetchState: fetchCheckoutState,
+    selectAddress: persistAddressSelection,
+    selectDeliverySlot,
+    applyCoupon,
+    selectPaymentMethod,
+    resetCheckout,
+  } = useCheckout();
+
+  // Local state is the source of truth for the UI (so checkout stays usable
+  // even if the checkout-state API is unavailable); selectPaymentMethod is
+  // still called as a best-effort persistence/pricing-sync side effect.
+  const [paymentMethod, setPaymentMethodLocal] = useState<'cod' | 'cashfree'>('cashfree');
+
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryWindow, setDeliveryWindow] = useState<string | null>(null);
+
+  const hasSeededDeliveryRef = useRef(false);
+  const hasReconciledAddressRef = useRef(false);
+
+  const addressSectionRef = useRef<HTMLDivElement | null>(null);
+  const addressFieldRefs = {
+    fullName: useRef<HTMLInputElement | null>(null),
+    phone: useRef<HTMLInputElement | null>(null),
+    street: useRef<HTMLInputElement | null>(null),
+    city: useRef<HTMLInputElement | null>(null),
+    state: useRef<HTMLButtonElement | null>(null),
+    zipCode: useRef<HTMLInputElement | null>(null),
+  };
+
+  const scrollToFirstError = (errors: Record<string, string>) => {
+    const firstKey = ADDRESS_FIELD_ORDER.find((key) => errors[key]);
+    if (!firstKey) return;
+    const el = addressFieldRefs[firstKey].current;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
+    }
+  };
+
+  // Sync the local payment method default to the server once checkout state
+  // first loads (best-effort — if the API is unavailable this silently
+  // no-ops and the local default above still drives the UI).
+  useEffect(() => {
+    if (checkoutState === null) return;
+    if (!checkoutState.paymentMethod) {
+      selectPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'ONLINE');
+    } else {
+      setPaymentMethodLocal(checkoutState.paymentMethod === 'COD' ? 'cod' : 'cashfree');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutState === null]);
+
+  // Restore a previously chosen delivery slot into the local form controls.
+  useEffect(() => {
+    if (hasSeededDeliveryRef.current || checkoutState === null) return;
+    hasSeededDeliveryRef.current = true;
+    if (checkoutState.deliverySlot?.date) {
+      setDeliveryDate(checkoutState.deliverySlot.date.slice(0, 10));
+    }
+    if (checkoutState.deliverySlot?.window) {
+      setDeliveryWindow(checkoutState.deliverySlot.window);
+    }
+  }, [checkoutState]);
+
+  // Reconcile the locally-selected address (default/first, picked by
+  // fetchAddresses) with whatever was already persisted server-side, once
+  // both have loaded.
+  useEffect(() => {
+    if (hasReconciledAddressRef.current) return;
+    if (addresses.length === 0 || checkoutState === null) return;
+    hasReconciledAddressRef.current = true;
+
+    const persistedId = checkoutState.addressId;
+    if (persistedId && addresses.some((a) => a._id === persistedId)) {
+      setSelectedAddressId(persistedId);
+    } else if (selectedAddressId) {
+      persistAddressSelection(selectedAddressId);
+    }
+  }, [addresses, checkoutState, selectedAddressId, persistAddressSelection]);
+
   const [addressForm, setAddressForm] = useState({
     fullName: '',
     phone: '',
@@ -137,13 +226,39 @@ export default function CheckoutPage() {
 
   const [orderCreated, setOrderCreated] = useState(false);
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+  // Local fallback for when the checkout-state coupon endpoint is unavailable.
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
+  const [localCouponDiscount, setLocalCouponDiscount] = useState(0);
+  const effectiveCouponCode = checkoutState?.couponCode ?? appliedCouponCode;
+
+  const [selectedEmiPlan, setSelectedEmiPlan] = useState<{ provider: string; tenureMonths: number } | null>(null);
+
+  // Mirrors the render-body fallback total formula below (hooks can't be
+  // called after the early returns further down, so the amount EMI plans
+  // are quoted against has to be computed here instead of reused from there).
+  const checkoutTotalAmount = useMemo(() => {
+    if (!cart) return 0;
+    const sub = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+    let autoDiscount = 0;
+    if (sub > 20000) autoDiscount = Math.round(sub * 0.10);
+    else if (sub > 10000) autoDiscount = Math.round(sub * 0.04);
+    const deliveryFeeLocal = paymentMethod === 'cod' ? 250 : 0;
+    const fallbackTotalLocal = Math.max(0, sub - autoDiscount - localCouponDiscount) + deliveryFeeLocal;
+    return pricing?.totalAmount ?? fallbackTotalLocal;
+  }, [cart, pricing, paymentMethod, localCouponDiscount]);
+
+  const { emiSupported, plans: emiPlans } = useEmiQuote(checkoutTotalAmount, paymentMethod === 'cashfree');
+
+  useEffect(() => {
+    if (paymentMethod !== 'cashfree') setSelectedEmiPlan(null);
+  }, [paymentMethod]);
 
   useEffect(() => {
     fetchCart();
     fetchAddresses();
+    fetchCheckoutState();
   }, []);
 
   const fetchAddresses = async () => {
@@ -200,112 +315,52 @@ export default function CheckoutPage() {
   }
 };
 
-  const calculateTotals = (cartData: CartData) => {
-    if (!cartData || !cartData.items.length) {
-      return { 
-        subtotal: 0, 
-        automaticDiscount: 0, 
-        couponDiscount: 0, 
-        totalDiscount: 0,
-        subtotalAfterDiscount: 0,
-        shipping: 0, 
-        advancePayment: 0,
-        total: 0 
-      };
-    }
-
-    const subtotal = cartData.totalAmount || cartData.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
-    
-    // Apply automatic discount based on subtotal
-    // If subtotal > ₹20,000: 10% discount
-    // If subtotal > ₹10,000: 4% discount
-    // Only highest eligible discount applies
-    let automaticDiscount = 0;
-    if (subtotal > 20000) {
-      automaticDiscount = Math.round(subtotal * 0.10);
-    } else if (subtotal > 10000) {
-      automaticDiscount = Math.round(subtotal * 0.04);
-    }
-
-    // Coupon discount (applied after automatic discount)
-    const couponDiscount = appliedCoupon?.discountAmount || 0;
-    const totalDiscount = automaticDiscount + couponDiscount;
-    const subtotalAfterDiscount = Math.max(0, subtotal - totalDiscount);
-
-    // Calculate shipping (COD shipping charge; online payment has free shipping)
-    let shipping = 0;
-    let advancePayment = 0;
-
-    if (paymentMethod === 'cod') {
-      // COD: ₹250 delivery charge (no advance payment)
-      shipping = 250;
-      advancePayment = 0;
-    } else {
-      // Online payment (Cashfree): Free shipping
-      shipping = 0;
-      advancePayment = 0;
-    }
-
-    // Final total (advance payment is NOT included - it's paid separately)
-    const total = subtotalAfterDiscount + shipping;
-
-    return { 
-      subtotal, 
-      automaticDiscount,
-      couponDiscount,
-      totalDiscount,
-      subtotalAfterDiscount,
-      shipping, 
-      advancePayment,
-      total 
-    };
-  };
-
   const handleValidateCoupon = async () => {
     if (!couponCode.trim()) {
       setCouponError('Please enter a coupon code');
       return;
     }
 
-    if (!cart) {
-      return;
-    }
-
     setIsValidatingCoupon(true);
     setCouponError(null);
 
-    try {
-      const response = await couponApi.validateCoupon(couponCode, cart.totalAmount);
-      
-      if (response.error) {
-        setCouponError(response.error);
-        setAppliedCoupon(null);
-        return;
-      }
+    const code = couponCode.trim().toUpperCase();
+    const result = await applyCoupon(code);
 
-      if (response.data?.data?.discount) {
-        setAppliedCoupon({
-          code: couponCode.toUpperCase(),
-          discountAmount: response.data.data.discount.discountAmount
-        });
-        toast({
-          title: 'Coupon Applied!',
-          description: `You saved ₹${response.data.data.discount.discountAmount.toLocaleString('en-IN')}`,
-        });
+    if (result.success && result.pricing) {
+      toast({
+        title: 'Coupon Applied!',
+        description: `You saved ₹${result.pricing.couponDiscount.toLocaleString('en-IN')}`,
+      });
+    } else {
+      // Checkout-state API unavailable (or this environment doesn't have it
+      // deployed yet) — fall back to the legacy validate-coupon endpoint.
+      try {
+        const legacy = await couponApi.validateCoupon(code, cart?.totalAmount || 0);
+        if (legacy.error) {
+          setCouponError(legacy.error);
+        } else if (legacy.data?.data?.discount) {
+          setAppliedCouponCode(code);
+          setLocalCouponDiscount(legacy.data.data.discount.discountAmount);
+          toast({
+            title: 'Coupon Applied!',
+            description: `You saved ₹${legacy.data.data.discount.discountAmount.toLocaleString('en-IN')}`,
+          });
+        }
+      } catch (error: any) {
+        setCouponError(error.message || 'Invalid coupon code');
       }
-    } catch (error: any) {
-      console.error('Error validating coupon:', error);
-      setCouponError(error.message || 'Invalid coupon code');
-      setAppliedCoupon(null);
-    } finally {
-      setIsValidatingCoupon(false);
     }
+
+    setIsValidatingCoupon(false);
   };
 
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
+  const handleRemoveCoupon = async () => {
     setCouponCode('');
     setCouponError(null);
+    setAppliedCouponCode(null);
+    setLocalCouponDiscount(0);
+    await applyCoupon(null);
   };
 
   const handleCashfreePayment = async () => {
@@ -330,7 +385,8 @@ export default function CheckoutPage() {
           pincode: selectedAddress.zipCode,
           nearbyPlaces: selectedAddress.nearbyPlaces || ''
         },
-        ...(appliedCoupon && { couponCode: appliedCoupon.code })
+        ...(effectiveCouponCode && { couponCode: effectiveCouponCode }),
+        ...(selectedEmiPlan && { emi: selectedEmiPlan })
       });
 
       if (response.error) {
@@ -378,10 +434,6 @@ export default function CheckoutPage() {
     }
   };
 
-  const calculateTotal = (cartData: CartData) => {
-    return calculateTotals(cartData).total;
-  };
-
   const handleAddAddress = () => {
     setEditingAddress(null);
     setAddressForm({
@@ -416,19 +468,16 @@ export default function CheckoutPage() {
     setShowAddressModal(true);
   };
 
-  const validateAddressForm = (): boolean => {
+  const handleSaveAddress = async () => {
     const errors = validateAddressFields(addressForm);
     setAddressFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSaveAddress = async () => {
-    if (!validateAddressForm()) {
+    if (Object.keys(errors).length > 0) {
       toast({
         title: 'Please fix the highlighted fields',
         description: 'Some address details are missing or invalid.',
         variant: 'destructive',
       });
+      scrollToFirstError(errors);
       return;
     }
 
@@ -479,6 +528,7 @@ export default function CheckoutPage() {
         description: 'Please select or add a delivery address',
         variant: 'destructive',
       });
+      addressSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return false;
     }
 
@@ -545,29 +595,28 @@ export default function CheckoutPage() {
           nearbyPlaces: selectedAddress.nearbyPlaces || ''
         },
         paymentMethod: paymentMethod,
-        ...(appliedCoupon && { couponCode: appliedCoupon.code })
+        ...(effectiveCouponCode && { couponCode: effectiveCouponCode })
       };
 
       const response = await orderApi.createOrder(orderData);
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
 
+      const order = response.data?.data?.order;
       setOrderCreated(true);
 
       toast({
         title: 'Order Placed Successfully! 🎉',
-        description: 'Order created and sent for admin approval. You will be notified once approved.',
+        description: 'Your order has been confirmed. A confirmation email is on its way.',
       });
 
-      // Clear cart after successful order
+      // Clear cart and checkout state after successful order
       await cartApi.clearCart();
-      
-      // Redirect to orders page after a short delay
-      setTimeout(() => {
-        router.push('/orders');
-      }, 2000);
+      await resetCheckout();
+
+      router.push(`/checkout/payment-success?order=${order?._id}&method=cod`);
 
     } catch (error: any) {
       console.error('Error creating order:', error);
@@ -581,7 +630,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isCheckoutLoading) {
     return (
       <div className="container py-24">
         <div className="text-center">
@@ -605,7 +654,50 @@ export default function CheckoutPage() {
     );
   }
 
-  const { subtotal, automaticDiscount, couponDiscount, totalDiscount, subtotalAfterDiscount, shipping, advancePayment, total } = calculateTotals(cart);
+  // The checkout-state API (live pricing/settings) may not be deployed on
+  // every backend environment yet. Fall back to the same subtotal-tier
+  // discount + flat COD shipping this page used before that API existed, so
+  // checkout never hard-blocks if those routes 404.
+  const fallbackSubtotal = cart.totalAmount || cart.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+  let fallbackAutomaticDiscount = 0;
+  if (fallbackSubtotal > 20000) fallbackAutomaticDiscount = Math.round(fallbackSubtotal * 0.10);
+  else if (fallbackSubtotal > 10000) fallbackAutomaticDiscount = Math.round(fallbackSubtotal * 0.04);
+  const fallbackDeliveryFee = paymentMethod === 'cod' ? 250 : 0;
+  const fallbackCouponDiscount = localCouponDiscount;
+  const fallbackTotal = Math.max(0, fallbackSubtotal - fallbackAutomaticDiscount - fallbackCouponDiscount) + fallbackDeliveryFee;
+
+  const {
+    subtotal,
+    automaticDiscount,
+    couponDiscount,
+    deliveryFee,
+    platformFee,
+    packagingFee,
+    convenienceFee,
+    tax,
+    customCharges,
+    totalAmount,
+  } = pricing || {
+    subtotal: fallbackSubtotal,
+    automaticDiscount: fallbackAutomaticDiscount,
+    couponDiscount: fallbackCouponDiscount,
+    deliveryFee: fallbackDeliveryFee,
+    platformFee: 0,
+    packagingFee: 0,
+    convenienceFee: 0,
+    tax: 0,
+    customCharges: [] as Array<{ name: string; code: string; amount: number }>,
+    totalAmount: fallbackTotal,
+  };
+
+  const currentStep = checkoutState?.step || 'address';
+  const STEPS: Array<{ key: typeof currentStep; label: string }> = [
+    { key: 'address', label: 'Address' },
+    { key: 'delivery', label: 'Delivery' },
+    { key: 'payment', label: 'Payment' },
+    { key: 'review', label: 'Review' },
+  ];
+  const currentStepIndex = STEPS.findIndex((s) => s.key === currentStep);
 
   return (
     <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
@@ -615,47 +707,40 @@ export default function CheckoutPage() {
         <p className="text-xs sm:text-sm md:text-base text-text-muted">Complete your order details below</p>
       </div>
 
-      {/* No Returns Policy Notice */}
-   {/*    <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-red-600 mt-0.5 sm:mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-red-900 mb-1 sm:mb-2 text-xs sm:text-sm md:text-base">No Returns Policy</h3>
-                <p className="text-red-800 text-xs sm:text-sm leading-relaxed break-words">
-                  <strong>Important:</strong> All products are non-returnable. Please review your order carefully before placing it. 
-                  By proceeding with checkout, you acknowledge that you have read and agree to this policy.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>  */}
-
-      {/* Order Review Process Notice */}
-    {/*  <div className="max-w-4xl mx-auto mb-3 sm:mb-4 md:mb-8">
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600 mt-0.5 sm:mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-blue-900 mb-1 sm:mb-2 text-xs sm:text-sm md:text-base">Order Review Process</h3>
-                <p className="text-blue-800 text-xs sm:text-sm leading-relaxed break-words">
-                  After placing your order, it will be sent to our admin team for review and approval. 
-                  You'll be notified via email once your order is approved and ready for processing. 
-                  This helps us ensure quality and prevent any issues with your order.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>  */}
+      {/* Step Indicator */}
+      <div className="mx-auto mb-6 flex max-w-7xl items-center gap-1.5 sm:gap-2 md:mb-8" role="list" aria-label="Checkout progress">
+        {STEPS.map((step, index) => (
+          <button
+            key={step.key}
+            type="button"
+            role="listitem"
+            onClick={() => {
+              if (step.key === 'payment') {
+                document.getElementById('payment-method-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else if (step.key === 'delivery') {
+                document.getElementById('delivery-slot-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else {
+                addressSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            className="flex flex-1 flex-col items-center gap-1 text-center"
+          >
+            <span
+              className={`h-1.5 w-full rounded-full transition-colors ${
+                index <= currentStepIndex ? 'bg-gold' : 'bg-border'
+              }`}
+            />
+            <span className={`text-[10px] uppercase tracking-luxe sm:text-xs ${index <= currentStepIndex ? 'text-heading' : 'text-text-muted'}`}>
+              {step.label}
+            </span>
+          </button>
+        ))}
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
         {/* Shipping Information */}
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 order-2 lg:order-1">
-          <Card>
+          <Card ref={addressSectionRef}>
             <CardHeader className="p-3 sm:p-4 md:p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 md:gap-0">
                 <div className="flex-1 min-w-0">
@@ -696,7 +781,11 @@ export default function CheckoutPage() {
                           ? 'border-primary bg-primary/5'
                           : 'hover:bg-muted/50'
                       } ${orderCreated ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      onClick={() => !orderCreated && setSelectedAddressId(address._id)}
+                      onClick={() => {
+                        if (orderCreated) return;
+                        setSelectedAddressId(address._id);
+                        persistAddressSelection(address._id);
+                      }}
                     >
                       <div className="flex items-start justify-between gap-2 sm:gap-3">
                         <div className="flex-1 min-w-0 pr-2">
@@ -704,7 +793,11 @@ export default function CheckoutPage() {
                             <input
                               type="radio"
                               checked={selectedAddressId === address._id}
-                              onChange={() => !orderCreated && setSelectedAddressId(address._id)}
+                              onChange={() => {
+                                if (orderCreated) return;
+                                setSelectedAddressId(address._id);
+                                persistAddressSelection(address._id);
+                              }}
                               disabled={orderCreated}
                               className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5"
                             />
@@ -749,8 +842,59 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
+          {/* Delivery Slot Selection */}
+          <Card id="delivery-slot-section" className="mt-3 sm:mt-4 md:mt-6">
+            <CardHeader className="p-3 sm:p-4 md:p-6">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
+                <span>Delivery Slot</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                Preferred delivery window — we&apos;ll try our best, but it isn&apos;t guaranteed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-4 md:p-6 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="deliveryDate" className="text-sm font-medium">Preferred date (optional)</Label>
+                <Input
+                  id="deliveryDate"
+                  type="date"
+                  min={new Date().toISOString().slice(0, 10)}
+                  value={deliveryDate}
+                  disabled={orderCreated}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setDeliveryDate(value);
+                    selectDeliverySlot(value ? new Date(value).toISOString() : undefined, deliveryWindow || undefined);
+                  }}
+                  className="text-sm sm:text-base"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Preferred window (optional)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DELIVERY_WINDOWS.map((windowLabel) => (
+                    <Button
+                      key={windowLabel}
+                      type="button"
+                      variant={deliveryWindow === windowLabel ? 'gold' : 'outline'}
+                      size="sm"
+                      disabled={orderCreated}
+                      onClick={() => {
+                        setDeliveryWindow(windowLabel);
+                        selectDeliverySlot(deliveryDate ? new Date(deliveryDate).toISOString() : undefined, windowLabel);
+                      }}
+                    >
+                      {windowLabel}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Payment Method Selection */}
-          <Card className="mt-3 sm:mt-4 md:mt-6">
+          <Card id="payment-method-section" className="mt-3 sm:mt-4 md:mt-6">
             <CardHeader className="p-3 sm:p-4 md:p-6">
               <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
                 <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
@@ -759,35 +903,60 @@ export default function CheckoutPage() {
               <CardDescription className="text-xs sm:text-sm mt-1">Select your preferred payment method</CardDescription>
             </CardHeader>
             <CardContent className="p-3 sm:p-4 md:p-6">
-              <RadioGroup 
-                value={paymentMethod} 
-                onValueChange={(value) => setPaymentMethod(value)}
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(value) => {
+                  if (orderCreated) return;
+                  const next = value === 'cod' ? 'cod' : 'cashfree';
+                  setPaymentMethodLocal(next);
+                  selectPaymentMethod(next === 'cod' ? 'COD' : 'ONLINE');
+                }}
                 disabled={orderCreated}
                 className="space-y-3"
               >
-                <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                <label
+                  htmlFor="cod"
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                    paymentMethod === 'cod' ? 'border-gold bg-gold-soft/40' : 'hover:bg-muted/50'
+                  }`}
+                >
                   <RadioGroupItem value="cod" id="cod" className="mt-1" disabled={orderCreated} />
+                  <Banknote className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-muted" />
                   <div className="flex-1">
-                    <Label htmlFor="cod" className="cursor-pointer font-medium text-sm sm:text-base">
+                    <span className="cursor-pointer font-medium text-sm sm:text-base">
                       Cash on Delivery (COD)
-                    </Label>
+                    </span>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Pay on delivery. (₹250 delivery charge applies)
+                      Pay in cash when your order arrives.
                     </p>
                   </div>
-                </div>
-                <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors border-primary/50">
+                </label>
+                <label
+                  htmlFor="cashfree"
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                    paymentMethod === 'cashfree' ? 'border-gold bg-gold-soft/40' : 'hover:bg-muted/50'
+                  }`}
+                >
                   <RadioGroupItem value="cashfree" id="cashfree" className="mt-1" disabled={orderCreated} />
+                  <CreditCard className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-muted" />
                   <div className="flex-1">
-                    <Label htmlFor="cashfree" className="cursor-pointer font-medium text-sm sm:text-base">
-                      Secure Online Payment (Cashfree)
-                    </Label>
+                    <span className="cursor-pointer font-medium text-sm sm:text-base">
+                      Secure Online Payment
+                    </span>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Free delivery. Secure payment gateway with instant confirmation. Supports UPI, Cards, Net Banking, Wallets.
+                      Instant confirmation via UPI, Cards, Net Banking, or Wallets.
                     </p>
                   </div>
-                </div>
+                </label>
               </RadioGroup>
+
+              {paymentMethod === 'cashfree' && emiSupported && (
+                <EmiPlanSelector
+                  plans={emiPlans}
+                  selected={selectedEmiPlan}
+                  onSelect={setSelectedEmiPlan}
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -833,7 +1002,7 @@ export default function CheckoutPage() {
 
               {/* Coupon Code Section */}
               <div className="space-y-2">
-                {!appliedCoupon ? (
+                {!effectiveCouponCode ? (
                   <div className="flex gap-2">
                     <Input
                       placeholder="Enter coupon code"
@@ -866,14 +1035,14 @@ export default function CheckoutPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between rounded-lg border border-sage/40 bg-sage/10 p-2">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs sm:text-sm font-medium text-green-800">
-                        {appliedCoupon.code}
+                      <CheckCircle className="h-4 w-4 text-sage-deep" />
+                      <span className="text-xs sm:text-sm font-medium text-sage-deep">
+                        {effectiveCouponCode}
                       </span>
-                      <Badge variant="outline" className="text-[10px] sm:text-xs bg-green-100 text-green-800 border-green-300">
-                        -₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}
+                      <Badge variant="outline" className="border-sage/40 bg-sage/15 text-[10px] text-sage-deep sm:text-xs">
+                        -₹{couponDiscount.toLocaleString('en-IN')}
                       </Badge>
                     </div>
                     <Button
@@ -882,14 +1051,14 @@ export default function CheckoutPage() {
                       size="sm"
                       onClick={handleRemoveCoupon}
                       disabled={orderCreated}
-                      className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                      className="h-6 w-6 p-0 text-sage-deep hover:text-heading"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
                 )}
                 {couponError && (
-                  <p className="text-xs text-red-600">{couponError}</p>
+                  <p className="text-xs text-destructive">{couponError}</p>
                 )}
               </div>
 
@@ -901,58 +1070,88 @@ export default function CheckoutPage() {
                   <span className="break-words">Subtotal ({cart.totalItems} items)</span>
                   <span className="flex-shrink-0 ml-2">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                
+
                 {/* Automatic Discount */}
                 {automaticDiscount > 0 && (
                   <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                    <span className="text-green-600 font-medium">
+                    <span className="font-medium text-sage-deep">
                       Discount {subtotal > 20000 ? '(10%)' : '(4%)'}
                     </span>
-                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">
+                    <span className="ml-2 flex-shrink-0 font-medium text-sage-deep">
                       -₹{automaticDiscount.toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
-                
+
                 {/* Coupon Discount */}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
-                    <span className="text-green-600 font-medium">
-                      Coupon Discount ({appliedCoupon?.code})
+                    <span className="font-medium text-sage-deep">
+                      Coupon Discount ({effectiveCouponCode})
                     </span>
-                    <span className="flex-shrink-0 ml-2 text-green-600 font-medium">
+                    <span className="ml-2 flex-shrink-0 font-medium text-sage-deep">
                       -₹{couponDiscount.toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
-                
+
                 {/* Shipping */}
                 <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
                   <span>Shipping</span>
                   <span className="flex-shrink-0 ml-2">
-                    {shipping === 0 ? (
-                      <span className="text-green-600 font-medium">Free</span>
+                    {deliveryFee === 0 ? (
+                      <span className="font-medium text-sage-deep">Free</span>
                     ) : (
-                      `₹${shipping.toLocaleString('en-IN')}`
+                      `₹${deliveryFee.toLocaleString('en-IN')}`
                     )}
                   </span>
                 </div>
-                
+
+                {/* Admin-configurable fees — only rendered when active */}
+                {platformFee > 0 && (
+                  <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span>Platform Fee</span>
+                    <span className="flex-shrink-0 ml-2">₹{platformFee.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {packagingFee > 0 && (
+                  <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span>Packaging Fee</span>
+                    <span className="flex-shrink-0 ml-2">₹{packagingFee.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {convenienceFee > 0 && (
+                  <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span>Convenience Fee</span>
+                    <span className="flex-shrink-0 ml-2">₹{convenienceFee.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {tax > 0 && (
+                  <div className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span>Tax</span>
+                    <span className="flex-shrink-0 ml-2">₹{tax.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {customCharges?.map((charge) => (
+                  <div key={charge.code} className="flex justify-between items-start gap-2 text-xs sm:text-sm md:text-base">
+                    <span>{charge.name}</span>
+                    <span className="flex-shrink-0 ml-2">₹{charge.amount.toLocaleString('en-IN')}</span>
+                  </div>
+                ))}
+
                 <Separator />
                 <div className="flex justify-between items-center gap-2 text-sm sm:text-base md:text-lg font-semibold pt-1">
                   <span>Total Amount</span>
-                  <span className="flex-shrink-0 ml-2">₹{total.toLocaleString('en-IN')}</span>
+                  <span className="flex-shrink-0 ml-2">₹{totalAmount.toLocaleString('en-IN')}</span>
                 </div>
-                
-                {/* COD breakdown removed (no advance payment) */}
               </div>
 
               {orderCreated ? (
                 <div className="space-y-2 sm:space-y-3">
-                  <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-green-600 mb-1.5 sm:mb-2" />
-                    <p className="font-semibold text-green-800 text-xs sm:text-sm md:text-base">Order Placed Successfully!</p>
-                    <p className="text-xs sm:text-sm text-green-700 mt-1">Redirecting to your orders...</p>
+                  <div className="rounded-lg border border-sage/40 bg-sage/10 p-3 text-center sm:p-4">
+                    <CheckCircle className="mx-auto mb-1.5 h-6 w-6 text-sage-deep sm:mb-2 sm:h-8 sm:w-8" />
+                    <p className="text-xs font-semibold text-sage-deep sm:text-sm md:text-base">Order Placed Successfully!</p>
+                    <p className="mt-1 text-xs text-sage-deep/90 sm:text-sm">Redirecting to your order confirmation...</p>
                   </div>
                 </div>
               ) : (
@@ -969,26 +1168,18 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <span className="break-words">
-                      {`Place Order - ₹${total.toLocaleString('en-IN')}`}
+                      {`Place Order - ₹${totalAmount.toLocaleString('en-IN')}`}
                     </span>
                   )}
                 </Button>
               )}
 
               {!orderCreated && (
-                <>
-                  <div className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-[10px] sm:text-xs text-blue-800 text-center leading-relaxed">
-                      <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 align-middle" />
-                      Order will be sent for admin approval after placement
-                    </p>
-                  </div>
-                  <div className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-[10px] sm:text-xs text-red-800 text-center leading-relaxed">
-                      <strong>No Returns:</strong> All products are non-returnable
-                    </p>
-                  </div>
-                </>
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 sm:p-3">
+                  <p className="text-center text-[10px] leading-relaxed text-destructive sm:text-xs">
+                    <strong>No Returns:</strong> All products are non-returnable
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1013,12 +1204,13 @@ export default function CheckoutPage() {
           <div className="space-y-4 sm:space-y-5">
             {/* Personal Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Personal Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Personal Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressFullName" className="text-sm font-medium">Full Name *</Label>
                   <Input
                     id="addressFullName"
+                    ref={addressFieldRefs.fullName}
                     value={addressForm.fullName}
                     onChange={(e) => {
                       setAddressForm({ ...addressForm, fullName: e.target.value });
@@ -1028,7 +1220,8 @@ export default function CheckoutPage() {
                     }}
                     placeholder="Enter full name"
                     disabled={isSubmitting}
-                    className={`text-sm sm:text-base ${addressFormErrors.fullName ? 'border-destructive' : ''}`}
+                    aria-invalid={!!addressFormErrors.fullName}
+                    className="text-sm sm:text-base"
                   />
                   {addressFormErrors.fullName && (
                     <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.fullName}</p>
@@ -1039,6 +1232,7 @@ export default function CheckoutPage() {
                   <Label htmlFor="addressPhone" className="text-sm font-medium">Phone Number *</Label>
                   <Input
                     id="addressPhone"
+                    ref={addressFieldRefs.phone}
                     type="tel"
                     value={addressForm.phone}
                     onChange={(e) => {
@@ -1051,7 +1245,8 @@ export default function CheckoutPage() {
                     placeholder="10-digit mobile number"
                     maxLength={10}
                     disabled={isSubmitting}
-                    className={`text-sm sm:text-base ${addressFormErrors.phone ? 'border-destructive' : ''}`}
+                    aria-invalid={!!addressFormErrors.phone}
+                    className="text-sm sm:text-base"
                   />
                   {addressFormErrors.phone && (
                     <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.phone}</p>
@@ -1062,12 +1257,13 @@ export default function CheckoutPage() {
 
             {/* Address Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Address Details</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Address Details</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressStreet" className="text-sm font-medium">Street Address *</Label>
                   <Input
                     id="addressStreet"
+                    ref={addressFieldRefs.street}
                     value={addressForm.street}
                     onChange={(e) => {
                       setAddressForm({ ...addressForm, street: e.target.value });
@@ -1077,7 +1273,8 @@ export default function CheckoutPage() {
                     }}
                     placeholder="House no, Street, Area"
                     disabled={isSubmitting}
-                    className={`text-sm sm:text-base ${addressFormErrors.street ? 'border-destructive' : ''}`}
+                    aria-invalid={!!addressFormErrors.street}
+                    className="text-sm sm:text-base"
                   />
                   {addressFormErrors.street && (
                     <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.street}</p>
@@ -1089,6 +1286,7 @@ export default function CheckoutPage() {
                     <Label htmlFor="addressCity" className="text-sm font-medium">City *</Label>
                     <Input
                       id="addressCity"
+                      ref={addressFieldRefs.city}
                       value={addressForm.city}
                       onChange={(e) => {
                         setAddressForm({ ...addressForm, city: e.target.value });
@@ -1098,7 +1296,8 @@ export default function CheckoutPage() {
                       }}
                       placeholder="Enter city"
                       disabled={isSubmitting}
-                      className={`text-sm sm:text-base ${addressFormErrors.city ? 'border-destructive' : ''}`}
+                      aria-invalid={!!addressFormErrors.city}
+                      className="text-sm sm:text-base"
                     />
                     {addressFormErrors.city && (
                       <p className="text-xs sm:text-sm text-destructive">{addressFormErrors.city}</p>
@@ -1116,7 +1315,11 @@ export default function CheckoutPage() {
                       }}
                       disabled={isSubmitting}
                     >
-                      <SelectTrigger className={`text-sm sm:text-base bg-[#F5F5F5] hover:bg-[#EEEEEE] ${addressFormErrors.state ? 'border-destructive' : 'border-gray-300'}`}>
+                      <SelectTrigger
+                        ref={addressFieldRefs.state}
+                        aria-invalid={!!addressFormErrors.state}
+                        className="text-sm sm:text-base bg-input-bg hover:bg-sand border-input aria-[invalid=true]:border-destructive"
+                      >
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1138,6 +1341,7 @@ export default function CheckoutPage() {
                   <div className="relative">
                     <Input
                       id="addressZipCode"
+                      ref={addressFieldRefs.zipCode}
                       value={addressForm.zipCode}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only allow numbers, max 6 digits
@@ -1149,11 +1353,12 @@ export default function CheckoutPage() {
                       placeholder="000000"
                       maxLength={6}
                       disabled={isSubmitting}
-                      className={`text-sm sm:text-base ${addressFormErrors.zipCode ? 'border-destructive' : ''}`}
+                      aria-invalid={!!addressFormErrors.zipCode}
+                      className="text-sm sm:text-base"
                     />
                     {isFetchingPincode && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gold"></div>
                       </div>
                     )}
                   </div>
@@ -1166,7 +1371,7 @@ export default function CheckoutPage() {
 
             {/* Additional Information Section */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Additional Information</h3>
+              <h3 className="text-sm font-semibold text-heading border-b border-border pb-1">Additional Information</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="addressNearbyPlaces" className="text-sm font-medium">Nearby Places/Landmarks</Label>
@@ -1186,7 +1391,7 @@ export default function CheckoutPage() {
                     id="isDefault"
                     checked={addressForm.isDefault}
                     onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                    className="rounded border-gray-300 w-4 h-4 cursor-pointer"
+                    className="h-4 w-4 cursor-pointer rounded border-input accent-primary"
                     disabled={isSubmitting}
                   />
                   <Label htmlFor="isDefault" className="cursor-pointer text-sm font-medium">

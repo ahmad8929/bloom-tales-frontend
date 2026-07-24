@@ -12,29 +12,60 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  CheckCircle,
   Loader2,
   XCircle,
   ShoppingBag,
   RefreshCcw
 } from 'lucide-react';
-import { paymentApi } from '@/lib/api';
+import { orderApi, paymentApi } from '@/lib/api';
+import { OrderConfirmation } from '@/components/checkout/OrderConfirmation';
+import type { Order } from '@/types/order';
 
 type PaymentStatus = 'completed' | 'failed' | 'pending';
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
-  const orderNumber = searchParams.get('order_id');
+  const onlineOrderNumber = searchParams.get('order_id');
+  const codOrderId = searchParams.get('order');
+  const isCod = searchParams.get('method') === 'cod';
 
   const [isVerifying, setIsVerifying] = useState(true);
-  const [paymentStatus, setPaymentStatus] =
-    useState<PaymentStatus>('pending');
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [confirmedOrderNumber, setConfirmedOrderNumber] =
-    useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('pending');
+  const [order, setOrder] = useState<Order | null>(null);
 
+  // COD flow: the order is already confirmed, just fetch and display it once.
   useEffect(() => {
-    if (!orderNumber) {
+    if (!isCod) return;
+
+    if (!codOrderId) {
+      setPaymentStatus('failed');
+      setIsVerifying(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await orderApi.getOrder(codOrderId);
+        if (res.error || !res.data?.data?.order) {
+          throw new Error(res.error || 'Order not found');
+        }
+        setOrder(res.data.data.order);
+        setPaymentStatus('completed');
+      } catch (err) {
+        console.error('Error fetching COD order:', err);
+        setPaymentStatus('failed');
+      } finally {
+        setIsVerifying(false);
+      }
+    })();
+  }, [isCod, codOrderId]);
+
+  // Online (Cashfree) flow: poll payment verification, then fetch the full
+  // order (the verify response doesn't populate items.product).
+  useEffect(() => {
+    if (isCod) return;
+
+    if (!onlineOrderNumber) {
       setPaymentStatus('failed');
       setIsVerifying(false);
       return;
@@ -48,12 +79,10 @@ export default function PaymentSuccessPage() {
       try {
         attempts++;
 
-        const res =
-          await paymentApi.verifyPaymentByOrderNumber(orderNumber);
+        const res = await paymentApi.verifyPaymentByOrderNumber(onlineOrderNumber);
 
         if (res.error) {
           console.error('Payment verification API error:', res.error);
-          // Continue polling if it's a temporary error
           if (attempts >= MAX_ATTEMPTS) {
             setPaymentStatus('pending');
             setIsVerifying(false);
@@ -63,27 +92,20 @@ export default function PaymentSuccessPage() {
         }
 
         const rawStatus = res.data?.data?.paymentStatus;
-        const order = res.data?.data?.order;
+        const verifiedOrder = res.data?.data?.order;
 
-        console.log('Payment verification response:', {
-          orderNumber,
-          rawStatus,
-          hasOrder: !!order,
-          orderId: order?._id
-        });
-
-        // ✅ TYPE GUARD (this fixes the TS error)
-        if (
-          rawStatus === 'completed' ||
-          rawStatus === 'failed' ||
-          rawStatus === 'pending'
-        ) {
+        if (rawStatus === 'completed' || rawStatus === 'failed' || rawStatus === 'pending') {
           if (rawStatus === 'completed') {
-            setOrderId(order?._id || null);
-            setConfirmedOrderNumber(order?.orderNumber || null);
             setPaymentStatus('completed');
             setIsVerifying(false);
             clearInterval(interval);
+
+            // Fetch the fully-populated order for display.
+            if (verifiedOrder?._id) {
+              orderApi.getOrder(verifiedOrder._id).then((full) => {
+                if (full.data?.data?.order) setOrder(full.data.data.order);
+              }).catch((err) => console.error('Error fetching full order detail:', err));
+            }
             return;
           }
 
@@ -110,7 +132,7 @@ export default function PaymentSuccessPage() {
     }, INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [orderNumber]);
+  }, [isCod, onlineOrderNumber]);
 
   // --------------------
   // VERIFYING STATE
@@ -120,12 +142,12 @@ export default function PaymentSuccessPage() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <Card className="max-w-md w-full text-center">
           <CardContent className="p-8">
-            <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
+            <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-gold" />
             <h2 className="text-xl font-semibold mb-2">
-              Verifying Payment
+              {isCod ? 'Loading Your Order' : 'Verifying Payment'}
             </h2>
-            <p className="text-muted-foreground">
-              Please wait while we confirm your payment.
+            <p className="text-text-muted">
+              {isCod ? 'Just a moment…' : 'Please wait while we confirm your payment.'}
             </p>
           </CardContent>
         </Card>
@@ -134,53 +156,19 @@ export default function PaymentSuccessPage() {
   }
 
   // --------------------
-  // SUCCESS
+  // SUCCESS — rich order confirmation once the full order has loaded,
+  // otherwise a minimal fallback while that follow-up fetch resolves.
   // --------------------
   if (paymentStatus === 'completed') {
+    if (order) {
+      return <OrderConfirmation order={order} />;
+    }
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl">
-              Payment Successful 🎉
-            </CardTitle>
-            <CardDescription>
-              Your order has been placed successfully.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            {confirmedOrderNumber && (
-              <div className="p-4 bg-muted rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">
-                  Order Number
-                </p>
-                <p className="text-lg font-semibold">
-                  {confirmedOrderNumber}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Button asChild className="w-full">
-                <Link
-                  href={`/orders${
-                    orderId ? `?order=${orderId}` : ''
-                  }`}
-                >
-                  View Order
-                </Link>
-              </Button>
-
-              <Button variant="outline" asChild className="w-full">
-                <Link href="/products">
-                  Continue Shopping
-                </Link>
-              </Button>
-            </div>
+        <Card className="max-w-md w-full text-center">
+          <CardContent className="p-8">
+            <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin text-gold" />
+            <p className="text-text-muted">Loading your order details…</p>
           </CardContent>
         </Card>
       </div>
@@ -188,19 +176,19 @@ export default function PaymentSuccessPage() {
   }
 
   // --------------------
-  // PENDING
+  // PENDING (online flow only)
   // --------------------
   if (paymentStatus === 'pending') {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <Card className="max-w-md w-full text-center">
           <CardHeader>
-            <Loader2 className="w-10 h-10 mx-auto mb-3 animate-spin text-primary" />
+            <Loader2 className="w-10 h-10 mx-auto mb-3 animate-spin text-gold" />
             <CardTitle>Payment Processing</CardTitle>
             <CardDescription>
               We are still confirming your payment.
               <br />
-              Please don’t refresh or close this page.
+              Please don&apos;t refresh or close this page.
             </CardDescription>
           </CardHeader>
 
@@ -232,23 +220,29 @@ export default function PaymentSuccessPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <XCircle className="w-10 h-10 text-red-600" />
+          <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+            <XCircle className="w-10 h-10 text-destructive" />
           </div>
           <CardTitle className="text-2xl">
-            Payment Failed
+            {isCod ? 'Order Not Found' : 'Payment Failed'}
           </CardTitle>
           <CardDescription>
-            We couldn’t verify your payment.
-            <br />
-            If money was deducted, please contact support.
+            {isCod ? (
+              'We couldn’t load your order details. Check your orders page or contact support.'
+            ) : (
+              <>
+                We couldn&apos;t verify your payment.
+                <br />
+                If money was deducted, please contact support.
+              </>
+            )}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-3">
           <Button asChild className="w-full">
-            <Link href="/checkout">
-              Try Again
+            <Link href={isCod ? '/orders' : '/checkout'}>
+              {isCod ? 'View Orders' : 'Try Again'}
             </Link>
           </Button>
 
