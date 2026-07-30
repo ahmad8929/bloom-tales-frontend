@@ -2,46 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
+import { useFooterLift } from '@/hooks/useFooterLift';
 
-// Mirrors WhatsAppButton's footer-avoidance mechanism, mirrored to the
+// Shares WhatsAppButton's footer-avoidance mechanism, mirrored to the
 // opposite corner so the two buttons never overlap.
-const MOBILE_CLEARANCE = 96 + 56;
-const DESKTOP_CLEARANCE = 20 + 56;
-const MD_BREAKPOINT = 768;
-const GAP = 16;
-
 export function FloatingCartButton() {
   const pathname = usePathname();
   const { itemCount } = useCart();
-  const [lift, setLift] = useState(0);
-
-  useEffect(() => {
-    const footer = document.querySelector('footer');
-    if (!footer) return;
-
-    let raf = 0;
-    const recalc = () => {
-      raf = 0;
-      const overlap = window.innerHeight - footer.getBoundingClientRect().top;
-      const clearance = window.innerWidth >= MD_BREAKPOINT ? DESKTOP_CLEARANCE : MOBILE_CLEARANCE;
-      setLift(Math.max(0, overlap - clearance + GAP));
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(recalc);
-    };
-
-    recalc();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
+  const lift = useFooterLift();
 
   const hideOnCurrentRoute = pathname === '/cart' || pathname?.startsWith('/checkout');
   if (hideOnCurrentRoute || itemCount === 0) return null;

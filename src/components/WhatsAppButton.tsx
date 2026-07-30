@@ -1,16 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { BRAND } from '@/lib/constants';
-
-// Must mirror the `bottom-24`/`md:bottom-5` + `h-14` offsets on the anchor
-// below — used to detect when the footer would creep into the button's
-// resting footprint so it can be lifted clear instead of clipping the
-// copyright line.
-const MOBILE_CLEARANCE = 96 + 56;
-const DESKTOP_CLEARANCE = 20 + 56;
-const MD_BREAKPOINT = 768;
-const GAP = 16;
+import { useFooterLift } from '@/hooks/useFooterLift';
 
 /**
  * Sits above the mobile sticky add-to-cart bar (product pages, <md) so the
@@ -20,32 +11,7 @@ const GAP = 16;
  * never sits on top of the footer links/copyright text.
  */
 export function WhatsAppButton() {
-  const [lift, setLift] = useState(0);
-
-  useEffect(() => {
-    const footer = document.querySelector('footer');
-    if (!footer) return;
-
-    let raf = 0;
-    const recalc = () => {
-      raf = 0;
-      const overlap = window.innerHeight - footer.getBoundingClientRect().top;
-      const clearance = window.innerWidth >= MD_BREAKPOINT ? DESKTOP_CLEARANCE : MOBILE_CLEARANCE;
-      setLift(Math.max(0, overlap - clearance + GAP));
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(recalc);
-    };
-
-    recalc();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
+  const lift = useFooterLift();
 
   const phone = BRAND.phone.replace(/\D/g, '');
   const href = `https://wa.me/${phone}?text=${encodeURIComponent(BRAND.whatsappMessage)}`;

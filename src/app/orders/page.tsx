@@ -42,6 +42,13 @@ interface Order {
     quantity: number;
     price: number;
     size?: string;
+    // Snapshot of the product taken when the order was placed. Order history
+    // has to survive the catalogue changing, so read these when `product` is
+    // gone rather than treating the item as broken.
+    name?: string;
+    image?: string;
+    // Populated ref — Mongoose resolves this to null once the underlying
+    // product is deleted, so it is genuinely nullable on the wire.
     product: {
       _id: string;
       name: string;
@@ -50,7 +57,7 @@ interface Order {
       size: string;
       material: string;
       slug?: string;
-    };
+    } | null;
   }>;
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'rejected';
@@ -88,6 +95,18 @@ interface Order {
       lastName: string;
     };
   }>;
+}
+
+type OrderItem = Order['items'][number];
+
+// Prefer the live product, fall back to the purchase-time snapshot. Both can be
+// absent on very old orders, hence the final literals.
+function itemName(item: OrderItem) {
+  return item.product?.name || item.name || 'Item no longer available';
+}
+
+function itemImage(item: OrderItem) {
+  return item.product?.images?.[0]?.url || item.image || '/placeholder-product.jpg';
 }
 
 interface OrderDetailsModalProps {
@@ -333,17 +352,18 @@ function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalProps) {
                     <div key={item._id} className="flex items-center gap-4 p-4 border rounded-lg">
                       <div className="relative w-16 h-16 flex-shrink-0">
                         <Image
-                          src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
-                          alt={item.product.name}
+                          src={itemImage(item)}
+                          alt={itemName(item)}
                           fill
                           className="object-cover rounded-md"
                           sizes="64px"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.product.name}</p>
+                        <p className="font-medium truncate">{itemName(item)}</p>
                         <p className="text-sm text-muted-foreground">
-                          Size: {item.size || item.product.size} • Material: {item.product.material}
+                          Size: {item.size || item.product?.size || '—'}
+                          {item.product?.material && ` • Material: ${item.product.material}`}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Qty: {item.quantity} × ₹{item.price.toLocaleString('en-IN')}
@@ -387,9 +407,11 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            {/* Order numbers are long enough to crowd the status badge on a
+                phone, so let them wrap instead of pushing it off the card. */}
+            <h3 className="font-semibold text-lg break-all">{order.orderNumber}</h3>
             <p className="text-sm text-muted-foreground">
               {new Date(order.createdAt).toLocaleDateString('en-IN', {
                 year: 'numeric',
@@ -398,7 +420,7 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
               })}
             </p>
           </div>
-          <Badge className={statusInfo.color}>
+          <Badge className={`${statusInfo.color} shrink-0`}>
             <div className="flex items-center gap-1">
               {statusInfo.icon}
               {statusInfo.text}
@@ -411,8 +433,8 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
             {order.items.slice(0, 3).map((item, index) => (
               <div key={item._id} className="relative w-10 h-10 rounded-md border-2 border-white overflow-hidden">
                 <Image
-                  src={item.product.images?.[0]?.url || '/placeholder-product.jpg'}
-                  alt={item.product.name}
+                  src={itemImage(item)}
+                  alt={itemName(item)}
                   fill
                   className="object-cover"
                   sizes="40px"
@@ -430,7 +452,7 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
               {order.items.length} item{order.items.length !== 1 ? 's' : ''}
             </p>
             <p className="text-sm text-muted-foreground truncate">
-              {order.items[0].product.name}
+              {order.items[0] ? itemName(order.items[0]) : 'No items'}
               {order.items.length > 1 && ` +${order.items.length - 1} more`}
             </p>
           </div>
@@ -476,6 +498,26 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
     </Card>
   );
 }
+
+// Shared across all three tabs. The mobile sizes keep every label plus its
+// count badge inside the list at ~320px viewports; `group` is what lets the
+// badge react to the trigger's active state (see TAB_BADGE_CLASS).
+const TAB_TRIGGER_CLASS = `
+  group relative min-w-0 overflow-hidden px-1.5 text-xs font-medium
+  !text-white
+  data-[state=active]:!text-black
+  sm:px-3 sm:text-sm
+`;
+
+// data-state lives on the trigger, not the badge, so the active variant has to
+// be read from the parent via group-data-* or it never matches.
+const TAB_BADGE_CLASS = `
+  ml-1 px-1.5 text-xs
+  bg-white text-black
+  group-data-[state=active]:bg-secondary
+  group-data-[state=active]:text-secondary-foreground
+  sm:ml-2 sm:px-2
+`;
 
 export default function UserOrdersPage() {
   const [orders, setOrders] = useState<{
@@ -535,7 +577,9 @@ export default function UserOrdersPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      // Matches the loaded state's height so the footer doesn't jump up the
+      // viewport (and back) while orders are in flight.
+      <div className="container mx-auto px-4 py-12 min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading your orders...</p>
@@ -569,80 +613,38 @@ export default function UserOrdersPage() {
           </Card>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-md grid-cols-3">
-  <TabsTrigger
-    value="ongoing"
-    className="
-      relative font-medium text-sm
-      !text-white
-      data-[state=active]:!text-black
-    "
-  >
-    Ongoing
-    {orders.ongoing.length > 0 && (
-      <Badge
-        className="
-          ml-2 text-xs
-          !bg-white !text-black
-          data-[state=active]:!bg-secondary data-[state=active]:!text-secondary-foreground
-        "
-      >
-        {orders.ongoing.length}
-      </Badge>
-    )}
-  </TabsTrigger>
+            {/* Tabs and Refresh share a row from sm up; on a phone the row
+                would squeeze the list far below the width its three labels
+                need, so they stack instead. */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <TabsList className="grid h-auto w-full grid-cols-3 sm:max-w-md">
+                <TabsTrigger value="ongoing" className={TAB_TRIGGER_CLASS}>
+                  Ongoing
+                  {orders.ongoing.length > 0 && (
+                    <Badge className={TAB_BADGE_CLASS}>{orders.ongoing.length}</Badge>
+                  )}
+                </TabsTrigger>
 
-  <TabsTrigger
-    value="completed"
-    className="
-      relative font-medium text-sm
-      !text-white
-      data-[state=active]:!text-black
-    "
-  >
-    Completed
-    {orders.completed.length > 0 && (
-      <Badge
-        className="
-          ml-2 text-xs
-          !bg-white !text-black
-          data-[state=active]:!bg-secondary data-[state=active]:!text-secondary-foreground
-        "
-      >
-        {orders.completed.length}
-      </Badge>
-    )}
-  </TabsTrigger>
+                <TabsTrigger value="completed" className={TAB_TRIGGER_CLASS}>
+                  Completed
+                  {orders.completed.length > 0 && (
+                    <Badge className={TAB_BADGE_CLASS}>{orders.completed.length}</Badge>
+                  )}
+                </TabsTrigger>
 
-  <TabsTrigger
-    value="cancelled"
-    className="
-      relative font-medium text-sm
-      !text-white
-      data-[state=active]:!text-black
-    "
-  >
-    Cancelled
-    {orders.cancelled.length > 0 && (
-      <Badge
-        className="
-          ml-2 text-xs
-          !bg-white !text-black
-          data-[state=active]:!bg-secondary data-[state=active]:!text-secondary-foreground
-        "
-      >
-        {orders.cancelled.length}
-      </Badge>
-    )}
-  </TabsTrigger>
-</TabsList>
+                <TabsTrigger value="cancelled" className={TAB_TRIGGER_CLASS}>
+                  Cancelled
+                  {orders.cancelled.length > 0 && (
+                    <Badge className={TAB_BADGE_CLASS}>{orders.cancelled.length}</Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={fetchAllOrders}
-                className="flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 sm:w-auto"
               >
                 <RefreshCw className="w-4 h-4" />
                 Refresh
