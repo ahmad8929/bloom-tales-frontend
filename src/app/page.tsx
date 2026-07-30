@@ -30,17 +30,26 @@ const MARQUEE_WORDS = [
 
 export default function Home() {
   return (
+    // Source order is the mobile order (products → marquee → collections), so
+    // small screens need no order utilities. The md:order-* values restore the
+    // desktop layout (hero → marquee → collections → products) from the same
+    // DOM, which keeps every section mounted once across the breakpoint.
     <div className="flex flex-col">
       {/* Cinematic hero — slides beneath the transparent header. Hidden on
-          mobile so the page opens straight on collections/products; kept
-          mounted (not conditionally rendered) so desktop hydration is
-          unaffected when the viewport is resized. */}
-      <div className="hidden md:block">
+          mobile so the page opens straight on products; kept mounted (not
+          conditionally rendered) so desktop hydration is unaffected when the
+          viewport is resized. */}
+      <div className="hidden md:order-1 md:block">
         <Hero />
       </div>
 
+      {/* Featured products — the edit. Leads on mobile. */}
+      <div className="md:order-4">
+        <FeaturedProducts limit={12} showViewAll={true} title="The Edit" />
+      </div>
+
       {/* Editorial marquee strip */}
-      <div className="border-y border-border bg-background">
+      <div className="border-y border-border bg-background md:order-2">
         <Marquee speed={44} className="py-5">
           {MARQUEE_WORDS.map((word, i) => (
             <span key={i} className="mx-8 inline-flex items-center gap-8">
@@ -54,16 +63,19 @@ export default function Home() {
       </div>
 
       {/* Shop by collection — editorial grid */}
-      <CollectionsEditorial />
-
-      {/* Featured products — the edit */}
-      <FeaturedProducts limit={12} showViewAll={true} title="The Edit" />
+      <div className="md:order-3">
+        <CollectionsEditorial />
+      </div>
 
       {/* Brand story + values */}
-      <StoryEditorial />
+      <div className="md:order-5">
+        <StoryEditorial />
+      </div>
 
       {/* Instagram reels */}
-      <InstagramReels />
+      <div className="md:order-6">
+        <InstagramReels />
+      </div>
     </div>
   );
 }
