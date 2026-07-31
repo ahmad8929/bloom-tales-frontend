@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle, CreditCard, Banknote, ShoppingBag, X, Clock, Plus, Edit, MapPin, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cartApi, orderApi, profileApi, paymentApi, couponApi } from '@/lib/api';
@@ -929,6 +930,31 @@ export default function CheckoutPage() {
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       Pay in cash when your order arrives.
                     </p>
+                    <AnimatePresence initial={false}>
+                      {paymentMethod === 'cod' && (
+                        <motion.div
+                          key="cod-advance-note"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 rounded-md border border-gold/30 bg-white p-3">
+                            <p className="text-sm font-semibold text-heading">Cash on Delivery (COD)</p>
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                              A <strong className="text-heading">₹250 advance payment</strong> is required to confirm your COD order.
+                            </p>
+                            <p className="mt-2 text-xs font-semibold leading-relaxed text-heading sm:text-sm">
+                              The remaining amount can be paid when your order is delivered.
+                            </p>
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                              This helps us prevent fake COD orders. Thank you for your understanding. 💖
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </label>
                 <label
@@ -1145,45 +1171,51 @@ export default function CheckoutPage() {
                   <span className="flex-shrink-0 ml-2">₹{totalAmount.toLocaleString('en-IN')}</span>
                 </div>
               </div>
-
-              {orderCreated ? (
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="rounded-lg border border-sage/40 bg-sage/10 p-3 text-center sm:p-4">
-                    <CheckCircle className="mx-auto mb-1.5 h-6 w-6 text-sage-deep sm:mb-2 sm:h-8 sm:w-8" />
-                    <p className="text-xs font-semibold text-sage-deep sm:text-sm md:text-base">Order Placed Successfully!</p>
-                    <p className="mt-1 text-xs text-sage-deep/90 sm:text-sm">Redirecting to your order confirmation...</p>
-                  </div>
-                </div>
-              ) : (
-                <Button 
-                  className="w-full text-xs sm:text-sm md:text-base" 
-                  size="lg" 
-                  onClick={handleSubmitOrder}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span className="text-xs sm:text-sm">Processing...</span>
-                    </div>
-                  ) : (
-                    <span className="break-words">
-                      {`Place Order - ₹${totalAmount.toLocaleString('en-IN')}`}
-                    </span>
-                  )}
-                </Button>
-              )}
-
-              {!orderCreated && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 sm:p-3">
-                  <p className="text-center text-[10px] leading-relaxed text-destructive sm:text-xs">
-                    <strong>No Returns:</strong> All products are non-returnable
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Place Order — kept last in the flow on every breakpoint, after
+          Address/Delivery/Payment, not tucked inside the summary sidebar. */}
+      <div className="mx-auto mt-3 max-w-7xl sm:mt-4 md:mt-6">
+        <Card>
+          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4 md:p-6">
+            {orderCreated ? (
+              <div className="rounded-lg border border-sage/40 bg-sage/10 p-3 text-center sm:p-4">
+                <CheckCircle className="mx-auto mb-1.5 h-6 w-6 text-sage-deep sm:mb-2 sm:h-8 sm:w-8" />
+                <p className="text-xs font-semibold text-sage-deep sm:text-sm md:text-base">Order Placed Successfully!</p>
+                <p className="mt-1 text-xs text-sage-deep/90 sm:text-sm">Redirecting to your order confirmation...</p>
+              </div>
+            ) : (
+              <Button
+                className="w-full text-xs sm:text-sm md:text-base"
+                size="lg"
+                onClick={handleSubmitOrder}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs sm:text-sm">Processing...</span>
+                  </div>
+                ) : (
+                  <span className="break-words">
+                    {`Place Order - ₹${totalAmount.toLocaleString('en-IN')}`}
+                  </span>
+                )}
+              </Button>
+            )}
+
+            {!orderCreated && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 sm:p-3">
+                <p className="text-center text-[10px] leading-relaxed text-destructive sm:text-xs">
+                  <strong>No Returns:</strong> All products are non-returnable
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Address Modal */}
