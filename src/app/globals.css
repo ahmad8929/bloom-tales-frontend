@@ -24,13 +24,17 @@ body {
 @layer base {
   :root {
     /* ————— Bloom Tales official brand palette ————— */
-    /* Premium neutral canvas — #FAF8F5 */
-    --background: 36 33% 97%;
+    /* Pure white canvas — #FFFFFF */
+    --background: 0 0% 100%;
     --foreground: 28 13% 38%; /* soft taupe body text */
 
-    --ivory: 36 33% 97%; /* Premium neutral canvas #FAF8F5 */
+    --ivory: 0 0% 100%; /* canvas alias — tracks --background */
     --ink: 24 20% 11%; /* espresso — reserved for scrims/overlays */
-    --sand: 40 23% 95%; /* Alternate sections #F5F3EF — dividers */
+    /* Alternate sections, dividers and skeleton fills — #F5F5F5. Neutral
+       rather than warm so it reads as a faint step off white instead of
+       beige, and it has to stay visible: the product skeletons and image
+       placeholders are drawn in this tone against the canvas. */
+    --sand: 0 0% 96%;
 
     /* Brand section tones */
     --blush: 10 49% 91%; /* Soft Blush Pink #F3E0DC — hero */
@@ -60,7 +64,7 @@ body {
     --muted-foreground: 29 18% 44%;
 
     /* Accent — alternate-section tone for hover surfaces (menus, rows) */
-    --accent: 40 23% 95%;
+    --accent: 0 0% 96%;
     --accent-foreground: 28 13% 38%;
 
     /* Gold — Dusty Rose accent #D8A7A1 (icons, prices, hover links) */
@@ -76,14 +80,14 @@ body {
     --hover: 7 33% 64%; /* ~#C68E87 */
     --hover-foreground: 0 0% 100%;
 
-    --secondary-hover: 40 23% 95%;
+    --secondary-hover: 0 0% 96%;
 
     --destructive: 0 60% 42%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Borders & dividers — #E8E5DF, one consistent neutral tone sitewide */
-    --border: 40 16% 89%;
-    --input: 40 16% 89%;
+    /* Borders & dividers — #E5E5E5, one consistent neutral tone sitewide */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
     --input-bg: 0 0% 100%;
     --input-focus: 7 41% 74%;
 
