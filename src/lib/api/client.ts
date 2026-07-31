@@ -1,8 +1,8 @@
 import { getCookie, removeCookie } from '../utils';
 
 // const API_URL = "https://bloom-backend-rtch.onrender.com";
-// const API_URL = "https://orange-llama-692113.hostingersite.com";
-export const API_URL = "http://localhost:5000";
+// const API_URL = "http://localhost:5000";
+export const API_URL = "https://orange-llama-692113.hostingersite.com";
 
 export interface ApiResponse<T> {
   data?: T;
