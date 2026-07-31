@@ -133,7 +133,7 @@ export function FeaturedProducts({
   // Loading state — elegant skeleton grid
   if (loading) {
     return (
-      <section className="bg-linen/70 py-20 md:py-28">
+      <section className="bg-white py-20 md:py-28">
         <div className="container">
           {sectionHeader}
           <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
@@ -149,7 +149,7 @@ export function FeaturedProducts({
   // Empty state
   if (products.length === 0) {
     return (
-      <section className="bg-linen/70 py-20 md:py-28">
+      <section className="bg-white py-20 md:py-28">
         <div className="container text-center">
           <p className="eyebrow mb-4">Handpicked for you</p>
           <h2 className="font-display text-3xl md:text-4xl">The shelves are being dressed</h2>
@@ -162,7 +162,7 @@ export function FeaturedProducts({
   }
 
   return (
-    <section className="bg-linen/70 py-20 md:py-28">
+    <section className="bg-white py-20 md:py-28">
       <div className="container">
         {sectionHeader}
 

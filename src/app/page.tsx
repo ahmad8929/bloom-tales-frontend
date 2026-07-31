@@ -30,16 +30,15 @@ const MARQUEE_WORDS = [
 
 export default function Home() {
   return (
-    // Source order is the mobile order (products → marquee → collections), so
-    // small screens need no order utilities. The md:order-* values restore the
-    // desktop layout (hero → marquee → collections → products) from the same
-    // DOM, which keeps every section mounted once across the breakpoint.
+    // Source order is the mobile order (hero → products → marquee →
+    // collections), so small screens need no order utilities. The md:order-*
+    // values restore the desktop layout (hero → marquee → collections →
+    // products) from the same DOM, which keeps every section mounted once
+    // across the breakpoint.
     <div className="flex flex-col">
-      {/* Cinematic hero — slides beneath the transparent header. Hidden on
-          mobile so the page opens straight on products; kept mounted (not
-          conditionally rendered) so desktop hydration is unaffected when the
-          viewport is resized. */}
-      <div className="hidden md:order-1 md:block">
+      {/* Cinematic hero — slides beneath the glass header. Leads on every
+          breakpoint; source order already puts it first on mobile. */}
+      <div className="md:order-1">
         <Hero />
       </div>
 
