@@ -112,6 +112,11 @@ export interface Order {
   couponCode?: string;
   emiEnabled?: boolean;
   emiPlan?: EmiPlanSnapshot;
+  // Set only for a COD order confirmed via the advance-payment flow
+  // (paymentController#createCodAdvanceSession) — the amount already paid
+  // online; the remainder (totalAmount - advancePayment) is cash on delivery.
+  // 0/undefined for a plain COD order or a full ONLINE order.
+  advancePayment?: number;
   category?: 'ongoing' | 'completed' | 'cancelled';
 }
 

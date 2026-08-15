@@ -18,7 +18,9 @@ const PAYMENT_STATUS_STYLE: Record<string, string> = {
 
 function formatPaymentMethod(order: Order): string {
   const method = (order.paymentMethod || '').toUpperCase();
-  if (method === 'COD') return 'Cash on Delivery';
+  if (method === 'COD') {
+    return order.advancePayment ? `Cash on Delivery (₹${order.advancePayment} paid in advance)` : 'Cash on Delivery';
+  }
   if (method === 'ONLINE' || method === 'CASHFREE') {
     return order.paymentGateway && order.paymentGateway !== 'none'
       ? `Online Payment (${order.paymentGateway})`
@@ -73,6 +75,22 @@ export function OrderConfirmation({ order }: { order: Order }) {
           </CardContent>
         </Card>
       </div>
+
+      {!!order.advancePayment && (
+        <Card className="mt-4 border-gold/30 bg-gold-soft/20">
+          <CardContent className="p-4">
+            <p className="mb-2 text-xs uppercase tracking-luxe text-text-muted">Cash on Delivery — Advance Paid</p>
+            <div className="flex items-center justify-between text-sm">
+              <span>Paid online now</span>
+              <span className="font-semibold">₹{order.advancePayment.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-text-muted">
+              <span>Due in cash at delivery</span>
+              <span>₹{(order.totalAmount - order.advancePayment).toLocaleString('en-IN')}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {order.emiEnabled && order.emiPlan && (
         <Card className="mt-4">

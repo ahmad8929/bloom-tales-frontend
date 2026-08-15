@@ -18,6 +18,8 @@ export { checkoutApi } from './checkout';
 export type { CheckoutStateData, CheckoutPricing, CheckoutInlineAddress } from './checkout';
 export { emiApi } from './emi';
 export type { EmiPlanQuote } from './emi';
+export { settingsApi } from './settings';
+export type { AdminChargeSettings } from './settings';
 export { analyticsApi } from './analytics';
 export type {
   AnalyticsOverview,
