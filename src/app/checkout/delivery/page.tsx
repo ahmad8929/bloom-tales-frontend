@@ -48,7 +48,7 @@ export default function CheckoutDeliveryPage() {
     <>
       <CheckoutStepIndicator currentStep="delivery" />
 
-      <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 order-2 lg:order-1">
           <Card>
             <CardHeader className="p-3 sm:p-4 md:p-6">
@@ -92,11 +92,11 @@ export default function CheckoutDeliveryPage() {
             </CardContent>
           </Card>
 
-          <div className="flex gap-2 sm:gap-3">
-            <Button variant="outline" className="flex-1 text-xs sm:text-sm md:text-base" size="lg" onClick={() => router.push('/checkout/address')}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+            <Button variant="outline" className="min-w-0 text-xs sm:flex-1 sm:text-sm md:text-base" size="lg" onClick={() => router.push('/checkout/address')}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
-            <Button className="flex-1 text-xs sm:text-sm md:text-base" size="lg" onClick={() => router.push('/checkout/payment')}>
+            <Button className="min-w-0 text-xs sm:flex-1 sm:text-sm md:text-base" size="lg" onClick={() => router.push('/checkout/payment')}>
               Continue to Payment <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

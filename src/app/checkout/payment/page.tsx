@@ -62,7 +62,7 @@ export default function CheckoutPaymentPage() {
     <>
       <CheckoutStepIndicator currentStep="payment" />
 
-      <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 order-2 lg:order-1">
           <Card>
             <CardHeader className="p-3 sm:p-4 md:p-6">
@@ -80,13 +80,13 @@ export default function CheckoutPaymentPage() {
               >
                 <label
                   htmlFor="cod"
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                  className={`flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
                     paymentMethod === 'cod' ? 'border-gold bg-gold-soft/40' : 'hover:bg-muted/50'
                   }`}
                 >
                   <RadioGroupItem value="cod" id="cod" className="mt-1" />
                   <Banknote className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-muted" />
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <span className="cursor-pointer font-medium text-sm sm:text-base">Cash on Delivery (COD)</span>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">Pay in cash when your order arrives.</p>
                     <AnimatePresence initial={false}>
@@ -118,13 +118,13 @@ export default function CheckoutPaymentPage() {
                 </label>
                 <label
                   htmlFor="cashfree"
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                  className={`flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
                     paymentMethod === 'cashfree' ? 'border-gold bg-gold-soft/40' : 'hover:bg-muted/50'
                   }`}
                 >
                   <RadioGroupItem value="cashfree" id="cashfree" className="mt-1" />
                   <CreditCard className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-muted" />
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <span className="cursor-pointer font-medium text-sm sm:text-base">Secure Online Payment</span>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">Instant confirmation via UPI, Cards, Net Banking, or Wallets.</p>
                   </div>
@@ -137,11 +137,11 @@ export default function CheckoutPaymentPage() {
             </CardContent>
           </Card>
 
-          <div className="flex gap-2 sm:gap-3">
-            <Button variant="outline" className="flex-1 text-xs sm:text-sm md:text-base" size="lg" onClick={() => router.push('/checkout/delivery')}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+            <Button variant="outline" className="min-w-0 text-xs sm:flex-1 sm:text-sm md:text-base" size="lg" onClick={() => router.push('/checkout/delivery')}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
-            <Button className="flex-1 text-xs sm:text-sm md:text-base" size="lg" onClick={handleContinue} disabled={isContinuing}>
+            <Button className="min-w-0 text-xs sm:flex-1 sm:text-sm md:text-base" size="lg" onClick={handleContinue} disabled={isContinuing}>
               Continue to Review <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

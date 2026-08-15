@@ -114,7 +114,7 @@ export default function CheckoutReviewPage() {
     <>
       <CheckoutStepIndicator currentStep="review" />
 
-      <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 order-2 lg:order-1">
           {resolvedAddress && (
             <Card>
