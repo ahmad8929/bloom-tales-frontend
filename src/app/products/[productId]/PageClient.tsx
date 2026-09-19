@@ -28,16 +28,16 @@ import { toast } from '@/hooks/use-toast';
 import { getDiscountPercentage } from '@/lib/format';
 import type { Product } from '@/types/product';
 
-export default function ProductDetailPage() {
+export default function ProductDetailPage({ initialProduct = null, initialSelectedSize = '' }: { initialProduct?: Product | null; initialSelectedSize?: string }) {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { cartItems: reduxCartItems, removeFromCart } = useCart();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<Product | null>(initialProduct);
+  const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<string>(initialSelectedSize);
+  const [selectedMaterial, setSelectedMaterial] = useState<string>(initialProduct?.materials?.[0] || '');
   const [isInCart, setIsInCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | undefined>();
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -45,10 +45,10 @@ export default function ProductDetailPage() {
   const productId = params.productId as string;
 
   useEffect(() => {
-    if (productId) {
+    if (productId && !initialProduct) {
       fetchProduct(productId);
     }
-  }, [productId]);
+  }, [productId, initialProduct]);
 
   const fetchProduct = async (id: string) => {
     try {
@@ -426,7 +426,7 @@ export default function ProductDetailPage() {
               />
             )}
 
-            {availableSizes.length > 0 && (
+            {(availableSizes.length > 0 || (product.variants?.length ?? 0) > 0) && (
               <SizeSelector product={product} selectedSize={selectedSize} onSelect={setSelectedSize} />
             )}
           </div>

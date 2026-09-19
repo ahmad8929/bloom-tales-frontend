@@ -2,8 +2,11 @@
 
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from '@/store';
+import { store, persistor, serverState } from '@/store';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { AuthInitializer } from '@/components/AuthInitializer';
+import { CartInitializer } from '@/components/CartInitializer';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const SkeletonLoading = () => (
@@ -24,6 +27,8 @@ const SkeletonLoading = () => (
 );
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const privatePage = /^\/(admin|cart|checkout|orders|profile|login|signup|verify-email|reset-password)(\/|$)/.test(pathname);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -32,23 +37,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   if (!isClient) {
     return (
-      <Provider store={store}>
+      <Provider store={store} serverState={serverState}>
         <ErrorBoundary>
-          <SkeletonLoading />
+          {privatePage ? <SkeletonLoading /> : children}
         </ErrorBoundary>
       </Provider>
     );
   }
+
+  // Keep auth/cart side effects behind persistence, as before public SSR was enabled.
+  const hydratedContent = <><AuthInitializer /><CartInitializer />{children}</>;
 
   return (
     <ErrorBoundary>
       <Provider store={store}>
         {persistor ? (
           <PersistGate loading={<SkeletonLoading />} persistor={persistor}>
-            {children}
+            {hydratedContent}
           </PersistGate>
         ) : (
-          children
+          hydratedContent
         )}
       </Provider>
     </ErrorBoundary>

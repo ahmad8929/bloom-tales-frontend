@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -26,7 +27,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <ScrollingBanner />
-      <Header />
+      <Suspense fallback={<div className="h-20" />}><Header /></Suspense>
       <main className="flex-grow">
         {children}
       </main>

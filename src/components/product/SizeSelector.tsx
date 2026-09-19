@@ -28,6 +28,8 @@ export function SizeSelector({ product, selectedSize, onSelect }: SizeSelectorPr
               <button
                 type="button"
                 disabled={!isAvailable}
+                aria-pressed={isSelected}
+                aria-label={`Size ${size}${!isAvailable ? ", out of stock" : ""}`}
                 onClick={() => isAvailable && onSelect(size)}
                 className={`flex h-11 min-w-[3rem] items-center justify-center border px-4 font-sans text-sm font-semibold transition-all duration-300 ${
                   isSelected

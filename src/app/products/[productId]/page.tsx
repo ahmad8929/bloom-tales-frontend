@@ -1,13 +1,28 @@
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
-import { catalogData } from '@/lib/catalog-seo';
+import { getSeoProduct, productDescription, productTitle, initialSize } from '@/lib/product-seo';
+import { productData, breadcrumbData } from '@/lib/structured-data';
+import { JsonLd } from '@/components/JsonLd';
 import PageClient from './PageClient';
 
-export async function generateMetadata({ params }: { params: Promise<{ productId: string }> }): Promise<Metadata> {
+type Props = { params: Promise<{ productId: string }>; searchParams: Promise<{ size?: string | string[] }> };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { productId } = await params;
-  const data = await catalogData(`/products/${encodeURIComponent(productId)}`);
-  const product = data?.product;
-  return pageMetadata(`/products/${encodeURIComponent(productId)}`, typeof product?.name === 'string' ? product.name : 'Product', typeof product?.description === 'string' ? product.description : undefined, typeof product?.images?.[0]?.url === 'string' ? product.images[0].url : undefined);
+  const product = await getSeoProduct(productId);
+  return pageMetadata(`/products/${encodeURIComponent(productId)}`, product ? productTitle(product) : `Product ${productId}`, product ? productDescription(product) : `Explore product ${productId} at Bloomtales Boutique.`, product?.images?.find(image => image.isPrimary)?.url || product?.images?.[0]?.url);
 }
-
-export default function Page() { return <PageClient />; }
+export default async function Page({ params, searchParams }: Props) {
+  const { productId } = await params;
+  const query = await searchParams;
+  const product = await getSeoProduct(productId);
+  const structured = product ? productData(product, productId) : null;
+  const crumbs = product ? breadcrumbData([
+    { name: 'Home', path: '/' }, { name: 'Products', path: '/products' },
+    { name: product.name, path: `/products/${encodeURIComponent(productId)}` },
+  ]) : null;
+  return <>
+    {structured && <JsonLd data={structured} />}
+    {crumbs && <JsonLd data={crumbs} />}
+    <PageClient key={`${productId}:${String(query.size)}`} initialProduct={product} initialSelectedSize={initialSize(product, typeof query.size === 'string' ? query.size : undefined)} />
+  </>;
+}
