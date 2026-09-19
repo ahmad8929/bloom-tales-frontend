@@ -64,6 +64,9 @@ export const store = configureStore({
   devTools: process.env.NODE_ENV !== 'production',
 });
 
+// Match the anonymous server render during hydration, before persisted user state.
+export const serverState = store.getState();
+
 // Only create persistor on client side
 export const persistor = isClient ? persistStore(store) : undefined;
 

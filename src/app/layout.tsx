@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Playfair_Display, Manrope } from 'next/font/google';
 import { Providers } from '@/components/Providers';
-import { AuthInitializer } from '@/components/AuthInitializer';
-import { CartInitializer } from '@/components/CartInitializer';
 import { Toaster } from '@/components/ui/toaster';
 import { ConditionalLayout } from '@/components/ConditionalLayout';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
@@ -56,14 +54,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    siteName: 'Bloomtales Boutique',
+    siteName: BRAND.name,
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing. Shipping across all of India.',
     images: [
       {
         url: '/image.png',
-        width: 1200,
-        height: 630,
+        width: 262,
+        height: 268,
         alt: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
       },
     ],
@@ -73,8 +71,6 @@ export const metadata: Metadata = {
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Premium quality ethnic and modern wear. Shipping across all of India.',
     images: ['/image.png'],
-    creator: '@bloomtales_clothing',
-    site: '@bloomtales_clothing',
   },
   robots: {
     index: true,
@@ -95,19 +91,7 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-status-bar-style': 'default',
     'apple-mobile-web-app-title': 'Bloomtales',
   },
-  icons: {
-    icon: [
-      { url: '/image.png', type: 'image/png' },
-      { url: '/image.png', type: 'image/png', sizes: '32x32' },
-      { url: '/image.png', type: 'image/png', sizes: '16x16' },
-      { url: '/image.png', type: 'image/png', sizes: '192x192' },
-      { url: '/image.png', type: 'image/png', sizes: '512x512' },
-    ],
-    apple: [
-      { url: '/image.png', sizes: '180x180', type: 'image/png' },
-    ],
-    shortcut: '/image.png',
-  },
+
 };
 
 export default function RootLayout({
@@ -131,59 +115,10 @@ export default function RootLayout({
         <meta name="distribution" content="global" />
         <meta name="rating" content="general" />
         <link rel="manifest" href="/manifest.json" />
-        {/* Primary favicon - Google looks for this first */}
-        <link rel="icon" type="image/png" href="/image.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/image.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/image.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/image.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/image.png" />
-        {/* Apple Touch Icon */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/image.png" />
-        {/* Shortcut icon */}
-        <link rel="shortcut icon" href="/image.png" />
         <meta name="application-name" content="Bloomtales Boutique" />
         <meta name="apple-mobile-web-app-title" content="Bloomtales" />
         <meta name="msapplication-TileImage" content="/image.png" />
         <meta name="msapplication-TileColor" content="#B88A4E" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "OnlineStore",
-              "name": "Bloomtales Boutique",
-              "description": "Discover the latest in women's fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing.",
-              "url": BRAND.domain,
-              "logo": `${BRAND.domain}/image.png`,
-              "image": `${BRAND.domain}/image.png`,
-              "priceRange": "₹₹",
-              "telephone": BRAND.phone,
-              "email": BRAND.email,
-              "address": {
-                "@type": "PostalAddress",
-                "addressLocality": "Bareilly",
-                "addressRegion": "Uttar Pradesh",
-                "addressCountry": "IN"
-              },
-              "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                "opens": "09:00",
-                "closes": "20:00"
-              },
-              "sameAs": [
-                "https://www.facebook.com/bloomtales",
-                BRAND.instagram,
-                "https://twitter.com/bloomtales_clothing"
-              ],
-              "offers": {
-                "@type": "Offer",
-                "priceCurrency": "INR",
-                "availability": "https://schema.org/InStock"
-              }
-            })
-          }}
-        />
         <meta name="target" content="all" />
         <meta name="audience" content="all" />
         <meta name="expires" content="never" />
@@ -204,8 +139,6 @@ export default function RootLayout({
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <Providers>
-          <AuthInitializer />
-          <CartInitializer />
           <ConditionalLayout>
             {children}
           </ConditionalLayout>
