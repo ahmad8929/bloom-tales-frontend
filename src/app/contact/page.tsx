@@ -1,9 +1,11 @@
+import { pageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 import { MessageCircle, Mail, MapPin, Clock } from 'lucide-react';
 import { BRAND } from '@/lib/constants';
 import { ContactForm } from '@/components/ContactForm';
 
 export const metadata: Metadata = {
+  ...pageMetadata('/contact', 'Contact Us'),
   title: 'Contact Us — Bloomtales',
   description: "We'd love to hear from you — reach BloomTales Clothing & Co. on WhatsApp or email for questions and custom requests.",
 };

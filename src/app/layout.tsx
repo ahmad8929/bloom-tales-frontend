@@ -22,7 +22,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://bloomtales.com'),
+  metadataBase: new URL(BRAND.domain),
   title: {
     default: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     template: '%s | Bloomtales Boutique',
@@ -56,7 +56,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://bloomtales.com',
     siteName: 'Bloomtales Boutique',
     title: 'Bloomtales Boutique - Women\'s Fashion & Ethnic Wear',
     description: 'Discover the latest in women\'s fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing. Shipping across all of India.',
@@ -87,12 +86,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  verification: {
-    google: 'your-google-verification-code',
-  },
-  alternates: {
-    canonical: 'https://bloomtales.com',
   },
   category: 'Fashion',
   classification: 'E-commerce, Fashion, Clothing',
@@ -152,16 +145,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Bloomtales" />
         <meta name="msapplication-TileImage" content="/image.png" />
         <meta name="msapplication-TileColor" content="#B88A4E" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:secure_url" content="https://bloomtales.com/image.png" />
-        <meta property="og:image" content="https://bloomtales.com/image.png" />
-        <meta property="og:url" content="https://bloomtales.com" />
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow" />
-        <meta name="bingbot" content="index, follow" />
-        <meta name="yandex" content="index, follow" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -170,9 +153,9 @@ export default function RootLayout({
               "@type": "OnlineStore",
               "name": "Bloomtales Boutique",
               "description": "Discover the latest in women's fashion at Bloomtales Boutique. Shop premium quality sarees, kurtis, ethnic wear, and modern clothing.",
-              "url": "https://bloomtales.com",
-              "logo": "https://bloomtales.com/image.png",
-              "image": "https://bloomtales.com/image.png",
+              "url": BRAND.domain,
+              "logo": `${BRAND.domain}/image.png`,
+              "image": `${BRAND.domain}/image.png`,
               "priceRange": "₹₹",
               "telephone": BRAND.phone,
               "email": BRAND.email,
@@ -208,8 +191,8 @@ export default function RootLayout({
         <meta name="designer" content="Mohd Ahmad" />
         <meta name="reply-to" content="bloomtalesclothing@gmail.com" />
         <meta name="owner" content="Bloomtales Boutique" />
-        <meta name="url" content="https://bloomtales.com" />
-        <meta name="identifier-URL" content="https://bloomtales.com" />
+        <meta name="url" content={BRAND.domain} />
+        <meta name="identifier-URL" content={BRAND.domain} />
         <meta name="directory" content="submission" />
         <meta name="pagename" content="Bloomtales Boutique - Women's Fashion & Ethnic Wear" />
         <meta name="category" content="Fashion, E-commerce, Clothing" />
@@ -218,7 +201,6 @@ export default function RootLayout({
         <meta name="MobileOptimized" content="320" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        <link rel="canonical" href="https://bloomtales.com" />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <Providers>

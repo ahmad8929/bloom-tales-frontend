@@ -1,7 +1,9 @@
+import { pageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 import { BRAND } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  ...pageMetadata('/privacy', 'Privacy Policy'),
   title: 'Privacy Policy — Bloomtales',
   description: 'How BloomTales Clothing & Co. collects, uses and protects your personal information.',
 };
