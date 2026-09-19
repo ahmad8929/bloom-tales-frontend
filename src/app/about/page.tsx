@@ -1,3 +1,5 @@
+export const metadata = pageMetadata('/about', 'Our Story');
+import { pageMetadata } from '@/lib/seo';
 import Image from 'next/image';
 import Link from 'next/link';
 

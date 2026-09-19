@@ -1,8 +1,10 @@
+import { pageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 import { MessageCircle, Instagram, Star } from 'lucide-react';
 import { BRAND } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  ...pageMetadata('/reviews', 'Customer Reviews'),
   title: 'Customer Reviews — Bloomtales',
   description: 'What our customers say about their BloomTales outfits — and how to share your own story.',
 };

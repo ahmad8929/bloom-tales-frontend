@@ -1,7 +1,9 @@
+import { pageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 import { BRAND } from '@/lib/constants';
 
 export const metadata: Metadata = {
+  ...pageMetadata('/faq', 'FAQs'),
   title: 'FAQs — Bloomtales',
   description: 'Answers about shipping, returns, exchanges, payments and made-to-order outfits at BloomTales Clothing & Co.',
 };

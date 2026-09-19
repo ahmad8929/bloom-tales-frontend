@@ -1,3 +1,3 @@
 Bloom Tales
 
-Link: https://www.bloomtales.shop/
+Link: https://www.bloomtales.in/

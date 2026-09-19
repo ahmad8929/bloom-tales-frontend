@@ -1,3 +1,5 @@
+export const metadata = pageMetadata('/shipping', 'Shipping & Refund Policy');
+import { pageMetadata } from '@/lib/seo';
 import { BRAND } from '@/lib/constants';
 
 export default function ShippingPage() {

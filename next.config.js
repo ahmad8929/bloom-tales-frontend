@@ -39,10 +39,6 @@ const nextConfig = {
     // Set to false in development for better DX
     ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
-  eslint: {
-    // Set to false in development for better DX
-    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
-  },
 };
 
 module.exports = nextConfig;
